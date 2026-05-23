@@ -1,0 +1,107 @@
+export interface Profile {
+  id: string;
+  display_name: string;
+  email: string;
+  venmo_username: string | null;
+  invite_token: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Receipt {
+  id: string;
+  created_by: string;
+  image_url: string | null;
+  merchant_name: string | null;
+  date_of_receipt: string | null;
+  subtotal: number | null;
+  tax: number | null;
+  tip: number | null;
+  total: number | null;
+  notes: string | null;
+  split_mode: "equal" | "by_item";
+  status: "draft" | "reviewing" | "charging" | "settled";
+  created_at: string;
+}
+
+export interface ReceiptItem {
+  id: string;
+  receipt_id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  sort_order: number;
+}
+
+export interface ReceiptParticipant {
+  id: string;
+  receipt_id: string;
+  user_id: string | null;
+  venmo_username: string;
+  display_name: string;
+  is_owner: boolean;
+}
+
+export interface ItemAssignment {
+  id: string;
+  receipt_item_id: string;
+  participant_id: string;
+  quantity_assigned: number;
+}
+
+export interface Friendship {
+  id: string;
+  user_id: string;
+  friend_id: string;
+  created_at: string;
+}
+
+export interface Charge {
+  id: string;
+  receipt_id: string;
+  from_user_id: string;
+  to_participant_id: string;
+  amount: number;
+  venmo_link: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
+// Client-side flow types
+export interface ParsedReceipt {
+  merchant_name: string | null;
+  date_of_receipt: string | null;
+  items: ParsedItem[];
+  subtotal: number | null;
+  tax: number | null;
+  tip: number | null;
+  total: number | null;
+}
+
+export interface ParsedItem {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface EditableItem extends ParsedItem {
+  clientId: string;
+  dbId?: string;
+}
+
+export interface FlowParticipant {
+  clientId: string;
+  dbId?: string;
+  type: "friend" | "manual";
+  userId?: string;
+  displayName: string;
+  venmoUsername: string;
+  isOwner: boolean;
+}
+
+export interface ComputedCharge {
+  participant: FlowParticipant;
+  amount: number;
+  venmoLink: string;
+  venmoAppLink: string;
+}
