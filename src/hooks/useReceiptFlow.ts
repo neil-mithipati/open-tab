@@ -4,14 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { EditableItem, FlowParticipant, ComputedCharge } from "@/types";
 import { generateClientId } from "@/lib/utils";
 
-export type Step =
-  | "capture"
-  | "scanning"
-  | "review_items"
-  | "add_participants"
-  | "choose_split"
-  | "assign_items"
-  | "charge_review";
+export type Step = "capture" | "scanning" | "split" | "charge";
 
 export interface ReceiptFlowState {
   step: Step;
@@ -91,37 +84,23 @@ export function useReceiptFlow() {
     setState(INITIAL);
   }, []);
 
-  function addItem() {
+  const clearSplitState = useCallback(() => {
     setState((prev) => ({
       ...prev,
-      items: [
-        ...prev.items,
-        { clientId: generateClientId(), name: "", price: 0, quantity: 1 },
-      ],
+      splitMode: "equal",
+      participants: prev.participants.filter((p) => p.isOwner),
+      assignments: {},
+      charges: [],
     }));
-  }
+  }, []);
 
-  function updateItem(clientId: string, patch: Partial<EditableItem>) {
+  function addParticipant(p: Omit<FlowParticipant, "clientId">): string {
+    const clientId = generateClientId();
     setState((prev) => ({
       ...prev,
-      items: prev.items.map((it) =>
-        it.clientId === clientId ? { ...it, ...patch } : it
-      ),
+      participants: [...prev.participants, { ...p, clientId }],
     }));
-  }
-
-  function removeItem(clientId: string) {
-    setState((prev) => ({
-      ...prev,
-      items: prev.items.filter((it) => it.clientId !== clientId),
-    }));
-  }
-
-  function addParticipant(p: Omit<FlowParticipant, "clientId">) {
-    setState((prev) => ({
-      ...prev,
-      participants: [...prev.participants, { ...p, clientId: generateClientId() }],
-    }));
+    return clientId;
   }
 
   function removeParticipant(clientId: string) {
@@ -146,9 +125,7 @@ export function useReceiptFlow() {
     update,
     goTo,
     reset,
-    addItem,
-    updateItem,
-    removeItem,
+    clearSplitState,
     addParticipant,
     removeParticipant,
     toggleAssignment,

@@ -111,7 +111,7 @@ export function CaptureStep({ flow }: { flow: Flow }) {
       }
     }
 
-    flow.goTo("review_items");
+    flow.goTo("split");
   }
 
   return (
