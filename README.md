@@ -1,20 +1,20 @@
 # Open Tab
 
-Open Tab is a mobile-first bill-splitting app that turns a photo of a receipt into pre-filled Venmo payment requests — split equally or by item, charged to friends in one tap.
+Open Tab is a mobile-first bill-splitting app that turns a photo of a receipt into Venmo payment requests. Split equally or by item, charge friends in one tap.
 
 ---
 
-## The Problem
+## Problem
 
-Splitting a dinner bill is a solved social problem and an unsolved technical one. Everyone has a calculator and a Venmo app, but the actual work — reading the receipt, doing the math, opening Venmo, typing the amount and username, sending the request — gets done by the person who paid, after the night ends, usually while their friends have already left. Open Tab collapses that into a 30-second phone interaction at the table.
+Splitting a dinner bill is a solved social problem and an unsolved technical one. Everyone has a calculator and a Venmo app, but the actual work of reading the receipt, doing the math, opening Venmo, typing the amount and username, and sending the request takes too long by the person who paid.
 
 ---
 
-## The Solution
+## Solution
 
 Photograph the receipt. A vision model reads it and pulls out every line item, the subtotal, tax, and tip. Choose equal split or assign specific items to each person. The app computes each friend's share and generates a deep link straight into Venmo with the amount and note pre-filled — one tap per person to send the request.
 
-**Stack:** Next.js 16 + React 19 + TypeScript + Tailwind CSS v4 + Supabase (PostgreSQL + Auth + Storage) + Gemini 2.0 Flash + Venmo deep links
+**Stack:** Next.js 16 + React 19 + TypeScript + Tailwind CSS v4 + Supabase (PostgreSQL + Auth + Storage) + Gemini 2.0 Flash
 
 <p align="center">
   <img src="public/landing-page.png" alt="Landing page" width="49%" />
@@ -71,7 +71,7 @@ The multi-step flow (capture → scanning → split → charge) is managed by a 
 
 ---
 
-## What I Learned
+## Learnings
 
 - **Scoping a user flow requires communicating your vision clearly first:** The initial flow had too many steps and edge cases — it covered everything I could imagine rather than the core use case. When I shared it, the scope confused rather than communicated. Writing out the intended experience in plain language before building would have aligned expectations faster and cut a lot of rework.
 
