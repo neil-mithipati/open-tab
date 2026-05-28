@@ -67,8 +67,8 @@ The multi-step flow (capture → scanning → split → charge) is managed by a 
 
 ## What I Learned
 
-- **AI for unstructured, code for structured:** Receipt images are inherently unstructured — different layouts, fonts, handwriting — so a vision model is the right tool. But once items are parsed, distributing tax and tip proportionally is pure arithmetic. Reaching for the model at that stage would be the wrong call.
+- **Scoping a user flow requires communicating your vision clearly first:** The initial flow had too many steps and edge cases — it covered everything I could imagine rather than the core use case. When I shared it, the scope confused rather than communicated. Writing out the intended experience in plain language before building would have aligned expectations faster and cut a lot of rework.
 
-- **Platform constraints are disguised design decisions:** Venmo's OAuth API requires an approval process that's out of reach for a side project. Deep links turned out to be strictly better for this use case anyway — no redirect flow, no token management, and the payment opens directly in the native app. The constraint forced a simpler and faster UX.
+- **A minimal visual baseline invites the wrong feedback:** The first design pass was functional but bare. Sharing it early pulled feedback toward aesthetics rather than flow. Bringing in a strong visual direction — liquid glass, the indigo palette, the mobile-native feel — earlier in the process redirected the conversation to what actually mattered.
 
-- **Put complex multi-step flow state in one place:** The four-step receipt flow touches capture, AI parsing, split configuration, and charge generation. Managing that as a single hook with a clear state shape eliminated cross-page coordination problems and made the session-persistence story trivial — one hook, one `sessionStorage` key.
+- **Venmo is unavoidable even when it's difficult:** Users pay each other on Venmo; building around that is not optional. The official API requires an approval process that's inaccessible for a side project, but the deep link format is a documented public interface. Working within that constraint produced a UX that's arguably better — no OAuth redirect, amount and note pre-filled, payment opens directly in the native app.
