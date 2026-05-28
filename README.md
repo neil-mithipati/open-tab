@@ -67,8 +67,8 @@ The multi-step flow (capture → scanning → split → charge) is managed by a 
 
 ## What I Learned
 
-- **Scoping a user flow requires communicating your vision clearly first:** The initial flow had too many steps and edge cases — it covered everything I could imagine rather than the core use case. When I shared it, the scope confused rather than communicated. Writing out the intended experience in plain language before building would have aligned expectations faster and cut a lot of rework.
+- **Assumptions inflate user journeys — explicit mapping shrinks them:** The initial upload-and-split flow had too many steps because I assumed I understood what users needed at each stage. Laying out the ideal journey explicitly — from photo to Venmo link — exposed where those assumptions added friction and forced every step to justify itself. The result was a tighter flow with fewer taps and no dead ends.
 
-- **A minimal visual baseline invites the wrong feedback:** The first design pass was functional but bare. Sharing it early pulled feedback toward aesthetics rather than flow. Bringing in a strong visual direction — liquid glass, the indigo palette, the mobile-native feel — earlier in the process redirected the conversation to what actually mattered.
+- **AI for unstructured, code for structured:** Receipt images vary drastically — different layouts, fonts, printed vs. handwritten, crumpled paper — so a vision model is the right tool for parsing them. But once the items are extracted, computing each person's share of tax and tip is pure arithmetic. Reaching for the model there would be the wrong call.
 
 - **Venmo is unavoidable even when it's difficult:** Users pay each other on Venmo; building around that is not optional. The official API requires an approval process that's inaccessible for a side project, but the deep link format is a documented public interface. Working within that constraint produced a UX that's arguably better — no OAuth redirect, amount and note pre-filled, payment opens directly in the native app.
