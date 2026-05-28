@@ -17,7 +17,7 @@ Photograph the receipt. A vision model reads it and pulls out every line item, t
 **Stack:** Next.js 16 + React 19 + TypeScript + Tailwind CSS v4 + Supabase (PostgreSQL + Auth + Storage) + Gemini 2.0 Flash + Venmo deep links
 
 <p align="center">
-  <img src="public/landing-page.png" alt="Landing page" width="100%" />
+  <img src="public/landing-page.png" alt="Landing page" width="49%" />
 </p>
 
 <p align="center">
