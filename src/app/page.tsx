@@ -22,9 +22,9 @@ export default function LandingPage() {
 
       <GlassCard className="w-full max-w-sm overflow-hidden p-0">
         {[
-          { icon: <Camera className="w-5 h-5 text-brand" />, title: "Scan any receipt", description: "AI reads and itemizes your receipt in seconds." },
-          { icon: <Users className="w-5 h-5 text-brand" />, title: "Split your way", description: "Divide equally or assign items per person." },
-          { icon: <VenmoIcon className="w-5 h-5 text-brand" />, title: "Charge via Venmo", description: "One tap to open Venmo with the amount pre-filled." },
+          { icon: <Camera className="w-5 h-5 text-brand" />, title: "Scan any receipt", description: "AI reads and itemizes your receipt in seconds" },
+          { icon: <Users className="w-5 h-5 text-brand" />, title: "Split your way", description: "Split equally or assign items per person" },
+          { icon: <VenmoIcon className="w-5 h-5 text-brand" />, title: "Charge with Venmo", description: "One tap to charge your friends with Venmo" },
         ].map((f, i) => (
           <div key={i} className={`flex items-center gap-4 px-5 py-4 ${i < 2 ? "border-b border-white/10" : ""}`}>
             <div className="w-10 h-10 rounded-2xl glass-panel-sm flex items-center justify-center flex-shrink-0">
