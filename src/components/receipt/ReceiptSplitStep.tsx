@@ -612,16 +612,18 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                     className="flex-1 min-w-0 text-sm text-primary bg-transparent outline-none focus:bg-white/5 rounded px-1 -mx-1 truncate"
                   />
                   {/* Quantity */}
-                  <div className="flex items-center flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <span className="text-tertiary text-xs">×</span>
-                    <input
-                      type="number"
-                      min="1"
-                      inputMode="numeric"
-                      value={item.quantity}
-                      onChange={(e) => handleItemUpdate(item.clientId, "quantity", e.target.value)}
-                      className="w-7 text-xs text-tertiary bg-transparent outline-none text-center focus:bg-white/5 rounded [appearance:textfield]"
-                    />
+                    <div className="w-6 h-6 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
+                      <input
+                        type="number"
+                        min="1"
+                        inputMode="numeric"
+                        value={item.quantity}
+                        onChange={(e) => handleItemUpdate(item.clientId, "quantity", e.target.value)}
+                        className="w-5 text-xs text-tertiary bg-transparent outline-none text-center [appearance:textfield]"
+                      />
+                    </div>
                   </div>
                   {/* Inline avatars for itemize mode */}
                   {assignedParticipants.length > 0 && (
@@ -637,7 +639,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                     </div>
                   )}
                   {/* Unit price */}
-                  <div className="flex items-center flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center flex-shrink-0 border border-white/15 bg-white/5 rounded-lg px-1.5 py-0.5" onClick={(e) => e.stopPropagation()}>
                     <span className="text-tertiary text-sm">$</span>
                     <input
                       type="number"
@@ -646,7 +648,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                       inputMode="decimal"
                       value={item.price}
                       onChange={(e) => handleItemUpdate(item.clientId, "price", e.target.value)}
-                      className="w-14 text-sm text-right font-medium text-primary bg-transparent outline-none focus:bg-white/5 rounded [appearance:textfield]"
+                      className="w-14 text-sm text-right font-medium text-primary bg-transparent outline-none [appearance:textfield]"
                     />
                   </div>
                 </div>
@@ -683,7 +685,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
           )}
           <div className="flex justify-between items-center text-sm">
             <span className="text-secondary">Tax</span>
-            <div className="flex items-center">
+            <div className="flex items-center border border-white/15 bg-white/5 rounded-lg px-1.5 py-0.5">
               <span className="text-tertiary text-sm">$</span>
               <input
                 type="number"
@@ -692,13 +694,13 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                 inputMode="decimal"
                 value={state.tax ?? 0}
                 onChange={(e) => handleTaxUpdate(e.target.value)}
-                className="w-16 text-sm text-right text-primary bg-transparent outline-none focus:bg-white/5 rounded [appearance:textfield]"
+                className="w-16 text-sm text-right text-primary bg-transparent outline-none [appearance:textfield]"
               />
             </div>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-secondary">Tip</span>
-            <div className="flex items-center">
+            <div className="flex items-center border border-white/15 bg-white/5 rounded-lg px-1.5 py-0.5">
               <span className="text-tertiary text-sm">$</span>
               <input
                 type="number"
@@ -707,7 +709,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                 inputMode="decimal"
                 value={state.tip ?? 0}
                 onChange={(e) => handleTipUpdate(e.target.value)}
-                className="w-16 text-sm text-right text-primary bg-transparent outline-none focus:bg-white/5 rounded [appearance:textfield]"
+                className="w-16 text-sm text-right text-primary bg-transparent outline-none [appearance:textfield]"
               />
             </div>
           </div>
