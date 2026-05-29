@@ -614,12 +614,11 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                     <span className="text-tertiary text-xs">×</span>
                     <div className="w-6 h-6 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
                       <input
-                        type="number"
-                        min="1"
+                        type="text"
                         inputMode="numeric"
                         value={item.quantity}
-                        onChange={(e) => handleItemUpdate(item.clientId, "quantity", e.target.value)}
-                        className="w-5 text-xs text-tertiary bg-transparent outline-none text-center [appearance:textfield]"
+                        onChange={(e) => handleItemUpdate(item.clientId, "quantity", e.target.value.replace(/\D/g, ""))}
+                        className="w-5 text-xs text-tertiary bg-transparent outline-none text-center"
                       />
                     </div>
                   </div>
@@ -640,13 +639,11 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                   <div className="flex items-center flex-shrink-0 border border-white/15 bg-white/5 rounded-lg px-1.5 py-0.5" onClick={(e) => e.stopPropagation()}>
                     <span className="text-tertiary text-sm">$</span>
                     <input
-                      type="number"
-                      min="0"
-                      step="0.01"
+                      type="text"
                       inputMode="decimal"
                       value={item.price}
-                      onChange={(e) => handleItemUpdate(item.clientId, "price", e.target.value)}
-                      className="w-14 text-sm text-right font-medium text-primary bg-transparent outline-none [appearance:textfield]"
+                      onChange={(e) => handleItemUpdate(item.clientId, "price", e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))}
+                      className="w-14 text-sm text-right font-medium text-primary bg-transparent outline-none"
                     />
                   </div>
                 </div>
@@ -686,13 +683,11 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
             <div className="flex items-center border border-white/15 bg-white/5 rounded-lg px-1.5 py-0.5">
               <span className="text-tertiary text-sm">$</span>
               <input
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
                 inputMode="decimal"
                 value={state.tax ?? 0}
-                onChange={(e) => handleTaxUpdate(e.target.value)}
-                className="w-16 text-sm text-right text-primary bg-transparent outline-none [appearance:textfield]"
+                onChange={(e) => handleTaxUpdate(e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))}
+                className="w-16 text-sm text-right text-primary bg-transparent outline-none"
               />
             </div>
           </div>
@@ -701,13 +696,11 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
             <div className="flex items-center border border-white/15 bg-white/5 rounded-lg px-1.5 py-0.5">
               <span className="text-tertiary text-sm">$</span>
               <input
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
                 inputMode="decimal"
                 value={state.tip ?? 0}
-                onChange={(e) => handleTipUpdate(e.target.value)}
-                className="w-16 text-sm text-right text-primary bg-transparent outline-none [appearance:textfield]"
+                onChange={(e) => handleTipUpdate(e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))}
+                className="w-16 text-sm text-right text-primary bg-transparent outline-none"
               />
             </div>
           </div>
