@@ -16,7 +16,8 @@ import {
 } from "@/lib/utils";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import type { Profile, FlowParticipant, ComputedCharge } from "@/types";
-import { X, UserPlus, Users2, AlignJustify, Image as ImageIcon } from "lucide-react";
+import { VenmoIcon } from "@/components/ui/VenmoIcon";
+import { X, UserPlus, Users2, AlignJustify, Image as ImageIcon, ExternalLink, Check } from "lucide-react";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
 
@@ -175,17 +176,118 @@ function UsernameAutocomplete({
   );
 }
 
+// ─── LiveChargeCard ───────────────────────────────────────────────────────────
+
+function LiveChargeCard({
+  charge,
+  splitMode,
+  items,
+  assignments,
+  paid,
+  onMarkPaid,
+}: {
+  charge: ComputedCharge;
+  splitMode: "equal" | "by_item";
+  items: ReturnType<typeof useReceiptFlow>["state"]["items"];
+  assignments: Record<string, string[]>;
+  paid: boolean;
+  onMarkPaid: () => void;
+}) {
+  const breakdown =
+    splitMode === "by_item"
+      ? items
+          .filter((item) => (assignments[item.clientId] ?? []).includes(charge.participant.clientId))
+          .map((item) => {
+            const assignees = assignments[item.clientId] ?? [];
+            return {
+              item,
+              perPersonAmount: (item.price * item.quantity) / assignees.length,
+              shared: assignees.length > 1,
+            };
+          })
+      : [];
+
+  function openVenmo() {
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    window.open(isMobile ? charge.venmoAppLink : charge.venmoLink, "_blank");
+  }
+
+  const showDisplayName = charge.participant.displayName !== charge.participant.venmoUsername;
+
+  return (
+    <GlassCard size="sm" className="p-4">
+      <div className="flex items-center gap-3">
+        <Avatar name={charge.participant.displayName} size="sm" />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-primary truncate">
+            {showDisplayName ? charge.participant.displayName : `@${charge.participant.venmoUsername}`}
+          </p>
+          {showDisplayName && (
+            <p className="text-xs text-secondary">@{charge.participant.venmoUsername}</p>
+          )}
+        </div>
+        <p className="font-semibold text-primary flex-shrink-0">{formatCurrency(charge.amount)}</p>
+      </div>
+
+      {breakdown.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-white/8 flex flex-col gap-1.5">
+          {breakdown.map(({ item, perPersonAmount, shared }) => (
+            <div key={item.clientId} className="flex justify-between text-xs text-secondary">
+              <span className="truncate">
+                {item.name}
+                {item.quantity > 1 && ` ×${item.quantity}`}
+                {shared && " (shared)"}
+              </span>
+              <span className="flex-shrink-0 ml-2">{formatCurrency(perPersonAmount)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between text-xs text-tertiary pt-1 border-t border-white/8">
+            <span>incl. tax & tip</span>
+            <span>{formatCurrency(charge.amount)}</span>
+          </div>
+        </div>
+      )}
+      {splitMode === "equal" && (
+        <p className="mt-2 text-xs text-secondary">Even split</p>
+      )}
+
+      {paid ? (
+        <div className="mt-3 flex items-center gap-1.5 text-emerald-400 text-sm font-medium">
+          <Check className="w-4 h-4" /> Paid
+        </div>
+      ) : (
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={openVenmo}
+            className="flex-1 flex items-center justify-center gap-2 bg-brand/15 hover:bg-brand/25 active:bg-brand/30 text-brand font-semibold text-sm px-4 py-2.5 rounded-2xl transition-colors"
+          >
+            <VenmoIcon className="w-4 h-4 rounded-sm overflow-hidden" />
+            Venmo
+            <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+          </button>
+          <button
+            onClick={onMarkPaid}
+            className="flex items-center justify-center glass-panel-sm text-secondary hover:text-primary text-sm px-3 py-2.5 rounded-2xl transition-colors"
+          >
+            Mark paid
+          </button>
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ReceiptSplitStep({ flow }: { flow: Flow }) {
   const router = useRouter();
   const [view, setView] = useState<"parsed" | "original">("parsed");
+  const [paidClientIds, setPaidClientIds] = useState<Set<string>>(new Set());
   const [friends, setFriends] = useState<Profile[]>([]);
   const [evenSplitOpen, setEvenSplitOpen] = useState(false);
   const [evenSplitQuery, setEvenSplitQuery] = useState("");
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [itemQuery, setItemQuery] = useState("");
-  const [saving, setSaving] = useState(false);
   const evenSplitInputRef = useRef<HTMLInputElement>(null);
   const itemInputRef = useRef<HTMLInputElement>(null);
   const activeInputRef = useRef<HTMLDivElement | null>(null);
@@ -333,109 +435,22 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
     state.items.length > 0 &&
     state.items.every((item) => (state.assignments[item.clientId] ?? []).length >= 1);
 
-  const canCharge =
-    (state.splitMode === "equal" && nonOwnerParticipants.length >= 1) ||
-    (state.splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1);
-
-  async function handleCharge() {
-    setSaving(true);
-    const supabase = getSupabaseBrowserClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user || !state.receiptId) {
-      setSaving(false);
-      return;
-    }
-
-    const total =
-      state.total ??
-      state.items.reduce((s, it) => s + it.price * it.quantity, 0) +
-        (state.tax ?? 0) +
-        (state.tip ?? 0);
-
-    let computed: ComputedCharge[];
-    if (state.splitMode === "equal") {
-      computed = computeEqualCharges(
-        total,
-        state.participants,
-        state.merchantName,
-        state.dateOfReceipt
-      );
-    } else {
-      const subtotal = state.items.reduce((s, it) => s + it.price * it.quantity, 0);
-      computed = computeItemCharges(
-        state.items,
-        state.assignments,
-        state.participants,
-        subtotal,
-        state.tax ?? 0,
-        state.tip ?? 0,
-        state.merchantName,
-        state.dateOfReceipt
-      );
-    }
-
-    // Persist participants
-    await supabase
-      .from("receipt_participants")
-      .delete()
-      .eq("receipt_id", state.receiptId);
-    await supabase.from("receipt_participants").insert(
-      state.participants.map((p) => ({
-        receipt_id: state.receiptId,
-        user_id: p.userId ?? null,
-        venmo_username: p.venmoUsername,
-        display_name: p.displayName,
-        is_owner: p.isOwner,
-      }))
-    );
-
-    // Fetch participant DB IDs
-    const { data: dbParticipants } = await supabase
-      .from("receipt_participants")
-      .select("id, venmo_username")
-      .eq("receipt_id", state.receiptId);
-
-    const venmoToDbId = Object.fromEntries(
-      (dbParticipants ?? []).map(
-        (p: { id: string; venmo_username: string }) => [p.venmo_username, p.id]
-      )
-    );
-
-    // Write charges
-    const chargeRows = computed
-      .map((c) => ({
-        receipt_id: state.receiptId,
-        from_user_id: user.id,
-        to_participant_id: venmoToDbId[c.participant.venmoUsername] ?? null,
-        amount: c.amount,
-        venmo_link: c.venmoLink,
-      }))
-      .filter(
-        (r): r is typeof r & { to_participant_id: string } =>
-          r.to_participant_id !== null
-      );
-
-    if (chargeRows.length > 0) {
-      await supabase.from("charges").insert(chargeRows);
-    }
-
-    await supabase
-      .from("receipts")
-      .update({ status: "charging", split_mode: state.splitMode })
-      .eq("id", state.receiptId);
-
-    update("charges", computed);
-    goTo("charge");
-    setSaving(false);
-  }
-
   const total =
     state.total ??
     state.items.reduce((s, it) => s + it.price * it.quantity, 0) +
       (state.tax ?? 0) +
       (state.tip ?? 0);
+
+  const liveCharges: ComputedCharge[] = (() => {
+    if (state.splitMode === "equal" && nonOwnerParticipants.length >= 1) {
+      return computeEqualCharges(total, state.participants, state.merchantName, state.dateOfReceipt);
+    }
+    if (state.splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1) {
+      const subtotal = state.items.reduce((s, it) => s + it.price * it.quantity, 0);
+      return computeItemCharges(state.items, state.assignments, state.participants, subtotal, state.tax ?? 0, state.tip ?? 0, state.merchantName, state.dateOfReceipt);
+    }
+    return [];
+  })();
 
   return (
     <div className="flex flex-col gap-4 pt-4 pb-28">
@@ -668,40 +683,30 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
         </div>
       </GlassCard>
 
-      {/* Cancel / Retake */}
-      <div className="flex gap-3">
-        <GlassButton
-          variant="ghost"
-          size="md"
-          className="flex-1"
-          onClick={() => router.push("/dashboard")}
-        >
-          Cancel
-        </GlassButton>
-        <GlassButton
-          variant="secondary"
-          size="md"
-          className="flex-1"
-          onClick={() => goTo("capture")}
-        >
-          Retake
-        </GlassButton>
-      </div>
+      {/* Retake */}
+      <GlassButton variant="secondary" size="md" onClick={() => goTo("capture")}>
+        Retake
+      </GlassButton>
       </>
       )}
 
-      {/* Floating Charge button */}
-      {canCharge && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20 px-4 w-full max-w-md">
-          <GlassButton
-            size="lg"
-            loading={saving}
-            onClick={handleCharge}
-            className="shadow-xl"
-          >
-            Charge {nonOwnerParticipants.length > 0 ? `${nonOwnerParticipants.length} ` : ""}
-            {nonOwnerParticipants.length === 1 ? "person" : "people"}
-          </GlassButton>
+      {/* Live charge cards */}
+      {liveCharges.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-lg font-semibold text-primary">Charges</h2>
+          {liveCharges.map((charge) => (
+            <LiveChargeCard
+              key={charge.participant.clientId}
+              charge={charge}
+              splitMode={state.splitMode}
+              items={state.items}
+              assignments={state.assignments}
+              paid={paidClientIds.has(charge.participant.clientId)}
+              onMarkPaid={() =>
+                setPaidClientIds((prev) => new Set([...prev, charge.participant.clientId]))
+              }
+            />
+          ))}
         </div>
       )}
     </div>

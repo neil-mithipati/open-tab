@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { EditableItem, FlowParticipant, ComputedCharge } from "@/types";
+import type { EditableItem, FlowParticipant } from "@/types";
 import { generateClientId } from "@/lib/utils";
 
-export type Step = "capture" | "scanning" | "split" | "charge";
+export type Step = "capture" | "scanning" | "split";
 
 export interface ReceiptFlowState {
   step: Step;
@@ -22,7 +22,6 @@ export interface ReceiptFlowState {
   participants: FlowParticipant[];
   splitMode: "equal" | "by_item";
   assignments: Record<string, string[]>; // itemClientId → participantClientIds[]
-  charges: ComputedCharge[];
 }
 
 const STORAGE_KEY = "open_tab_receipt_flow";
@@ -43,13 +42,11 @@ const INITIAL: ReceiptFlowState = {
   participants: [],
   splitMode: "equal",
   assignments: {},
-  charges: [],
 };
 
 export function useReceiptFlow() {
   const [state, setState] = useState<ReceiptFlowState>(INITIAL);
 
-  // restore from sessionStorage on mount (excluding File object)
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
@@ -60,7 +57,6 @@ export function useReceiptFlow() {
     } catch {}
   }, []);
 
-  // persist to sessionStorage on change (excluding File)
   useEffect(() => {
     try {
       const { imageFile, ...rest } = state;
@@ -90,7 +86,6 @@ export function useReceiptFlow() {
       splitMode: "equal",
       participants: prev.participants.filter((p) => p.isOwner),
       assignments: {},
-      charges: [],
     }));
   }, []);
 
