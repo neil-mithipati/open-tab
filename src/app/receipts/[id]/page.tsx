@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { redirect, notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getReceiptDetail } from "@/lib/queries";
@@ -20,24 +22,30 @@ function extractStoragePath(url: string | null): string | null {
   }
 }
 
-export default async function ReceiptDetailPage({ params }: Props) {
+export default function ReceiptDetailPage({ params }: Props) {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-secondary text-sm">Loading…</div>}>
+      <ReceiptDetailContent params={params} />
+    </Suspense>
+  );
+}
+
+async function ReceiptDetailContent({ params }: Props) {
+  await connection();
   const { id } = await params;
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
 
-  // Cached — auth verified above, data fetched with service client
   const { receipt, items, participants } = await getReceiptDetail(id);
 
   if (!receipt) notFound();
 
-  // Verify the user owns or participates in this receipt
   const isAuthorised =
     receipt.created_by === user.id ||
     participants.some((p: { user_id: string | null }) => p.user_id === user.id);
   if (!isAuthorised) notFound();
 
-  // Refresh the signed URL (can't cache — tied to current time)
   const storagePath = extractStoragePath(receipt.image_url);
   const { data: signedUrlData } = storagePath
     ? await supabase.storage.from("receipt-images").createSignedUrl(storagePath, 3600)

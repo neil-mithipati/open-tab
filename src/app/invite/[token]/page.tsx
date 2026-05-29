@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -10,7 +12,16 @@ interface Props {
   params: Promise<{ token: string }>;
 }
 
-export default async function InvitePage({ params }: Props) {
+export default function InvitePage({ params }: Props) {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-dvh text-secondary text-sm">Loading…</div>}>
+      <InviteContent params={params} />
+    </Suspense>
+  );
+}
+
+async function InviteContent({ params }: Props) {
+  await connection();
   const { token } = await params;
   const supabase = await getSupabaseServerClient();
 
