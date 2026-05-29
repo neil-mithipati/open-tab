@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getUserProfile } from "@/lib/queries";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { InviteQRCode } from "@/components/profile/InviteQRCode";
 import { Avatar } from "@/components/ui/Avatar";
@@ -11,12 +12,8 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
+  // Cached — served from memory on repeat navigations within the stale window
+  const profile = await getUserProfile(user.id);
   if (!profile) redirect("/auth");
 
   return (

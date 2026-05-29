@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getUserReceipts, getUserProfile } from "@/lib/queries";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Camera, ChevronRight } from "lucide-react";
 
@@ -12,37 +13,13 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name, venmo_username")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.venmo_username) redirect("/auth/venmo");
-
-  const [{ data: created }, { data: participated }] = await Promise.all([
-    supabase
-      .from("receipts")
-      .select("id, merchant_name, date_of_receipt, total, status, created_at")
-      .eq("created_by", user.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("receipt_participants")
-      .select("receipt_id, receipts(id, merchant_name, date_of_receipt, total, status, created_at)")
-      .eq("user_id", user.id)
-      .eq("is_owner", false),
+  // Cached — served from memory on repeat navigations within the stale window
+  const [profile, allReceipts] = await Promise.all([
+    getUserProfile(user.id),
+    getUserReceipts(user.id),
   ]);
 
-  type Receipt = { id: string; merchant_name: string | null; date_of_receipt: string | null; total: number | null; status: string; created_at: string };
-
-  const participatedReceipts = (participated ?? [])
-    .map((p) => p.receipts)
-    .filter(Boolean)
-    .flat() as Receipt[];
-
-  const allReceipts = [...(created ?? []) as Receipt[], ...participatedReceipts].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  if (!profile?.venmo_username) redirect("/auth/venmo");
 
   return (
     <AppShell>
