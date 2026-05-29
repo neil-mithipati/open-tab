@@ -276,7 +276,7 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
 
   const canCharge =
     (state.splitMode === "equal" && nonOwnerParticipants.length >= 1) ||
-    (state.splitMode === "by_item" && allItemsAssigned);
+    (state.splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1);
 
   async function handleCharge() {
     setSaving(true);
