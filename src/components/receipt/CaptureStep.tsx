@@ -2,10 +2,9 @@
 
 import { useRef, useState } from "react";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { GlassCard } from "@/components/ui/GlassCard";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
-import { Camera, Upload, ImageIcon } from "lucide-react";
+import { Camera } from "lucide-react";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
 
@@ -112,31 +111,21 @@ export function CaptureStep({ flow }: { flow: Flow }) {
   }
 
   return (
-    <div className="flex flex-col gap-6 pt-4">
-      <GlassCard className="p-10 flex flex-col items-center gap-4 text-center">
-        <div className="w-16 h-16 rounded-3xl bg-brand/10 flex items-center justify-center">
-          <ImageIcon className="w-8 h-8 text-brand" />
-        </div>
-        <p className="text-secondary text-sm">Take a photo or upload an image of your receipt</p>
-      </GlassCard>
+    <div className="flex flex-col gap-4 pt-4">
+      <GlassButton
+        size="lg"
+        className="gap-2"
+        onClick={() => cameraRef.current?.click()}
+      >
+        <Camera className="w-5 h-5" /> Take photo
+      </GlassButton>
 
-      <div className="flex flex-col gap-3">
-        <GlassButton
-          size="lg"
-          className="gap-2"
-          onClick={() => cameraRef.current?.click()}
-        >
-          <Camera className="w-5 h-5" /> Take photo
-        </GlassButton>
-        <GlassButton
-          variant="secondary"
-          size="lg"
-          className="gap-2"
-          onClick={() => fileRef.current?.click()}
-        >
-          <Upload className="w-5 h-5" /> Choose from library
-        </GlassButton>
-      </div>
+      <button
+        onClick={() => fileRef.current?.click()}
+        className="text-sm text-secondary hover:text-primary transition-colors text-center"
+      >
+        Choose from library
+      </button>
 
       {error && <p className="text-sm text-red-400 text-center">{error}</p>}
 
