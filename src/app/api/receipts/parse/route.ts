@@ -29,7 +29,13 @@ export async function POST(request: Request) {
   const buffer = await imageRes.arrayBuffer();
   const base64 = Buffer.from(buffer).toString("base64");
 
-  const parsed = await parseReceiptImage(base64, mimeType ?? "image/jpeg");
+  let parsed;
+  try {
+    parsed = await parseReceiptImage(base64, mimeType ?? "image/jpeg");
+  } catch (err) {
+    console.error("[parse] Gemini error:", err);
+    return NextResponse.json({ error: "parse_failed", detail: String(err) }, { status: 500 });
+  }
 
   // write parsed data back to db
   await service

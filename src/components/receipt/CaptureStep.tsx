@@ -74,6 +74,12 @@ export function CaptureStep({ flow }: { flow: Flow }) {
       }),
     });
 
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("[handleScan] parse API error:", err);
+      flow.goTo("split");
+      return;
+    }
     const json = await res.json();
     if (json.success && json.data) {
       const d = json.data;

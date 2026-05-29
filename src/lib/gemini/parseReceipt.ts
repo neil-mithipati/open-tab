@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI, createPartFromBase64, createPartFromText } from "@google/genai";
 import type { ParsedReceipt } from "@/types";
 
 const PROMPT = `You are a receipt parser. Extract all information from this receipt image and return a single JSON object — nothing else, no markdown fences.
@@ -34,15 +34,17 @@ export async function parseReceiptImage(
   imageBase64: string,
   mimeType: string
 ): Promise<ParsedReceipt> {
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY! });
 
-  const result = await model.generateContent([
-    { inlineData: { data: imageBase64, mimeType } },
-    PROMPT,
-  ]);
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: [
+      createPartFromBase64(imageBase64, mimeType),
+      createPartFromText(PROMPT),
+    ],
+  });
 
-  const text = result.response.text().trim();
+  const text = (response.text ?? "").trim();
   const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
 
   try {
