@@ -7,6 +7,14 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
+const ANIMALS = ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐧","🦆","🦉","🦇","🐺","🐴","🦄","🐝","🦋","🐢","🐍","🦎","🐙","🦑","🐬","🐳","🦈","🦭","🐘","🦛","🦒","🦘","🦔","🦝","🦥","🦦","🦨","🐇","🦌","🐓","🦚","🦜","🦩","🕊️","🐆","🐅","🦓"];
+
+export function animalEmoji(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  return ANIMALS[Math.abs(hash) % ANIMALS.length];
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",

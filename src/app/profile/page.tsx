@@ -3,10 +3,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUserProfile, getUserFriends } from "@/lib/queries";
+import { animalEmoji } from "@/lib/utils";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { InviteQRCode } from "@/components/profile/InviteQRCode";
 import { FriendsManager } from "@/components/profile/FriendsManager";
-import { Avatar } from "@/components/ui/Avatar";
 
 export default async function ProfilePage() {
   const supabase = await getSupabaseServerClient();
@@ -24,7 +24,9 @@ export default async function ProfilePage() {
     <AppShell>
       <div className="flex flex-col gap-6 pb-10">
         <div className="flex items-center gap-4">
-          <Avatar name={profile.display_name} size="lg" />
+          <div className="w-14 h-14 rounded-full glass-panel-sm flex items-center justify-center text-2xl flex-shrink-0">
+            {animalEmoji(profile.id)}
+          </div>
           <div>
             <h1 className="text-xl font-bold text-primary">@{profile.display_name}</h1>
             <p className="text-sm text-secondary">{profile.email}</p>

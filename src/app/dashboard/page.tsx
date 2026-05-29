@@ -24,10 +24,7 @@ export default async function DashboardPage() {
   return (
     <AppShell>
       <div className="flex flex-col gap-6 pb-10">
-        <div>
-          <p className="text-secondary text-sm">Welcome back,</p>
-          <h1 className="text-2xl font-bold text-primary">@{profile.display_name}</h1>
-        </div>
+        <h1 className="text-3xl font-bold animate-gradient">Open Tab</h1>
 
         <Link href="/receipts/new">
           <GlassCard className="p-5 flex items-center gap-4 active:scale-[0.98] transition-transform cursor-pointer">
