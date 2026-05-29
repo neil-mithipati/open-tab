@@ -467,7 +467,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
   })();
 
   return (
-    <div className="flex flex-col gap-4 pt-4 pb-28">
+    <div className="flex flex-col gap-4 pt-4 pb-14">
       {/* View toggle */}
       <div className="flex self-start glass-panel-sm rounded-2xl p-1 gap-1">
         <button
