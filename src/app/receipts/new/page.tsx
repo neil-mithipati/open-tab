@@ -6,38 +6,25 @@ import { CaptureStep } from "@/components/receipt/CaptureStep";
 import { ScanningStep } from "@/components/receipt/ScanningStep";
 import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { ChargeScreen } from "@/components/receipt/ChargeScreen";
-import { ChevronLeft } from "lucide-react";
-
-const STEP_LABELS: Record<string, string> = {
-  capture: "Scan Receipt",
-  scanning: "Reading...",
-  split: "Split",
-  charge: "Charges",
-};
+import { X } from "lucide-react";
 
 export default function NewReceiptPage() {
   const flow = useReceiptFlow();
   const router = useRouter();
   const { step } = flow.state;
 
-  function handleBack() {
-    if (step === "capture") { router.push("/dashboard"); return; }
-    if (step === "scanning") { flow.goTo("capture"); return; }
-    if (step === "split") { router.push("/dashboard"); return; }
-    if (step === "charge") { flow.goTo("split"); return; }
-  }
-
-  const showBack = step !== "scanning";
-
   return (
     <div className="min-h-dvh flex flex-col">
-      <div className="flex items-center gap-2 px-4 pt-safe pt-4 pb-2">
-        {showBack && (
-          <button onClick={handleBack} className="text-secondary hover:text-primary p-1 -ml-1">
-            <ChevronLeft className="w-6 h-6" />
+      <div className="flex items-center px-4 pt-safe pt-4 pb-2">
+        {step !== "scanning" && (
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
           </button>
         )}
-        <h1 className="text-lg font-semibold text-primary">{STEP_LABELS[step]}</h1>
       </div>
 
       <StepDots step={step} />

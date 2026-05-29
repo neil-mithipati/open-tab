@@ -4,7 +4,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ChevronLeft } from "lucide-react";
+import { X } from "lucide-react";
 import { ChargeList } from "@/components/receipt/ChargeList";
 
 interface Props {
@@ -46,13 +46,14 @@ export default async function ReceiptDetailPage({ params }: Props) {
   return (
     <AppShell>
       <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard" className="text-secondary hover:text-primary">
-            <ChevronLeft className="w-6 h-6" />
+        <div className="flex items-start">
+          <Link
+            href="/dashboard"
+            className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
           </Link>
-          <h1 className="text-xl font-bold text-primary truncate">
-            {receipt.merchant_name ?? "Receipt"}
-          </h1>
         </div>
 
         <GlassCard className="p-5">
