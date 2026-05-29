@@ -272,6 +272,36 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
     setItemQuery("");
   }
 
+  function handleItemUpdate(clientId: string, field: "name" | "price" | "quantity", raw: string) {
+    const newItems = state.items.map((it) => {
+      if (it.clientId !== clientId) return it;
+      if (field === "name") return { ...it, name: raw };
+      if (field === "price") return { ...it, price: Math.round((parseFloat(raw) || 0) * 100) / 100 };
+      if (field === "quantity") return { ...it, quantity: Math.max(1, parseInt(raw) || 1) };
+      return it;
+    });
+    update("items", newItems);
+    if (field !== "name") {
+      const newSubtotal = Math.round(newItems.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
+      update("subtotal", newSubtotal);
+      update("total", Math.round((newSubtotal + (state.tax ?? 0) + (state.tip ?? 0)) * 100) / 100);
+    }
+  }
+
+  function handleTaxUpdate(raw: string) {
+    const tax = Math.round((parseFloat(raw) || 0) * 100) / 100;
+    update("tax", tax);
+    const subtotal = Math.round(state.items.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
+    update("total", Math.round((subtotal + tax + (state.tip ?? 0)) * 100) / 100);
+  }
+
+  function handleTipUpdate(raw: string) {
+    const tip = Math.round((parseFloat(raw) || 0) * 100) / 100;
+    update("tip", tip);
+    const subtotal = Math.round(state.items.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
+    update("total", Math.round((subtotal + (state.tax ?? 0) + tip) * 100) / 100);
+  }
+
   const allItemsAssigned =
     state.items.length > 0 &&
     state.items.every((item) => (state.assignments[item.clientId] ?? []).length >= 1);
@@ -497,12 +527,25 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
                     state.splitMode === "by_item" ? "active:bg-white/5 rounded-xl px-1 -mx-1" : ""
                   }`}
                 >
-                  <span className="flex-1 min-w-0 text-sm text-primary truncate">
-                    {item.name}
-                    {item.quantity > 1 && (
-                      <span className="text-tertiary"> ×{item.quantity}</span>
-                    )}
-                  </span>
+                  {/* Name */}
+                  <input
+                    value={item.name}
+                    onChange={(e) => handleItemUpdate(item.clientId, "name", e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex-1 min-w-0 text-sm text-primary bg-transparent outline-none focus:bg-white/5 rounded px-1 -mx-1 truncate"
+                  />
+                  {/* Quantity */}
+                  <div className="flex items-center flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-tertiary text-xs">×</span>
+                    <input
+                      type="number"
+                      min="1"
+                      inputMode="numeric"
+                      value={item.quantity}
+                      onChange={(e) => handleItemUpdate(item.clientId, "quantity", e.target.value)}
+                      className="w-7 text-xs text-tertiary bg-transparent outline-none text-center focus:bg-white/5 rounded [appearance:textfield]"
+                    />
+                  </div>
                   {/* Inline avatars for itemize mode */}
                   {assignedParticipants.length > 0 && (
                     <div className="flex items-center -space-x-1.5">
@@ -516,9 +559,19 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
                       ))}
                     </div>
                   )}
-                  <span className="text-sm font-medium text-primary flex-shrink-0">
-                    {formatCurrency(item.price * item.quantity)}
-                  </span>
+                  {/* Unit price */}
+                  <div className="flex items-center flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-tertiary text-sm">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={item.price}
+                      onChange={(e) => handleItemUpdate(item.clientId, "price", e.target.value)}
+                      className="w-14 text-sm text-right font-medium text-primary bg-transparent outline-none focus:bg-white/5 rounded [appearance:textfield]"
+                    />
+                  </div>
                 </div>
 
                 {/* Inline username input for itemize mode */}
@@ -551,18 +604,36 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
               <span className="text-primary">{formatCurrency(state.subtotal)}</span>
             </div>
           )}
-          {state.tax !== null && state.tax > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-secondary">Tax</span>
-              <span className="text-primary">{formatCurrency(state.tax)}</span>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-secondary">Tax</span>
+            <div className="flex items-center">
+              <span className="text-tertiary text-sm">$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={state.tax ?? 0}
+                onChange={(e) => handleTaxUpdate(e.target.value)}
+                className="w-16 text-sm text-right text-primary bg-transparent outline-none focus:bg-white/5 rounded [appearance:textfield]"
+              />
             </div>
-          )}
-          {state.tip !== null && state.tip > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-secondary">Tip</span>
-              <span className="text-primary">{formatCurrency(state.tip)}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-secondary">Tip</span>
+            <div className="flex items-center">
+              <span className="text-tertiary text-sm">$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={state.tip ?? 0}
+                onChange={(e) => handleTipUpdate(e.target.value)}
+                className="w-16 text-sm text-right text-primary bg-transparent outline-none focus:bg-white/5 rounded [appearance:textfield]"
+              />
             </div>
-          )}
+          </div>
           <div className="flex justify-between pt-1 border-t border-white/8 mt-0.5">
             <span className="font-bold text-primary">Total</span>
             <span className="font-bold text-primary text-lg">{formatCurrency(total)}</span>
