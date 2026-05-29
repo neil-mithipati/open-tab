@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
@@ -492,23 +493,41 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
         </button>
       </div>
 
-      {/* Original receipt image */}
-      {view === "original" && state.signedUrl && (
-        <GlassCard className="overflow-hidden p-0">
-          <div className="relative w-full" style={{ minHeight: "60vh" }}>
-            <Image
-              src={state.signedUrl}
-              alt="Original receipt"
-              fill
-              className="object-contain"
-            />
-          </div>
-        </GlassCard>
-      )}
-
-      {/* Parsed receipt — hidden when viewing original */}
-      {view === "original" ? null : (
-      <>
+      {/* Animated view container */}
+      <div className="[perspective:1200px]">
+        <AnimatePresence mode="wait" initial={false}>
+          {view === "original" ? (
+            <motion.div
+              key="original"
+              initial={{ rotateY: -90, opacity: 0 }}
+              animate={{ rotateY: 0, opacity: 1 }}
+              exit={{ rotateY: 90, opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+              style={{ transformOrigin: "center", transformStyle: "preserve-3d" }}
+            >
+              {state.signedUrl && (
+                <GlassCard className="overflow-hidden p-0">
+                  <div className="relative w-full" style={{ minHeight: "60vh" }}>
+                    <Image
+                      src={state.signedUrl}
+                      alt="Original receipt"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                </GlassCard>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="parsed"
+              initial={{ rotateY: 90, opacity: 0 }}
+              animate={{ rotateY: 0, opacity: 1 }}
+              exit={{ rotateY: -90, opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+              style={{ transformOrigin: "center", transformStyle: "preserve-3d" }}
+            >
+      <div className="flex flex-col gap-4">
       {/* Receipt card */}
       <GlassCard className="p-0 overflow-hidden">
         {/* Header */}
@@ -705,8 +724,11 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
           Retake
         </GlassButton>
       )}
-      </>
-      )}
+      </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Live charge cards */}
       {liveCharges.length > 0 && (
