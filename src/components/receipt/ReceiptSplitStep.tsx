@@ -604,18 +604,17 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                     {item.name}
                   </span>
                   {/* Quantity */}
-                  <div
-                    className="flex-shrink-0 w-10 h-10 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="text-sm text-primary font-medium">×</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={item.quantity}
-                      onChange={(e) => handleItemUpdate(item.clientId, "quantity", e.target.value.replace(/\D/g, ""))}
-                      className="w-6 text-sm text-primary font-medium bg-transparent outline-none text-center"
-                    />
+                  <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-primary text-sm font-medium">×</span>
+                    <div className="w-6 h-6 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={item.quantity}
+                        onChange={(e) => handleItemUpdate(item.clientId, "quantity", e.target.value.replace(/\D/g, ""))}
+                        className="w-5 text-sm text-primary font-medium bg-transparent outline-none text-center"
+                      />
+                    </div>
                   </div>
                   {/* Inline avatars for itemize mode */}
                   {assignedParticipants.length > 0 && (
