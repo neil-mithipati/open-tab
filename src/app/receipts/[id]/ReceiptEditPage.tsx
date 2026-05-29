@@ -2,20 +2,24 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useReceiptFlow } from "@/hooks/useReceiptFlow";
-import { CaptureStep } from "@/components/receipt/CaptureStep";
-import { ScanningStep } from "@/components/receipt/ScanningStep";
+import { useReceiptEditFlow } from "@/hooks/useReceiptEditFlow";
 import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { computeEqualCharges, computeItemCharges } from "@/lib/utils";
 import type { ComputedCharge } from "@/types";
+import type { ReceiptFlowState } from "@/hooks/useReceiptFlow";
 import { X, Check } from "lucide-react";
 
-export default function NewReceiptPage() {
-  const flow = useReceiptFlow();
+interface Props {
+  seed: Omit<ReceiptFlowState, "step" | "imageFile">;
+}
+
+export function ReceiptEditPage({ seed }: Props) {
+  const flow = useReceiptEditFlow(seed);
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const { step, splitMode, participants, items, assignments, tax, tip, total, receiptId, merchantName, dateOfReceipt } = flow.state;
+
+  const { splitMode, participants, items, assignments, tax, tip, total, receiptId, merchantName, dateOfReceipt } = flow.state;
 
   const nonOwnerParticipants = participants.filter((p) => !p.isOwner);
   const allItemsAssigned = items.length > 0 && items.every((item) => (assignments[item.clientId] ?? []).length >= 1);
@@ -24,7 +28,7 @@ export default function NewReceiptPage() {
     (splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1);
 
   async function handleDone() {
-    if (!receiptId) { flow.reset(); router.push("/dashboard"); return; }
+    if (!receiptId) { router.push("/dashboard"); return; }
     setSaving(true);
 
     const supabase = getSupabaseBrowserClient();
@@ -77,27 +81,24 @@ export default function NewReceiptPage() {
       await supabase.from("charges").insert(chargeRows);
     }
 
-    await supabase.from("receipts").update({ status: "charging", split_mode: splitMode }).eq("id", receiptId);
+    await supabase.from("receipts")
+      .update({ status: "charging", split_mode: splitMode })
+      .eq("id", receiptId);
 
-    flow.reset();
-    router.push(`/receipts/${receiptId}`);
+    router.push("/dashboard");
   }
 
   return (
     <div className="min-h-dvh flex flex-col">
       <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-2">
-        {step !== "scanning" ? (
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        ) : (
-          <div className="w-9 h-9" />
-        )}
-        {step === "split" && canFinalize ? (
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
+          aria-label="Close"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        {canFinalize ? (
           <button
             onClick={handleDone}
             disabled={saving}
@@ -110,36 +111,9 @@ export default function NewReceiptPage() {
           <div className="w-9 h-9" />
         )}
       </div>
-
-      <StepDots step={step} />
-
       <div className="flex-1 px-4 pb-8 max-w-md mx-auto w-full">
-        {step === "capture" && <CaptureStep flow={flow} />}
-        {step === "scanning" && <ScanningStep />}
-        {step === "split" && <ReceiptSplitStep flow={flow} />}
+        <ReceiptSplitStep flow={flow} hideRetake />
       </div>
-    </div>
-  );
-}
-
-const ORDERED_STEPS = ["capture", "split"] as const;
-
-function StepDots({ step }: { step: string }) {
-  const idx = ORDERED_STEPS.indexOf(step as (typeof ORDERED_STEPS)[number]);
-  return (
-    <div className="flex items-center justify-center gap-1.5 py-2">
-      {ORDERED_STEPS.map((s, i) => (
-        <div
-          key={s}
-          className={`rounded-full transition-all duration-300 ${
-            i === idx
-              ? "w-5 h-1.5 bg-brand"
-              : i < idx
-              ? "w-1.5 h-1.5 bg-brand/50"
-              : "w-1.5 h-1.5 bg-white/20"
-          }`}
-        />
-      ))}
     </div>
   );
 }

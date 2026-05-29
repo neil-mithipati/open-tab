@@ -1,13 +1,22 @@
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
-import { GlassCard } from "@/components/ui/GlassCard";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import { X, Check } from "lucide-react";
-import { ChargeList } from "@/components/receipt/ChargeList";
+import type { EditableItem, FlowParticipant } from "@/types";
+import { ReceiptEditPage } from "./ReceiptEditPage";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+function extractStoragePath(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const pathname = new URL(url).pathname;
+    const marker = "/receipt-images/";
+    const idx = pathname.indexOf(marker);
+    return idx === -1 ? null : pathname.slice(idx + marker.length);
+  } catch {
+    return null;
+  }
 }
 
 export default async function ReceiptDetailPage({ params }: Props) {
@@ -24,103 +33,52 @@ export default async function ReceiptDetailPage({ params }: Props) {
 
   if (!receipt) notFound();
 
-  const { data: items } = await supabase
-    .from("receipt_items")
-    .select("*")
-    .eq("receipt_id", id)
-    .order("sort_order");
+  const [{ data: items }, { data: participants }] = await Promise.all([
+    supabase.from("receipt_items").select("*").eq("receipt_id", id).order("sort_order"),
+    supabase.from("receipt_participants").select("*").eq("receipt_id", id),
+  ]);
 
-  const { data: participants } = await supabase
-    .from("receipt_participants")
-    .select("*")
-    .eq("receipt_id", id);
+  // Refresh the signed URL so the original image is viewable
+  const storagePath = extractStoragePath(receipt.image_url);
+  const { data: signedUrlData } = storagePath
+    ? await supabase.storage.from("receipt-images").createSignedUrl(storagePath, 3600)
+    : { data: null };
 
-  const { data: charges } = await supabase
-    .from("charges")
-    .select("*")
-    .eq("receipt_id", id);
+  const flowItems: EditableItem[] = (items ?? []).map((item) => ({
+    clientId: `item-${item.id}`,
+    dbId: item.id,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+  }));
 
-  const isOwner = receipt.created_by === user.id;
+  const flowParticipants: FlowParticipant[] = (participants ?? []).map((p) => ({
+    clientId: `p-${p.id}`,
+    dbId: p.id,
+    type: (p.user_id ? "friend" : "manual") as "friend" | "manual",
+    userId: p.user_id ?? undefined,
+    displayName: p.display_name,
+    venmoUsername: p.venmo_username,
+    isOwner: p.is_owner,
+  }));
 
   return (
-    <div className="min-h-dvh flex flex-col">
-      <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-2 max-w-md mx-auto w-full">
-        <Link
-          href="/dashboard"
-          className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
-          aria-label="Close"
-        >
-          <X className="w-4 h-4" />
-        </Link>
-        <Link
-          href="/dashboard"
-          className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
-          aria-label="Done"
-        >
-          <Check className="w-4 h-4" />
-        </Link>
-      </div>
-      <main className="flex-1 pb-8 px-4 max-w-md mx-auto w-full">
-      <div className="flex flex-col gap-5">
-
-        <GlassCard className="p-5">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <p className="font-semibold text-primary text-lg">
-                {receipt.merchant_name ?? "—"}
-              </p>
-              <p className="text-sm text-secondary">
-                {receipt.date_of_receipt ? formatDate(receipt.date_of_receipt) : "—"}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-primary">
-                {receipt.total ? formatCurrency(receipt.total) : "—"}
-              </p>
-              <span className="text-xs text-secondary capitalize">{receipt.status}</span>
-            </div>
-          </div>
-
-          {items && items.length > 0 && (
-            <div className="border-t border-white/10 pt-4 flex flex-col gap-2">
-              {items.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span className="text-secondary">
-                    {item.quantity > 1 ? `${item.quantity}× ` : ""}{item.name}
-                  </span>
-                  <span className="text-primary font-medium">
-                    {formatCurrency(item.price * item.quantity)}
-                  </span>
-                </div>
-              ))}
-              <div className="border-t border-white/10 mt-2 pt-2 flex flex-col gap-1">
-                {receipt.tax ? (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-secondary">Tax</span>
-                    <span className="text-primary">{formatCurrency(receipt.tax)}</span>
-                  </div>
-                ) : null}
-                {receipt.tip ? (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-secondary">Tip</span>
-                    <span className="text-primary">{formatCurrency(receipt.tip)}</span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          )}
-        </GlassCard>
-
-        {charges && charges.length > 0 && participants && (
-          <ChargeList
-            charges={charges}
-            participants={participants}
-            isOwner={isOwner}
-            receiptId={id}
-          />
-        )}
-      </div>
-      </main>
-    </div>
+    <ReceiptEditPage
+      seed={{
+        receiptId: id,
+        signedUrl: signedUrlData?.signedUrl ?? null,
+        mimeType: null,
+        merchantName: receipt.merchant_name ?? null,
+        dateOfReceipt: receipt.date_of_receipt ?? null,
+        subtotal: receipt.subtotal ?? null,
+        tax: receipt.tax ?? null,
+        tip: receipt.tip ?? null,
+        total: receipt.total ?? null,
+        items: flowItems,
+        participants: flowParticipants,
+        splitMode: (receipt.split_mode as "equal" | "by_item") ?? "equal",
+        assignments: {},
+      }}
+    />
   );
 }

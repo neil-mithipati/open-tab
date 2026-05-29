@@ -298,7 +298,7 @@ function LiveChargeCard({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function ReceiptSplitStep({ flow }: { flow: Flow }) {
+export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hideRetake?: boolean }) {
   const router = useRouter();
   const [view, setView] = useState<"parsed" | "original">("parsed");
   const [paidClientIds, setPaidClientIds] = useState<Set<string>>(new Set());
@@ -703,9 +703,11 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
       </GlassCard>
 
       {/* Retake */}
-      <GlassButton variant="secondary" size="md" onClick={() => goTo("capture")}>
-        Retake
-      </GlassButton>
+      {!hideRetake && (
+        <GlassButton variant="secondary" size="md" onClick={() => goTo("capture")}>
+          Retake
+        </GlassButton>
+      )}
       </>
       )}
 
