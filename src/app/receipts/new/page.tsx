@@ -6,17 +6,23 @@ import { CaptureStep } from "@/components/receipt/CaptureStep";
 import { ScanningStep } from "@/components/receipt/ScanningStep";
 import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { ChargeScreen } from "@/components/receipt/ChargeScreen";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 
 export default function NewReceiptPage() {
   const flow = useReceiptFlow();
   const router = useRouter();
   const { step } = flow.state;
 
+  function handleDone() {
+    const dest = flow.state.receiptId ? `/receipts/${flow.state.receiptId}` : "/dashboard";
+    flow.reset();
+    router.push(dest);
+  }
+
   return (
     <div className="min-h-dvh flex flex-col">
-      <div className="flex items-center px-4 pt-safe pt-4 pb-2">
-        {step !== "scanning" && (
+      <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-2">
+        {step !== "scanning" ? (
           <button
             onClick={() => router.push("/dashboard")}
             className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
@@ -24,6 +30,19 @@ export default function NewReceiptPage() {
           >
             <X className="w-4 h-4" />
           </button>
+        ) : (
+          <div className="w-9 h-9" />
+        )}
+        {step === "charge" ? (
+          <button
+            onClick={handleDone}
+            className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
+            aria-label="Done"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+        ) : (
+          <div className="w-9 h-9" />
         )}
       </div>
 

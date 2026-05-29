@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { GlassButton } from "@/components/ui/GlassButton";
 import { Avatar } from "@/components/ui/Avatar";
 import { VenmoIcon } from "@/components/ui/VenmoIcon";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -12,8 +10,7 @@ import { ExternalLink } from "lucide-react";
 type Flow = ReturnType<typeof useReceiptFlow>;
 
 export function ChargeScreen({ flow }: { flow: Flow }) {
-  const router = useRouter();
-  const { state, reset } = flow;
+  const { state } = flow;
   const { charges, merchantName, dateOfReceipt, receiptId, splitMode, items, assignments } = state;
 
   const note = `open-tab: ${merchantName ?? "receipt"}${dateOfReceipt ? ` ${dateOfReceipt}` : ""}`;
@@ -30,12 +27,6 @@ export function ChargeScreen({ flow }: { flow: Flow }) {
   function openVenmo(venmoLink: string, venmoAppLink: string) {
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
     window.open(isMobile ? venmoAppLink : venmoLink, "_blank");
-  }
-
-  function handleDone() {
-    const dest = receiptId ? `/receipts/${receiptId}` : "/dashboard";
-    reset();
-    router.push(dest);
   }
 
   return (
@@ -100,9 +91,6 @@ export function ChargeScreen({ flow }: { flow: Flow }) {
         })}
       </div>
 
-      <GlassButton size="lg" onClick={handleDone} className="mt-2">
-        Done
-      </GlassButton>
     </div>
   );
 }
