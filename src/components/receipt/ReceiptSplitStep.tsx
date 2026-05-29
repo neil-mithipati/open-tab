@@ -19,6 +19,7 @@ import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import type { Profile, FlowParticipant, ComputedCharge } from "@/types";
 import { VenmoIcon } from "@/components/ui/VenmoIcon";
 import { buildVenmoLinks } from "@/lib/venmo/deepLink";
+import { parseQuantity, parseAmount } from "@/lib/receiptValidation";
 import { X, UserPlus, Users2, AlignJustify, Image as ImageIcon, Check } from "lucide-react";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
@@ -421,8 +422,8 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
   function handleItemUpdate(clientId: string, field: "price" | "quantity", raw: string) {
     const newItems = state.items.map((it) => {
       if (it.clientId !== clientId) return it;
-      if (field === "price") return { ...it, price: Math.round((parseFloat(raw) || 0) * 100) / 100 };
-      if (field === "quantity") return { ...it, quantity: Math.max(1, parseInt(raw) || 1) };
+      if (field === "price") return { ...it, price: parseAmount(raw) };
+      if (field === "quantity") return { ...it, quantity: parseQuantity(raw) };
       return it;
     });
     update("items", newItems);
@@ -432,14 +433,14 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
   }
 
   function handleTaxUpdate(raw: string) {
-    const tax = Math.round((parseFloat(raw) || 0) * 100) / 100;
+    const tax = parseAmount(raw);
     update("tax", tax);
     const subtotal = Math.round(state.items.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
     update("total", Math.round((subtotal + tax + (state.tip ?? 0)) * 100) / 100);
   }
 
   function handleTipUpdate(raw: string) {
-    const tip = Math.round((parseFloat(raw) || 0) * 100) / 100;
+    const tip = parseAmount(raw);
     update("tip", tip);
     const subtotal = Math.round(state.items.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
     update("total", Math.round((subtotal + (state.tax ?? 0) + tip) * 100) / 100);
