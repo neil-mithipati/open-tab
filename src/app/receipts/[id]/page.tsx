@@ -1,10 +1,9 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { ChargeList } from "@/components/receipt/ChargeList";
 
 interface Props {
@@ -44,17 +43,25 @@ export default async function ReceiptDetailPage({ params }: Props) {
   const isOwner = receipt.created_by === user.id;
 
   return (
-    <AppShell>
+    <div className="min-h-dvh flex flex-col">
+      <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-2 max-w-md mx-auto w-full">
+        <Link
+          href="/dashboard"
+          className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
+          aria-label="Close"
+        >
+          <X className="w-4 h-4" />
+        </Link>
+        <Link
+          href="/dashboard"
+          className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
+          aria-label="Done"
+        >
+          <Check className="w-4 h-4" />
+        </Link>
+      </div>
+      <main className="flex-1 pb-8 px-4 max-w-md mx-auto w-full">
       <div className="flex flex-col gap-5">
-        <div className="flex items-start">
-          <Link
-            href="/dashboard"
-            className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </Link>
-        </div>
 
         <GlassCard className="p-5">
           <div className="flex justify-between items-start mb-4">
@@ -113,6 +120,7 @@ export default async function ReceiptDetailPage({ params }: Props) {
           />
         )}
       </div>
-    </AppShell>
+      </main>
+    </div>
   );
 }
