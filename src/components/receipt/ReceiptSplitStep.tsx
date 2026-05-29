@@ -491,7 +491,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
       </div>
 
       {/* Animated view container — height animates via layout, content fades via AnimatePresence */}
-      <motion.div layout transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }} className="relative overflow-hidden">
+      <motion.div layout transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }} className="relative">
         <AnimatePresence mode="popLayout" initial={false}>
           {view === "original" ? (
             <motion.div
@@ -537,14 +537,17 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
               </p>
             )}
           </div>
-          {/* Even Split button */}
-          <button
-            onClick={handleEvenSplitPress}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-sm font-semibold transition-all flex-shrink-0 bg-brand text-white hover:brightness-110 active:scale-95"
-          >
-            <Users2 className="w-4 h-4" />
-            Even Split
-          </button>
+          {/* Even Split button + hint */}
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            <button
+              onClick={handleEvenSplitPress}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-sm font-semibold transition-all bg-brand text-white hover:brightness-110 active:scale-95"
+            >
+              <Users2 className="w-4 h-4" />
+              Even Split
+            </button>
+            <p className="text-xs text-secondary">Click an item to itemize</p>
+          </div>
         </div>
 
         {/* Even Split panel */}
