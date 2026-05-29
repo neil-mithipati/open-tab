@@ -418,20 +418,17 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
     setItemQuery("");
   }
 
-  function handleItemUpdate(clientId: string, field: "name" | "price" | "quantity", raw: string) {
+  function handleItemUpdate(clientId: string, field: "price" | "quantity", raw: string) {
     const newItems = state.items.map((it) => {
       if (it.clientId !== clientId) return it;
-      if (field === "name") return { ...it, name: raw };
       if (field === "price") return { ...it, price: Math.round((parseFloat(raw) || 0) * 100) / 100 };
       if (field === "quantity") return { ...it, quantity: Math.max(1, parseInt(raw) || 1) };
       return it;
     });
     update("items", newItems);
-    if (field !== "name") {
-      const newSubtotal = Math.round(newItems.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
-      update("subtotal", newSubtotal);
-      update("total", Math.round((newSubtotal + (state.tax ?? 0) + (state.tip ?? 0)) * 100) / 100);
-    }
+    const newSubtotal = Math.round(newItems.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
+    update("subtotal", newSubtotal);
+    update("total", Math.round((newSubtotal + (state.tax ?? 0) + (state.tip ?? 0)) * 100) / 100);
   }
 
   function handleTaxUpdate(raw: string) {
@@ -602,23 +599,20 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                     state.splitMode === "by_item" ? "active:bg-white/5 rounded-xl px-1 -mx-1" : ""
                   }`}
                 >
-                  {/* Name */}
-                  <input
-                    value={item.name}
-                    onChange={(e) => handleItemUpdate(item.clientId, "name", e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex-1 min-w-0 text-sm text-primary bg-transparent outline-none focus:bg-white/5 rounded px-1 -mx-1 truncate"
-                  />
+                  {/* Name — read-only; click bubbles up to row's handleItemClick */}
+                  <span className="flex-1 min-w-0 text-sm text-primary truncate">
+                    {item.name}
+                  </span>
                   {/* Quantity */}
                   <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <span className="text-tertiary text-xs">×</span>
+                    <span className="text-primary text-sm font-medium">×</span>
                     <div className="w-6 h-6 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
                       <input
                         type="text"
                         inputMode="numeric"
                         value={item.quantity}
                         onChange={(e) => handleItemUpdate(item.clientId, "quantity", e.target.value.replace(/\D/g, ""))}
-                        className="w-5 text-xs text-tertiary bg-transparent outline-none text-center"
+                        className="w-5 text-sm text-primary font-medium bg-transparent outline-none text-center"
                       />
                     </div>
                   </div>
