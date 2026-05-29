@@ -237,18 +237,15 @@ function LiveChargeCard({
             <p className="text-xs text-secondary">@{charge.participant.venmoUsername}</p>
           )}
         </div>
-        {paid ? (
-          <div className="flex items-center gap-1 text-emerald-400 text-sm font-medium flex-shrink-0">
-            <Check className="w-3.5 h-3.5" /> Paid
-          </div>
-        ) : (
-          <button
-            onClick={onMarkPaid}
-            className="flex-shrink-0 text-xs text-secondary hover:text-primary transition-colors glass-panel-sm px-2.5 py-1 rounded-xl"
-          >
-            Mark paid
-          </button>
-        )}
+        <button
+          onClick={onMarkPaid}
+          className={`flex-shrink-0 flex items-center gap-1 text-xs transition-colors glass-panel-sm px-2.5 py-1 rounded-xl ${
+            paid ? "text-emerald-400 hover:text-emerald-300" : "text-secondary hover:text-primary"
+          }`}
+        >
+          {paid && <Check className="w-3 h-3" />}
+          {paid ? "Paid" : "Mark paid"}
+        </button>
       </div>
 
       {/* Venmo note input + send button */}
@@ -724,7 +721,11 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
               assignments={state.assignments}
               paid={paidClientIds.has(charge.participant.clientId)}
               onMarkPaid={() =>
-                setPaidClientIds((prev) => new Set([...prev, charge.participant.clientId]))
+                setPaidClientIds((prev) => {
+                  const next = new Set(prev);
+                  next.has(charge.participant.clientId) ? next.delete(charge.participant.clientId) : next.add(charge.participant.clientId);
+                  return next;
+                })
               }
               defaultNote={`open-tab: ${state.merchantName ?? "receipt"}${state.dateOfReceipt ? ` ${state.dateOfReceipt}` : ""}`}
             />
