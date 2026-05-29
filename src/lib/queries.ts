@@ -75,6 +75,21 @@ export async function getReceiptDetail(receiptId: string) {
   return { receipt, items: items ?? [], participants: participants ?? [] };
 }
 
+type FriendProfile = { id: string; display_name: string; venmo_username: string | null };
+
+export async function getUserFriends(userId: string): Promise<FriendProfile[]> {
+  "use cache";
+  cacheLife("minutes");
+
+  const { data } = await serviceClient()
+    .from("friendships")
+    .select("friend_id, profiles!friendships_friend_id_fkey(id, display_name, venmo_username)")
+    .eq("user_id", userId);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((f: any) => f.profiles).flat().filter((p: any): p is FriendProfile => p !== null);
+}
+
 export async function getUserProfile(userId: string) {
   "use cache";
   cacheLife("minutes");

@@ -2,9 +2,10 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getUserProfile } from "@/lib/queries";
+import { getUserProfile, getUserFriends } from "@/lib/queries";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { InviteQRCode } from "@/components/profile/InviteQRCode";
+import { FriendsManager } from "@/components/profile/FriendsManager";
 import { Avatar } from "@/components/ui/Avatar";
 
 export default async function ProfilePage() {
@@ -12,8 +13,11 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
 
-  // Cached — served from memory on repeat navigations within the stale window
-  const profile = await getUserProfile(user.id);
+  const [profile, friends] = await Promise.all([
+    getUserProfile(user.id),
+    getUserFriends(user.id),
+  ]);
+
   if (!profile) redirect("/auth");
 
   return (
@@ -34,6 +38,13 @@ export default async function ProfilePage() {
               userId={profile.id}
               initialVenmo={profile.venmo_username ?? ""}
             />
+          </GlassCard>
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold text-primary mb-3">Add friends</h2>
+          <GlassCard className="p-5">
+            <FriendsManager userId={user.id} initialFriends={friends} />
           </GlassCard>
         </div>
 
