@@ -17,7 +17,8 @@ import {
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import type { Profile, FlowParticipant, ComputedCharge } from "@/types";
 import { VenmoIcon } from "@/components/ui/VenmoIcon";
-import { X, UserPlus, Users2, AlignJustify, Image as ImageIcon, ExternalLink, Check } from "lucide-react";
+import { buildVenmoLinks } from "@/lib/venmo/deepLink";
+import { X, UserPlus, Users2, AlignJustify, Image as ImageIcon, Check } from "lucide-react";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
 
@@ -185,6 +186,7 @@ function LiveChargeCard({
   assignments,
   paid,
   onMarkPaid,
+  defaultNote,
 }: {
   charge: ComputedCharge;
   splitMode: "equal" | "by_item";
@@ -192,7 +194,10 @@ function LiveChargeCard({
   assignments: Record<string, string[]>;
   paid: boolean;
   onMarkPaid: () => void;
+  defaultNote: string;
 }) {
+  const [note, setNote] = useState(defaultNote);
+
   const breakdown =
     splitMode === "by_item"
       ? items
@@ -208,14 +213,20 @@ function LiveChargeCard({
       : [];
 
   function openVenmo() {
+    const { venmoLink, venmoAppLink } = buildVenmoLinks({
+      recipientUsername: charge.participant.venmoUsername,
+      amount: charge.amount,
+      note,
+    });
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-    window.open(isMobile ? charge.venmoAppLink : charge.venmoLink, "_blank");
+    window.open(isMobile ? venmoAppLink : venmoLink, "_blank");
   }
 
   const showDisplayName = charge.participant.displayName !== charge.participant.venmoUsername;
 
   return (
-    <GlassCard size="sm" className="p-4">
+    <GlassCard size="sm" className="p-4 flex flex-col gap-3">
+      {/* Top row: user info + mark paid */}
       <div className="flex items-center gap-3">
         <Avatar name={charge.participant.displayName} size="sm" />
         <div className="flex-1 min-w-0">
@@ -226,11 +237,40 @@ function LiveChargeCard({
             <p className="text-xs text-secondary">@{charge.participant.venmoUsername}</p>
           )}
         </div>
-        <p className="font-semibold text-primary flex-shrink-0">{formatCurrency(charge.amount)}</p>
+        {paid ? (
+          <div className="flex items-center gap-1 text-emerald-400 text-sm font-medium flex-shrink-0">
+            <Check className="w-3.5 h-3.5" /> Paid
+          </div>
+        ) : (
+          <button
+            onClick={onMarkPaid}
+            className="flex-shrink-0 text-xs text-secondary hover:text-primary transition-colors glass-panel-sm px-2.5 py-1 rounded-xl"
+          >
+            Mark paid
+          </button>
+        )}
       </div>
 
-      {breakdown.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-white/8 flex flex-col gap-1.5">
+      {/* Venmo note input + send button */}
+      <div className="flex items-center glass-panel-sm rounded-2xl overflow-hidden">
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Venmo note"
+          className="flex-1 min-w-0 bg-transparent text-sm text-secondary px-3 py-2.5 outline-none"
+        />
+        <button
+          onClick={openVenmo}
+          className="flex items-center justify-center px-3 py-2.5 bg-brand/20 hover:bg-brand/30 active:bg-brand/40 text-brand transition-colors border-l border-white/8 flex-shrink-0"
+          aria-label="Send on Venmo"
+        >
+          <VenmoIcon className="w-5 h-5 rounded-sm overflow-hidden" />
+        </button>
+      </div>
+
+      {/* Read-only charge breakdown */}
+      {splitMode === "by_item" && breakdown.length > 0 ? (
+        <div className="flex flex-col gap-1.5 pt-1 border-t border-white/8">
           {breakdown.map(({ item, perPersonAmount, shared }) => (
             <div key={item.clientId} className="flex justify-between text-xs text-secondary">
               <span className="truncate">
@@ -241,36 +281,15 @@ function LiveChargeCard({
               <span className="flex-shrink-0 ml-2">{formatCurrency(perPersonAmount)}</span>
             </div>
           ))}
-          <div className="flex justify-between text-xs text-tertiary pt-1 border-t border-white/8">
-            <span>incl. tax & tip</span>
+          <div className="flex justify-between text-sm font-semibold text-primary pt-1.5 border-t border-white/8">
+            <span>Total</span>
             <span>{formatCurrency(charge.amount)}</span>
           </div>
         </div>
-      )}
-      {splitMode === "equal" && (
-        <p className="mt-2 text-xs text-secondary">Even split</p>
-      )}
-
-      {paid ? (
-        <div className="mt-3 flex items-center gap-1.5 text-emerald-400 text-sm font-medium">
-          <Check className="w-4 h-4" /> Paid
-        </div>
       ) : (
-        <div className="mt-3 flex gap-2">
-          <button
-            onClick={openVenmo}
-            className="flex-1 flex items-center justify-center gap-2 bg-brand/15 hover:bg-brand/25 active:bg-brand/30 text-brand font-semibold text-sm px-4 py-2.5 rounded-2xl transition-colors"
-          >
-            <VenmoIcon className="w-4 h-4 rounded-sm overflow-hidden" />
-            Venmo
-            <ExternalLink className="w-3.5 h-3.5 opacity-60" />
-          </button>
-          <button
-            onClick={onMarkPaid}
-            className="flex items-center justify-center glass-panel-sm text-secondary hover:text-primary text-sm px-3 py-2.5 rounded-2xl transition-colors"
-          >
-            Mark paid
-          </button>
+        <div className="flex justify-between text-sm pt-1 border-t border-white/8">
+          <span className="text-secondary">Even split</span>
+          <span className="font-semibold text-primary">{formatCurrency(charge.amount)}</span>
         </div>
       )}
     </GlassCard>
@@ -705,6 +724,7 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
               onMarkPaid={() =>
                 setPaidClientIds((prev) => new Set([...prev, charge.participant.clientId]))
               }
+              defaultNote={`open-tab: ${state.merchantName ?? "receipt"}${state.dateOfReceipt ? ` ${state.dateOfReceipt}` : ""}`}
             />
           ))}
         </div>
