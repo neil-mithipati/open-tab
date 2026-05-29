@@ -6,27 +6,18 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import { Camera, Upload, ImageIcon } from "lucide-react";
-import Image from "next/image";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
 
 export function CaptureStep({ flow }: { flow: Flow }) {
-  const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState("");
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function handleFile(file: File) {
-    setPreview(URL.createObjectURL(file));
+  async function handleFile(file: File) {
     setError("");
     flow.update("imageFile", file);
     flow.update("mimeType", file.type || "image/jpeg");
-  }
-
-  async function handleScan() {
-    const file = flow.state.imageFile;
-    if (!file) { setError("Please select a photo first."); return; }
-
     flow.goTo("scanning");
 
     const supabase = getSupabaseBrowserClient();
@@ -76,7 +67,7 @@ export function CaptureStep({ flow }: { flow: Flow }) {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      console.error("[handleScan] parse API error:", err);
+      console.error("[handleFile] parse API error:", err);
       flow.goTo("split");
       return;
     }
@@ -122,55 +113,32 @@ export function CaptureStep({ flow }: { flow: Flow }) {
 
   return (
     <div className="flex flex-col gap-6 pt-4">
-      {preview ? (
-        <GlassCard className="overflow-hidden p-0">
-          <div className="relative w-full aspect-[3/4]">
-            <Image src={preview} alt="Receipt preview" fill className="object-cover" />
-          </div>
-          <div className="p-4 flex gap-3">
-            <GlassButton
-              variant="secondary"
-              size="sm"
-              className="flex-1"
-              onClick={() => { setPreview(null); flow.update("imageFile", null); }}
-            >
-              Retake
-            </GlassButton>
-            <GlassButton size="sm" className="flex-1" onClick={handleScan}>
-              Scan receipt
-            </GlassButton>
-          </div>
-        </GlassCard>
-      ) : (
-        <>
-          <GlassCard className="p-10 flex flex-col items-center gap-4 text-center">
-            <div className="w-16 h-16 rounded-3xl bg-brand/10 flex items-center justify-center">
-              <ImageIcon className="w-8 h-8 text-brand" />
-            </div>
-            <p className="text-secondary text-sm">Take a photo or upload an image of your receipt</p>
-          </GlassCard>
+      <GlassCard className="p-10 flex flex-col items-center gap-4 text-center">
+        <div className="w-16 h-16 rounded-3xl bg-brand/10 flex items-center justify-center">
+          <ImageIcon className="w-8 h-8 text-brand" />
+        </div>
+        <p className="text-secondary text-sm">Take a photo or upload an image of your receipt</p>
+      </GlassCard>
 
-          <div className="flex flex-col gap-3">
-            <GlassButton
-              size="lg"
-              className="gap-2"
-              onClick={() => cameraRef.current?.click()}
-            >
-              <Camera className="w-5 h-5" /> Take photo
-            </GlassButton>
-            <GlassButton
-              variant="secondary"
-              size="lg"
-              className="gap-2"
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="w-5 h-5" /> Choose from library
-            </GlassButton>
-          </div>
+      <div className="flex flex-col gap-3">
+        <GlassButton
+          size="lg"
+          className="gap-2"
+          onClick={() => cameraRef.current?.click()}
+        >
+          <Camera className="w-5 h-5" /> Take photo
+        </GlassButton>
+        <GlassButton
+          variant="secondary"
+          size="lg"
+          className="gap-2"
+          onClick={() => fileRef.current?.click()}
+        >
+          <Upload className="w-5 h-5" /> Choose from library
+        </GlassButton>
+      </div>
 
-          {error && <p className="text-sm text-red-400 text-center">{error}</p>}
-        </>
-      )}
+      {error && <p className="text-sm text-red-400 text-center">{error}</p>}
 
       {/* hidden inputs */}
       <input
