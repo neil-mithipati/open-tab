@@ -493,17 +493,16 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
         </button>
       </div>
 
-      {/* Animated view container */}
-      <div className="[perspective:1200px]">
-        <AnimatePresence mode="wait" initial={false}>
+      {/* Animated view container — height animates via layout, content fades via AnimatePresence */}
+      <motion.div layout transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }} className="relative overflow-hidden">
+        <AnimatePresence mode="popLayout" initial={false}>
           {view === "original" ? (
             <motion.div
               key="original"
-              initial={{ rotateY: -90, opacity: 0 }}
-              animate={{ rotateY: 0, opacity: 1 }}
-              exit={{ rotateY: 90, opacity: 0 }}
-              transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
-              style={{ transformOrigin: "center", transformStyle: "preserve-3d" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
             >
               {state.signedUrl && (
                 <GlassCard className="overflow-hidden p-0">
@@ -521,11 +520,10 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
           ) : (
             <motion.div
               key="parsed"
-              initial={{ rotateY: 90, opacity: 0 }}
-              animate={{ rotateY: 0, opacity: 1 }}
-              exit={{ rotateY: -90, opacity: 0 }}
-              transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
-              style={{ transformOrigin: "center", transformStyle: "preserve-3d" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
             >
       <div className="flex flex-col gap-4">
       {/* Receipt card */}
@@ -730,7 +728,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
 
       {/* Live charge cards */}
       {liveCharges.length > 0 && (
