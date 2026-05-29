@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { GlassInput } from "@/components/ui/GlassInput";
@@ -15,7 +16,7 @@ import {
 } from "@/lib/utils";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import type { Profile, FlowParticipant, ComputedCharge } from "@/types";
-import { X, UserPlus, Users2 } from "lucide-react";
+import { X, UserPlus, Users2, AlignJustify, Image as ImageIcon } from "lucide-react";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
 
@@ -178,6 +179,7 @@ function UsernameAutocomplete({
 
 export function ReceiptSplitStep({ flow }: { flow: Flow }) {
   const router = useRouter();
+  const [view, setView] = useState<"parsed" | "original">("parsed");
   const [friends, setFriends] = useState<Profile[]>([]);
   const [evenSplitOpen, setEvenSplitOpen] = useState(false);
   const [evenSplitQuery, setEvenSplitQuery] = useState("");
@@ -380,6 +382,45 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
 
   return (
     <div className="flex flex-col gap-4 pt-4 pb-28">
+      {/* View toggle */}
+      <div className="flex self-start glass-panel-sm rounded-2xl p-1 gap-1">
+        <button
+          onClick={() => setView("parsed")}
+          className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all ${
+            view === "parsed" ? "bg-white/15 text-primary" : "text-tertiary hover:text-secondary"
+          }`}
+          aria-label="Parsed receipt"
+        >
+          <AlignJustify className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setView("original")}
+          className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all ${
+            view === "original" ? "bg-white/15 text-primary" : "text-tertiary hover:text-secondary"
+          }`}
+          aria-label="Original receipt"
+        >
+          <ImageIcon className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Original receipt image */}
+      {view === "original" && state.signedUrl && (
+        <GlassCard className="overflow-hidden p-0">
+          <div className="relative w-full" style={{ minHeight: "60vh" }}>
+            <Image
+              src={state.signedUrl}
+              alt="Original receipt"
+              fill
+              className="object-contain"
+            />
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Parsed receipt — hidden when viewing original */}
+      {view === "original" ? null : (
+      <>
       {/* Receipt card */}
       <GlassCard className="p-0 overflow-hidden">
         {/* Header */}
@@ -548,6 +589,8 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
           Retake
         </GlassButton>
       </div>
+      </>
+      )}
 
       {/* Floating Charge button */}
       {canCharge && (
