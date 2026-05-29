@@ -540,11 +540,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
           {/* Even Split button */}
           <button
             onClick={handleEvenSplitPress}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-sm font-semibold transition-all flex-shrink-0 ${
-              state.splitMode === "equal" && (evenSplitOpen || nonOwnerParticipants.length > 0)
-                ? "bg-brand/20 text-brand"
-                : "glass-panel-sm text-secondary hover:text-primary"
-            }`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-sm font-semibold transition-all flex-shrink-0 bg-brand text-white hover:brightness-110 active:scale-95"
           >
             <Users2 className="w-4 h-4" />
             Even Split
