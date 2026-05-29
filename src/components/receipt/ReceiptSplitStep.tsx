@@ -188,9 +188,36 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
   const [saving, setSaving] = useState(false);
   const evenSplitInputRef = useRef<HTMLInputElement>(null);
   const itemInputRef = useRef<HTMLInputElement>(null);
+  const activeInputRef = useRef<HTMLDivElement | null>(null);
 
   const { state, addParticipant, removeParticipant, toggleAssignment, clearSplitState, update, goTo } = flow;
   const nonOwnerParticipants = state.participants.filter((p) => !p.isOwner);
+
+  function dismissActiveInput() {
+    setEvenSplitOpen(false);
+    setEvenSplitQuery("");
+    setActiveItemId(null);
+    setItemQuery("");
+  }
+
+  useEffect(() => {
+    if (!evenSplitOpen && !activeItemId) return;
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      if (!activeInputRef.current?.contains(e.target as Node)) {
+        dismissActiveInput();
+      }
+    }
+    // setTimeout(0) so this listener doesn't catch the click that opened the panel
+    const id = window.setTimeout(() => {
+      document.addEventListener("mousedown", handleOutside);
+      document.addEventListener("touchstart", handleOutside, { passive: true });
+    }, 0);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [evenSplitOpen, activeItemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     async function load() {
@@ -481,7 +508,7 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
 
         {/* Even Split panel */}
         {evenSplitOpen && (
-          <div className="px-4 pb-3 flex flex-col gap-3 border-t border-white/8 pt-3">
+          <div ref={activeInputRef} className="px-4 pb-3 flex flex-col gap-3 border-t border-white/8 pt-3">
             {nonOwnerParticipants.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {nonOwnerParticipants.map((p) => (
@@ -576,7 +603,7 @@ export function ReceiptSplitStep({ flow }: { flow: Flow }) {
 
                 {/* Inline username input for itemize mode */}
                 {isActive && (
-                  <div className="mt-2">
+                  <div ref={activeInputRef} className="mt-2">
                     <UsernameAutocomplete
                       friends={friends}
                       existingParticipants={[]}
