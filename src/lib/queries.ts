@@ -52,6 +52,29 @@ export async function getUserReceipts(userId: string): Promise<Receipt[]> {
   );
 }
 
+export async function getReceiptDetail(receiptId: string) {
+  "use cache";
+  cacheLife("minutes");
+
+  const supabase = serviceClient();
+
+  const [{ data: receipt }, { data: items }, { data: participants }] =
+    await Promise.all([
+      supabase.from("receipts").select("*").eq("id", receiptId).single(),
+      supabase
+        .from("receipt_items")
+        .select("*")
+        .eq("receipt_id", receiptId)
+        .order("sort_order"),
+      supabase
+        .from("receipt_participants")
+        .select("*")
+        .eq("receipt_id", receiptId),
+    ]);
+
+  return { receipt, items: items ?? [], participants: participants ?? [] };
+}
+
 export async function getUserProfile(userId: string) {
   "use cache";
   cacheLife("minutes");

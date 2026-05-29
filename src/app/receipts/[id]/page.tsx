@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getReceiptDetail } from "@/lib/queries";
 import type { EditableItem, FlowParticipant } from "@/types";
 import { ReceiptEditPage } from "./ReceiptEditPage";
 
@@ -25,26 +26,24 @@ export default async function ReceiptDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
 
-  const { data: receipt } = await supabase
-    .from("receipts")
-    .select("*")
-    .eq("id", id)
-    .single();
+  // Cached — auth verified above, data fetched with service client
+  const { receipt, items, participants } = await getReceiptDetail(id);
 
   if (!receipt) notFound();
 
-  const [{ data: items }, { data: participants }] = await Promise.all([
-    supabase.from("receipt_items").select("*").eq("receipt_id", id).order("sort_order"),
-    supabase.from("receipt_participants").select("*").eq("receipt_id", id),
-  ]);
+  // Verify the user owns or participates in this receipt
+  const isAuthorised =
+    receipt.created_by === user.id ||
+    participants.some((p: { user_id: string | null }) => p.user_id === user.id);
+  if (!isAuthorised) notFound();
 
-  // Refresh the signed URL so the original image is viewable
+  // Refresh the signed URL (can't cache — tied to current time)
   const storagePath = extractStoragePath(receipt.image_url);
   const { data: signedUrlData } = storagePath
     ? await supabase.storage.from("receipt-images").createSignedUrl(storagePath, 3600)
     : { data: null };
 
-  const flowItems: EditableItem[] = (items ?? []).map((item) => ({
+  const flowItems: EditableItem[] = items.map((item: { id: string; name: string; price: number; quantity: number }) => ({
     clientId: `item-${item.id}`,
     dbId: item.id,
     name: item.name,
@@ -52,7 +51,7 @@ export default async function ReceiptDetailPage({ params }: Props) {
     quantity: item.quantity,
   }));
 
-  const flowParticipants: FlowParticipant[] = (participants ?? []).map((p) => ({
+  const flowParticipants: FlowParticipant[] = participants.map((p: { id: string; user_id: string | null; display_name: string; venmo_username: string; is_owner: boolean }) => ({
     clientId: `p-${p.id}`,
     dbId: p.id,
     type: (p.user_id ? "friend" : "manual") as "friend" | "manual",

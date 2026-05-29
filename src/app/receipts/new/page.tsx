@@ -41,23 +41,25 @@ export default function NewReceiptPage() {
       computed = computeItemCharges(items, assignments, participants, subtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
     }
 
-    await supabase.from("receipt_participants").delete().eq("receipt_id", receiptId);
-    await supabase.from("charges").delete().eq("receipt_id", receiptId);
+    // Round 1: delete in parallel
+    await Promise.all([
+      supabase.from("receipt_participants").delete().eq("receipt_id", receiptId),
+      supabase.from("charges").delete().eq("receipt_id", receiptId),
+    ]);
 
-    await supabase.from("receipt_participants").insert(
-      participants.map((p) => ({
-        receipt_id: receiptId,
-        user_id: p.userId ?? null,
-        venmo_username: p.venmoUsername,
-        display_name: p.displayName,
-        is_owner: p.isOwner,
-      }))
-    );
-
+    // Round 2: insert participants and get IDs back in the same request
     const { data: dbParticipants } = await supabase
       .from("receipt_participants")
-      .select("id, venmo_username")
-      .eq("receipt_id", receiptId);
+      .insert(
+        participants.map((p) => ({
+          receipt_id: receiptId,
+          user_id: p.userId ?? null,
+          venmo_username: p.venmoUsername,
+          display_name: p.displayName,
+          is_owner: p.isOwner,
+        }))
+      )
+      .select("id, venmo_username");
 
     const venmoToDbId = Object.fromEntries(
       (dbParticipants ?? []).map((p: { id: string; venmo_username: string }) => [p.venmo_username, p.id])
@@ -73,11 +75,11 @@ export default function NewReceiptPage() {
       }))
       .filter((r): r is typeof r & { to_participant_id: string } => r.to_participant_id !== null);
 
-    if (chargeRows.length > 0) {
-      await supabase.from("charges").insert(chargeRows);
-    }
-
-    await supabase.from("receipts").update({ status: "charging", split_mode: splitMode }).eq("id", receiptId);
+    // Round 3: write charges and update receipt in parallel
+    await Promise.all([
+      chargeRows.length > 0 ? supabase.from("charges").insert(chargeRows) : Promise.resolve(),
+      supabase.from("receipts").update({ status: "charging", split_mode: splitMode }).eq("id", receiptId),
+    ]);
 
     flow.reset();
     router.push(`/receipts/${receiptId}`);
