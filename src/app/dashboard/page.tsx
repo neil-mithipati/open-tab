@@ -20,12 +20,29 @@ export default async function DashboardPage() {
 
   if (!profile?.venmo_username) redirect("/auth/venmo");
 
-  const { data: receipts } = await supabase
-    .from("receipts")
-    .select("id, merchant_name, date_of_receipt, total, status")
-    .eq("created_by", user.id)
-    .order("created_at", { ascending: false })
-    .limit(5);
+  const [{ data: created }, { data: participated }] = await Promise.all([
+    supabase
+      .from("receipts")
+      .select("id, merchant_name, date_of_receipt, total, status, created_at")
+      .eq("created_by", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("receipt_participants")
+      .select("receipt_id, receipts(id, merchant_name, date_of_receipt, total, status, created_at)")
+      .eq("user_id", user.id)
+      .eq("is_owner", false),
+  ]);
+
+  type Receipt = { id: string; merchant_name: string | null; date_of_receipt: string | null; total: number | null; status: string; created_at: string };
+
+  const participatedReceipts = (participated ?? [])
+    .map((p) => p.receipts)
+    .filter(Boolean)
+    .flat() as Receipt[];
+
+  const allReceipts = [...(created ?? []) as Receipt[], ...participatedReceipts].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   return (
     <AppShell>
@@ -49,10 +66,10 @@ export default async function DashboardPage() {
         </Link>
 
         <div>
-          <h2 className="text-lg font-semibold text-primary mb-3">Recent</h2>
-          {receipts && receipts.length > 0 ? (
+          <h2 className="text-lg font-semibold text-primary mb-3">Activity</h2>
+          {allReceipts.length > 0 ? (
             <div className="flex flex-col gap-3">
-              {receipts.map((r) => (
+              {allReceipts.map((r) => (
                 <Link key={r.id} href={`/receipts/${r.id}`}>
                   <GlassCard size="sm" className="p-4 flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer">
                     <div className="flex-1 min-w-0">
