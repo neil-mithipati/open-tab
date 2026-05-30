@@ -11,7 +11,7 @@ export default function AuthPage() {
             <h1
               className="text-7xl font-black animate-gradient"
               style={{
-                fontFamily: "ui-rounded, var(--font-nunito), system-ui, sans-serif",
+                fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
                 letterSpacing: "-0.03em",
               }}
             >

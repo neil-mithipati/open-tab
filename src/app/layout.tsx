@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 
-const nunito = Nunito({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-nunito",
+  variable: "--font-dm-sans",
 });
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={nunito.variable}>
+    <html lang="en" className={dmSans.variable}>
       <body>{children}</body>
     </html>
   );
