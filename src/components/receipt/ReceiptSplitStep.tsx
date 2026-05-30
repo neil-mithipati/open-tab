@@ -112,8 +112,8 @@ function UsernameAutocomplete({
   function handleAddFriend(friend: Profile) {
     if (!friend.venmo_username || isAdded(friend.venmo_username)) return;
     onAdd({
-      type: "friend",
-      userId: friend.id,
+      type: friend.id ? "friend" : "manual",
+      userId: friend.id || undefined,
       displayName: friend.display_name,
       venmoUsername: friend.venmo_username,
       isOwner: false,
@@ -469,7 +469,7 @@ export function ReceiptSplitStep({
       const self: Profile[] = selfData ? [selfData as Profile] : [];
       const realFriends = (friendshipData ?? []).map((f) => f.profiles).filter((p): p is Profile => p !== null);
       const externalFriends: Profile[] = (externalData ?? []).map((c: { id: string; venmo_username: string; display_name: string | null }) => ({
-        id: c.id,
+        id: "",  // not a profiles.id — treat as manual when adding to participants
         display_name: (c.display_name ?? c.venmo_username) as string,
         venmo_username: c.venmo_username as string,
         email: "",
@@ -558,8 +558,8 @@ export function ReceiptSplitStep({
         clientId = existing.clientId;
       } else {
         clientId = addParticipant({
-          type: "friend",
-          userId: friend.id,
+          type: friend.id ? "friend" : "manual",
+          userId: friend.id || undefined,
           displayName: friend.display_name,
           venmoUsername: friend.venmo_username,
           isOwner: false,
