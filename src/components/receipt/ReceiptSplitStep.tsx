@@ -382,10 +382,21 @@ function OwnerChargeCard({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hideRetake?: boolean }) {
+export function ReceiptSplitStep({
+  flow,
+  hideRetake = false,
+  paidClientIds: externalPaidClientIds,
+  onTogglePaid,
+}: {
+  flow: Flow;
+  hideRetake?: boolean;
+  paidClientIds?: Set<string>;
+  onTogglePaid?: (clientId: string) => void;
+}) {
   const router = useRouter();
   const [view, setView] = useState<"parsed" | "original">("parsed");
-  const [paidClientIds, setPaidClientIds] = useState<Set<string>>(new Set());
+  const [internalPaidClientIds, setInternalPaidClientIds] = useState<Set<string>>(new Set());
+  const paidClientIds = externalPaidClientIds ?? internalPaidClientIds;
   const [friends, setFriends] = useState<Profile[]>([]);
   const [evenSplitOpen, setEvenSplitOpen] = useState(false);
   const [evenSplitQuery, setEvenSplitQuery] = useState("");
@@ -921,13 +932,17 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
               items={state.items}
               assignments={state.assignments}
               paid={paidClientIds.has(charge.participant.clientId)}
-              onMarkPaid={() =>
-                setPaidClientIds((prev) => {
-                  const next = new Set(prev);
-                  next.has(charge.participant.clientId) ? next.delete(charge.participant.clientId) : next.add(charge.participant.clientId);
-                  return next;
-                })
-              }
+              onMarkPaid={() => {
+                if (onTogglePaid) {
+                  onTogglePaid(charge.participant.clientId);
+                } else {
+                  setInternalPaidClientIds((prev) => {
+                    const next = new Set(prev);
+                    next.has(charge.participant.clientId) ? next.delete(charge.participant.clientId) : next.add(charge.participant.clientId);
+                    return next;
+                  });
+                }
+              }}
               defaultNote={`open-tab: ${state.merchantName ?? "receipt"}${state.dateOfReceipt ? ` ${state.dateOfReceipt}` : ""}`}
             />
           ))}
