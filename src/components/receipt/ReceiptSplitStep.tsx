@@ -395,7 +395,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
   const itemInputRef = useRef<HTMLInputElement>(null);
   const activeInputRef = useRef<HTMLDivElement | null>(null);
 
-  const { state, addParticipant, removeParticipant, toggleAssignment, clearSplitState, update, goTo } = flow;
+  const { state, addParticipant, removeParticipant, toggleAssignment, clearSplitState, update, goTo, reset } = flow;
   const nonOwnerParticipants = state.participants.filter((p) => !p.isOwner);
 
   function dismissActiveInput() {
@@ -497,6 +497,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
       } catch {}
     }
     await supabase.from("receipts").delete().eq("id", state.receiptId);
+    reset();
     router.push("/dashboard");
   }
 
