@@ -478,6 +478,28 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
     }
   }, [activeItemId]);
 
+  async function handleDelete() {
+    if (!state.receiptId) return;
+    const supabase = getSupabaseBrowserClient();
+    const { data: receipt } = await supabase
+      .from("receipts")
+      .select("image_url")
+      .eq("id", state.receiptId)
+      .single();
+    if (receipt?.image_url) {
+      try {
+        const pathname = new URL(receipt.image_url).pathname;
+        const marker = "/receipt-images/";
+        const idx = pathname.indexOf(marker);
+        if (idx !== -1) {
+          await supabase.storage.from("receipt-images").remove([pathname.slice(idx + marker.length)]);
+        }
+      } catch {}
+    }
+    await supabase.from("receipts").delete().eq("id", state.receiptId);
+    router.push("/dashboard");
+  }
+
   function handleEvenSplitPress() {
     if (state.splitMode === "by_item" && nonOwnerParticipants.length > 0) {
       clearSplitState();
@@ -666,9 +688,15 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
         {/* Header */}
         <div className="relative px-4 pt-4 pb-3 flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-primary text-lg leading-tight truncate">
-              {state.merchantName ?? "Receipt"}
-            </h2>
+            <input
+              type="text"
+              value={state.merchantName ?? ""}
+              onChange={(e) => update("merchantName", e.target.value || null)}
+              placeholder="Receipt"
+              className="font-bold text-primary text-lg leading-tight bg-transparent outline-none w-full border-b border-transparent focus:border-white/20 transition-colors truncate"
+              autoCapitalize="words"
+              autoCorrect="off"
+            />
             {state.dateOfReceipt && (
               <p className="text-sm text-secondary mt-0.5">
                 {formatDate(state.dateOfReceipt)}
@@ -886,6 +914,17 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
               defaultNote={`open-tab: ${state.merchantName ?? "receipt"}${state.dateOfReceipt ? ` ${state.dateOfReceipt}` : ""}`}
             />
           ))}
+        </div>
+      )}
+
+      {state.receiptId && (
+        <div className="flex justify-center pt-2 pb-4">
+          <button
+            onClick={handleDelete}
+            className="text-sm text-red-500 underline underline-offset-2"
+          >
+            Delete receipt
+          </button>
         </div>
       )}
     </div>

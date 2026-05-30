@@ -78,7 +78,7 @@ export default function NewReceiptPage() {
     // Round 3: write charges and update receipt in parallel
     await Promise.all([
       chargeRows.length > 0 ? supabase.from("charges").insert(chargeRows) : Promise.resolve(),
-      supabase.from("receipts").update({ status: "charging", split_mode: splitMode }).eq("id", receiptId),
+      supabase.from("receipts").update({ status: "charging", split_mode: splitMode, merchant_name: merchantName }).eq("id", receiptId),
     ]);
 
     flow.reset();
