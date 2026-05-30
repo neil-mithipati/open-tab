@@ -39,7 +39,22 @@ export function FriendsManager({ userId, initialFriends }: Props) {
       .single();
 
     if (!profile) {
-      setError("No user found with that Venmo username.");
+      // Not on Open Tab yet — save as an external contact by Venmo username
+      const { data: contacts, error: insertError } = await supabase
+        .from("external_contacts")
+        .insert({ user_id: userId, venmo_username: username })
+        .select("id, venmo_username");
+
+      if (insertError) {
+        setError(insertError.code === "23505" ? "Already in your friends list." : "Something went wrong. Try again.");
+        setAdding(false);
+        return;
+      }
+
+      const contact = contacts?.[0];
+      const contactId = contact?.id ?? crypto.randomUUID();
+      setFriends((prev) => [...prev, { id: contactId, display_name: username, venmo_username: username }]);
+      setQuery("");
       setAdding(false);
       return;
     }

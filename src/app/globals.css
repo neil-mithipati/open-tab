@@ -109,7 +109,7 @@ body {
   background-attachment: fixed;
   min-height: 100dvh;
   color: var(--text-primary);
-  font-family: var(--font-sans);
+  font-family: ui-rounded, var(--font-nunito), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

@@ -9,6 +9,7 @@ import { animalEmoji } from "@/lib/utils";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { InviteQRCode } from "@/components/profile/InviteQRCode";
 import { FriendsManager } from "@/components/profile/FriendsManager";
+import { LogoutButton } from "@/components/profile/LogoutButton";
 
 export default function ProfilePage() {
   return (
@@ -70,6 +71,9 @@ async function ProfileContent() {
           </p>
           <InviteQRCode inviteToken={profile.invite_token} />
         </GlassCard>
+      </div>
+      <div className="flex justify-center pt-2">
+        <LogoutButton />
       </div>
     </div>
   );

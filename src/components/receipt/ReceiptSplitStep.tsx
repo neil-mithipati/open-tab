@@ -346,17 +346,29 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = (await supabase
-        .from("friendships")
-        .select(
-          "friend_id, profiles!friendships_friend_id_fkey(id, display_name, venmo_username, email)"
-        )
-        .eq("user_id", user.id)) as {
-        data: Array<{ friend_id: string; profiles: Profile | null }> | null;
-      };
-      setFriends(
-        (data ?? []).map((f) => f.profiles).filter((p): p is Profile => p !== null)
-      );
+      const [{ data: friendshipData }, { data: externalData }] = await Promise.all([
+        supabase
+          .from("friendships")
+          .select("friend_id, profiles!friendships_friend_id_fkey(id, display_name, venmo_username, email)")
+          .eq("user_id", user.id) as unknown as Promise<{ data: Array<{ friend_id: string; profiles: Profile | null }> | null }>,
+        supabase
+          .from("external_contacts")
+          .select("id, venmo_username, display_name")
+          .eq("user_id", user.id),
+      ]);
+
+      const realFriends = (friendshipData ?? []).map((f) => f.profiles).filter((p): p is Profile => p !== null);
+      const externalFriends: Profile[] = (externalData ?? []).map((c) => ({
+        id: c.id,
+        display_name: (c.display_name ?? c.venmo_username) as string,
+        venmo_username: c.venmo_username as string,
+        email: "",
+        invite_token: "",
+        created_at: "",
+        updated_at: "",
+      }));
+
+      setFriends([...realFriends, ...externalFriends]);
     }
     load();
   }, []);

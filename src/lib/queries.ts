@@ -81,13 +81,29 @@ export async function getUserFriends(userId: string): Promise<FriendProfile[]> {
   "use cache";
   cacheLife("minutes");
 
-  const { data } = await serviceClient()
-    .from("friendships")
-    .select("friend_id, profiles!friendships_friend_id_fkey(id, display_name, venmo_username)")
-    .eq("user_id", userId);
+  const supabase = serviceClient();
+
+  const [{ data: friendships }, { data: external }] = await Promise.all([
+    supabase
+      .from("friendships")
+      .select("friend_id, profiles!friendships_friend_id_fkey(id, display_name, venmo_username)")
+      .eq("user_id", userId),
+    supabase
+      .from("external_contacts")
+      .select("id, display_name, venmo_username")
+      .eq("user_id", userId),
+  ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data ?? []).map((f: any) => f.profiles).flat().filter((p: any): p is FriendProfile => p !== null);
+  const realFriends: FriendProfile[] = (friendships ?? []).map((f: any) => f.profiles).flat().filter((p: any): p is FriendProfile => p !== null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const externalFriends: FriendProfile[] = (external ?? []).map((c: any) => ({
+    id: c.id,
+    display_name: c.display_name ?? c.venmo_username,
+    venmo_username: c.venmo_username,
+  }));
+
+  return [...realFriends, ...externalFriends];
 }
 
 export async function getUserProfile(userId: string) {
