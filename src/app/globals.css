@@ -99,6 +99,10 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+input, select, textarea {
+  font-size: max(16px, 1em);
+}
+
 body {
   background:
     radial-gradient(ellipse 70% 50% at 10% 10%, rgba(99, 102, 241, 0.55) 0%, transparent 70%),
