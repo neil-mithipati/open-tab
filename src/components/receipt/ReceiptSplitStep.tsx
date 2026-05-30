@@ -529,9 +529,25 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
 
   function handleAddAllToItem(itemClientId: string) {
     const assigned = state.assignments[itemClientId] ?? [];
-    for (const p of state.participants) {
-      if (!assigned.includes(p.clientId)) {
-        toggleAssignment(itemClientId, p.clientId);
+    for (const friend of friends) {
+      if (!friend.venmo_username) continue;
+      const existing = state.participants.find(
+        (p) => p.venmoUsername.toLowerCase() === friend.venmo_username!.toLowerCase()
+      );
+      let clientId: string;
+      if (existing) {
+        clientId = existing.clientId;
+      } else {
+        clientId = addParticipant({
+          type: "friend",
+          userId: friend.id,
+          displayName: friend.display_name,
+          venmoUsername: friend.venmo_username,
+          isOwner: false,
+        });
+      }
+      if (!assigned.includes(clientId)) {
+        toggleAssignment(itemClientId, clientId);
       }
     }
     setActiveItemId(null);
