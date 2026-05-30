@@ -118,7 +118,8 @@ export default function NewReceiptPage() {
       }))
       .filter((r): r is typeof r & { to_participant_id: string } => r.to_participant_id !== null);
 
-    const status = computed.length > 0 ? "charging" : "reviewing";
+    const allPaid = computed.length > 0 && computed.every((c) => paidClientIds.has(c.participant.clientId));
+    const status = allPaid ? "settled" : computed.length > 0 ? "charging" : "reviewing";
 
     // Round 3: write assignments, charges, update receipt
     await Promise.all([

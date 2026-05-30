@@ -92,15 +92,14 @@ async function DashboardContent() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    draft: "text-tertiary",
-    reviewing: "text-amber-400",
-    charging: "text-brand",
-    settled: "text-emerald-400",
+  const map: Record<string, { color: string; label: string }> = {
+    draft:    { color: "text-tertiary",     label: "draft" },
+    reviewing:{ color: "text-amber-400",    label: "reviewing" },
+    charging: { color: "text-brand",        label: "charging" },
+    settled:  { color: "text-emerald-400",  label: "done" },
   };
+  const { color, label } = map[status] ?? { color: "text-tertiary", label: status };
   return (
-    <span className={`text-xs font-medium capitalize ${map[status] ?? "text-tertiary"}`}>
-      {status}
-    </span>
+    <span className={`text-xs font-medium ${color}`}>{label}</span>
   );
 }
