@@ -145,7 +145,7 @@ export default function NewReceiptPage() {
       <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-2">
         {step !== "scanning" ? (
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => { flow.reset(); router.push("/dashboard"); }}
             className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors"
             aria-label="Close"
           >

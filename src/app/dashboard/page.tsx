@@ -96,7 +96,7 @@ function StatusBadge({ status }: { status: string }) {
     draft:    { color: "text-tertiary",     label: "draft" },
     reviewing:{ color: "text-amber-400",    label: "reviewing" },
     charging: { color: "text-brand",        label: "charging" },
-    settled:  { color: "text-emerald-400",  label: "done" },
+    settled:  { color: "text-emerald-400",  label: "closed" },
   };
   const { color, label } = map[status] ?? { color: "text-tertiary", label: status };
   return (
