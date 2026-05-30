@@ -105,10 +105,10 @@ input, select, textarea {
 
 body {
   background:
-    radial-gradient(ellipse 70% 50% at 10% 10%, rgba(99, 102, 241, 0.55) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 40% at 88% 5%, rgba(59, 130, 246, 0.4) 0%, transparent 70%),
-    radial-gradient(ellipse 55% 45% at 80% 88%, rgba(236, 72, 153, 0.4) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 35% at 15% 92%, rgba(168, 85, 247, 0.3) 0%, transparent 70%),
+    radial-gradient(ellipse 140% 100% at 10% 0%, rgba(99, 102, 241, 0.30) 0%, transparent 65%),
+    radial-gradient(ellipse 120% 90% at 95% 5%, rgba(59, 130, 246, 0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 110% 95% at 85% 100%, rgba(236, 72, 153, 0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 100% 85% at 5% 95%, rgba(168, 85, 247, 0.18) 0%, transparent 65%),
     #040811;
   background-attachment: fixed;
   min-height: 100dvh;
