@@ -358,7 +358,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
       ]);
 
       const realFriends = (friendshipData ?? []).map((f) => f.profiles).filter((p): p is Profile => p !== null);
-      const externalFriends: Profile[] = (externalData ?? []).map((c) => ({
+      const externalFriends: Profile[] = (externalData ?? []).map((c: { id: string; venmo_username: string; display_name: string | null }) => ({
         id: c.id,
         display_name: (c.display_name ?? c.venmo_username) as string,
         venmo_username: c.venmo_username as string,
