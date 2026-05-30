@@ -69,6 +69,14 @@ async function ReceiptDetailContent({ params }: Props) {
     isOwner: p.is_owner,
   }));
 
+  // Reconstruct item→participant assignments from DB
+  const assignments: Record<string, string[]> = {};
+  for (const item of items as Array<{ id: string; item_assignments?: Array<{ receipt_item_id: string; participant_id: string }> }>) {
+    if (!item.item_assignments?.length) continue;
+    const itemClientId = `item-${item.id}`;
+    assignments[itemClientId] = item.item_assignments.map((a) => `p-${a.participant_id}`);
+  }
+
   return (
     <ReceiptEditPage
       seed={{
@@ -84,7 +92,7 @@ async function ReceiptDetailContent({ params }: Props) {
         items: flowItems,
         participants: flowParticipants,
         splitMode: (receipt.split_mode as "equal" | "by_item") ?? "equal",
-        assignments: {},
+        assignments,
       }}
     />
   );

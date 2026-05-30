@@ -20,7 +20,7 @@ import type { Profile, FlowParticipant, ComputedCharge } from "@/types";
 import { VenmoIcon } from "@/components/ui/VenmoIcon";
 import { buildVenmoLinks } from "@/lib/venmo/deepLink";
 import { parseQuantity, parseAmount } from "@/lib/receiptValidation";
-import { X, UserPlus, Users2, AlignJustify, Image as ImageIcon, Check } from "lucide-react";
+import { X, UserPlus, Users2, Check } from "lucide-react";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
 
@@ -387,14 +387,22 @@ export function ReceiptSplitStep({
   hideRetake = false,
   paidClientIds: externalPaidClientIds,
   onTogglePaid,
+  view: viewProp,
+  onViewChange,
 }: {
   flow: Flow;
   hideRetake?: boolean;
   paidClientIds?: Set<string>;
   onTogglePaid?: (clientId: string) => void;
+  view?: "parsed" | "original";
+  onViewChange?: (v: "parsed" | "original") => void;
 }) {
   const router = useRouter();
-  const [view, setView] = useState<"parsed" | "original">("parsed");
+  const [internalView, setInternalView] = useState<"parsed" | "original">("parsed");
+  const view = viewProp ?? internalView;
+  function setView(v: "parsed" | "original") {
+    if (onViewChange) onViewChange(v); else setInternalView(v);
+  }
   const [internalPaidClientIds, setInternalPaidClientIds] = useState<Set<string>>(new Set());
   const paidClientIds = externalPaidClientIds ?? internalPaidClientIds;
   const [friends, setFriends] = useState<Profile[]>([]);
@@ -656,28 +664,6 @@ export function ReceiptSplitStep({
 
   return (
     <div className="flex flex-col gap-4 pt-4 pb-7">
-      {/* View toggle */}
-      <div className="flex self-start glass-panel-sm rounded-2xl p-1 gap-1">
-        <button
-          onClick={() => setView("parsed")}
-          className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all ${
-            view === "parsed" ? "bg-white/15 text-primary" : "text-tertiary hover:text-secondary"
-          }`}
-          aria-label="Parsed receipt"
-        >
-          <AlignJustify className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setView("original")}
-          className={`flex items-center justify-center w-9 h-9 rounded-xl transition-all ${
-            view === "original" ? "bg-white/15 text-primary" : "text-tertiary hover:text-secondary"
-          }`}
-          aria-label="Original receipt"
-        >
-          <ImageIcon className="w-4 h-4" />
-        </button>
-      </div>
-
       {/* Animated view container — height animates via layout, content fades via AnimatePresence */}
       <motion.div layout transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }} className="relative">
         <AnimatePresence mode="popLayout" initial={false}>
@@ -943,7 +929,7 @@ export function ReceiptSplitStep({
                   });
                 }
               }}
-              defaultNote={`open-tab: ${state.merchantName ?? "receipt"}${state.dateOfReceipt ? ` ${state.dateOfReceipt}` : ""}`}
+              defaultNote={`Open Tab: ${state.merchantName ?? "receipt"}${state.dateOfReceipt ? ` ${state.dateOfReceipt}` : ""}`}
             />
           ))}
         </div>

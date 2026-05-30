@@ -63,7 +63,7 @@ export async function getReceiptDetail(receiptId: string) {
       supabase.from("receipts").select("*").eq("id", receiptId).single(),
       supabase
         .from("receipt_items")
-        .select("*")
+        .select("*, item_assignments(receipt_item_id, participant_id)")
         .eq("receipt_id", receiptId)
         .order("sort_order"),
       supabase

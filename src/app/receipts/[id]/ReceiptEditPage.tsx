@@ -8,7 +8,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { computeEqualCharges, computeItemCharges } from "@/lib/utils";
 import type { ComputedCharge } from "@/types";
 import type { ReceiptFlowState } from "@/hooks/useReceiptFlow";
-import { X, Check } from "lucide-react";
+import { X, Check, AlignJustify, Image as ImageIcon } from "lucide-react";
 
 interface Props {
   seed: Omit<ReceiptFlowState, "step" | "imageFile">;
@@ -19,6 +19,7 @@ export function ReceiptEditPage({ seed }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [paidClientIds, setPaidClientIds] = useState<Set<string>>(new Set());
+  const [view, setView] = useState<"parsed" | "original">("parsed");
 
   useEffect(() => { router.prefetch("/dashboard"); }, [router]);
 
@@ -54,11 +55,10 @@ export function ReceiptEditPage({ seed }: Props) {
       computed = computeItemCharges(items, assignments, participants, itemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
     }
 
-    // Round 1: clear old data (cascade handles item_assignments and charges)
-    await Promise.all([
-      supabase.from("receipt_items").delete().eq("receipt_id", receiptId),
-      supabase.from("receipt_participants").delete().eq("receipt_id", receiptId),
-    ]);
+    // Round 1: delete participants first (cascades charges + item_assignments),
+    // then items (cascade on item_assignments is already gone)
+    await supabase.from("receipt_participants").delete().eq("receipt_id", receiptId);
+    await supabase.from("receipt_items").delete().eq("receipt_id", receiptId);
 
     // Round 2: re-insert items and participants, get DB IDs back
     const [{ data: dbItems }, { data: dbParticipants }] = await Promise.all([
@@ -154,6 +154,26 @@ export function ReceiptEditPage({ seed }: Props) {
         >
           <X className="w-4 h-4" />
         </button>
+        {flow.state.signedUrl ? (
+          <div className="glass-panel-sm rounded-2xl p-1 flex gap-1">
+            <button
+              onClick={() => setView("parsed")}
+              className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all ${view === "parsed" ? "bg-white/15 text-primary" : "text-tertiary hover:text-secondary"}`}
+              aria-label="Parsed receipt"
+            >
+              <AlignJustify className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setView("original")}
+              className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all ${view === "original" ? "bg-white/15 text-primary" : "text-tertiary hover:text-secondary"}`}
+              aria-label="Original receipt"
+            >
+              <ImageIcon className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div />
+        )}
         <button
           onClick={handleDone}
           disabled={saving}
@@ -169,6 +189,8 @@ export function ReceiptEditPage({ seed }: Props) {
           hideRetake
           paidClientIds={paidClientIds}
           onTogglePaid={handleTogglePaid}
+          view={view}
+          onViewChange={setView}
         />
       </div>
     </div>
