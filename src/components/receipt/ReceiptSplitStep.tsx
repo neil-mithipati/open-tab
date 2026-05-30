@@ -74,6 +74,7 @@ function UsernameAutocomplete({
   query,
   onQueryChange,
   onAdd,
+  onAddAll,
   inputRef,
   placeholder,
 }: {
@@ -82,6 +83,7 @@ function UsernameAutocomplete({
   query: string;
   onQueryChange: (q: string) => void;
   onAdd: (p: Omit<FlowParticipant, "clientId">) => void;
+  onAddAll?: () => void;
   inputRef?: React.RefObject<HTMLInputElement | null>;
   placeholder?: string;
 }) {
@@ -105,7 +107,7 @@ function UsernameAutocomplete({
     ? friends.find((f) => f.venmo_username?.toLowerCase() === raw.toLowerCase())
     : null;
   const showAddManual = raw.length > 0 && !exactFriendMatch && !isAdded(raw);
-  const showDropdown = showAddManual || filteredFriends.length > 0;
+  const showDropdown = showAddManual || filteredFriends.length > 0 || !!onAddAll;
 
   function handleAddFriend(friend: Profile) {
     if (!friend.venmo_username || isAdded(friend.venmo_username)) return;
@@ -142,6 +144,17 @@ function UsernameAutocomplete({
       />
       {showDropdown && (
         <div className="glass-panel-sm rounded-2xl overflow-hidden flex flex-col z-10">
+          {onAddAll && (
+            <button
+              onClick={onAddAll}
+              className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/5 active:bg-white/10 transition-colors text-left border-b border-white/8"
+            >
+              <div className="w-7 h-7 rounded-full bg-brand/20 flex items-center justify-center flex-shrink-0">
+                <Users2 className="w-3.5 h-3.5 text-brand" />
+              </div>
+              <span className="text-sm font-medium text-primary">All</span>
+            </button>
+          )}
           {showAddManual && (
             <button
               onClick={handleAddManual}
@@ -491,6 +504,17 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
     setTimeout(() => evenSplitInputRef.current?.focus(), 50);
   }
 
+  function handleAddAllToItem(itemClientId: string) {
+    const assigned = state.assignments[itemClientId] ?? [];
+    for (const p of state.participants) {
+      if (!assigned.includes(p.clientId)) {
+        toggleAssignment(itemClientId, p.clientId);
+      }
+    }
+    setActiveItemId(null);
+    setItemQuery("");
+  }
+
   function handleAddToItem(itemClientId: string, p: Omit<FlowParticipant, "clientId">) {
     const existing = state.participants.find(
       (ep) => ep.venmoUsername.toLowerCase() === p.venmoUsername.toLowerCase()
@@ -729,19 +753,6 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                       />
                     </div>
                   </div>
-                  {/* Inline avatars for itemize mode */}
-                  {assignedParticipants.length > 0 && (
-                    <div className="flex items-center -space-x-1.5">
-                      {assignedParticipants.map((p) => (
-                        <div key={p.clientId} onClick={(e) => e.stopPropagation()}>
-                          <ParticipantBubble
-                            participant={p}
-                            onRemove={() => toggleAssignment(item.clientId, p.clientId)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
                   {/* Unit price */}
                   <div className="flex items-center flex-shrink-0 border border-white/15 bg-white/5 rounded-lg px-1.5 py-0.5" onClick={(e) => e.stopPropagation()}>
                     <span className="text-tertiary text-sm">$</span>
@@ -755,15 +766,29 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
                   </div>
                 </div>
 
+                {/* Assigned participants row */}
+                {assignedParticipants.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    {assignedParticipants.map((p) => (
+                      <ParticipantBubble
+                        key={p.clientId}
+                        participant={p}
+                        onRemove={() => toggleAssignment(item.clientId, p.clientId)}
+                      />
+                    ))}
+                  </div>
+                )}
+
                 {/* Inline username input for itemize mode */}
                 {isActive && (
                   <div ref={activeInputRef} className="mt-2">
                     <UsernameAutocomplete
                       friends={friends}
-                      existingParticipants={[]}
+                      existingParticipants={assignedParticipants}
                       query={itemQuery}
                       onQueryChange={setItemQuery}
                       onAdd={(p) => handleAddToItem(item.clientId, p)}
+                      onAddAll={state.participants.length > 0 ? () => handleAddAllToItem(item.clientId) : undefined}
                       inputRef={itemInputRef}
                       placeholder="who had this?"
                     />
