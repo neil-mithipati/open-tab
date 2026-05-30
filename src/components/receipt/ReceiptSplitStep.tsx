@@ -295,6 +295,78 @@ function LiveChargeCard({
   );
 }
 
+// ─── OwnerChargeCard ─────────────────────────────────────────────────────────
+
+function OwnerChargeCard({
+  participant,
+  amount,
+  splitMode,
+  items,
+  assignments,
+}: {
+  participant: FlowParticipant;
+  amount: number;
+  splitMode: "equal" | "by_item";
+  items: ReturnType<typeof useReceiptFlow>["state"]["items"];
+  assignments: Record<string, string[]>;
+}) {
+  const showDisplayName = participant.displayName !== participant.venmoUsername;
+  const breakdown =
+    splitMode === "by_item"
+      ? items
+          .filter((item) => (assignments[item.clientId] ?? []).includes(participant.clientId))
+          .map((item) => {
+            const assignees = assignments[item.clientId] ?? [];
+            return {
+              item,
+              perPersonAmount: (item.price * item.quantity) / assignees.length,
+              shared: assignees.length > 1,
+            };
+          })
+      : [];
+
+  return (
+    <GlassCard size="sm" className="p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <Avatar name={participant.displayName} size="sm" />
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-primary truncate">
+            {showDisplayName ? participant.displayName : `@${participant.venmoUsername}`}
+          </p>
+          {showDisplayName && (
+            <p className="text-xs text-secondary">@{participant.venmoUsername}</p>
+          )}
+        </div>
+        <span className="text-xs text-secondary glass-panel-sm px-2.5 py-1 rounded-xl">You</span>
+      </div>
+
+      {splitMode === "by_item" && breakdown.length > 0 ? (
+        <div className="flex flex-col gap-1.5 pt-1 border-t border-white/8">
+          {breakdown.map(({ item, perPersonAmount, shared }) => (
+            <div key={item.clientId} className="flex justify-between text-xs text-secondary">
+              <span className="truncate">
+                {item.name}
+                {item.quantity > 1 && ` ×${item.quantity}`}
+                {shared && " (shared)"}
+              </span>
+              <span className="flex-shrink-0 ml-2">{formatCurrency(perPersonAmount)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between text-sm font-semibold text-primary pt-1.5 border-t border-white/8">
+            <span>Total</span>
+            <span>{formatCurrency(amount)}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-between text-sm pt-1 border-t border-white/8">
+          <span className="text-secondary">Even split</span>
+          <span className="font-semibold text-primary">{formatCurrency(amount)}</span>
+        </div>
+      )}
+    </GlassCard>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hideRetake?: boolean }) {
@@ -346,7 +418,12 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      const [{ data: friendshipData }, { data: externalData }] = await Promise.all([
+      const [{ data: selfData }, { data: friendshipData }, { data: externalData }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, display_name, venmo_username, email, invite_token, created_at, updated_at")
+          .eq("id", user.id)
+          .single(),
         supabase
           .from("friendships")
           .select("friend_id, profiles!friendships_friend_id_fkey(id, display_name, venmo_username, email)")
@@ -357,6 +434,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
           .eq("user_id", user.id),
       ]);
 
+      const self: Profile[] = selfData ? [selfData as Profile] : [];
       const realFriends = (friendshipData ?? []).map((f) => f.profiles).filter((p): p is Profile => p !== null);
       const externalFriends: Profile[] = (externalData ?? []).map((c: { id: string; venmo_username: string; display_name: string | null }) => ({
         id: c.id,
@@ -368,7 +446,7 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
         updated_at: "",
       }));
 
-      setFriends([...realFriends, ...externalFriends]);
+      setFriends([...self, ...realFriends, ...externalFriends]);
     }
     load();
   }, []);
@@ -458,9 +536,8 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
     update("total", Math.round((subtotal + (state.tax ?? 0) + tip) * 100) / 100);
   }
 
-  const allItemsAssigned =
-    state.items.length > 0 &&
-    state.items.every((item) => (state.assignments[item.clientId] ?? []).length >= 1);
+  const anyItemsAssigned =
+    state.items.some((item) => (state.assignments[item.clientId] ?? []).length >= 1);
 
   const total =
     state.total ??
@@ -472,11 +549,35 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
     if (state.splitMode === "equal" && nonOwnerParticipants.length >= 1) {
       return computeEqualCharges(total, state.participants, state.merchantName, state.dateOfReceipt);
     }
-    if (state.splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1) {
+    if (state.splitMode === "by_item" && anyItemsAssigned && nonOwnerParticipants.length >= 1) {
       const subtotal = state.items.reduce((s, it) => s + it.price * it.quantity, 0);
-      return computeItemCharges(state.items, state.assignments, state.participants, subtotal, state.tax ?? 0, state.tip ?? 0, state.merchantName, state.dateOfReceipt);
+      return computeItemCharges(state.items, state.assignments, state.participants, subtotal, state.tax ?? 0, state.tip ?? 0, state.merchantName, state.dateOfReceipt)
+        .filter((c) => c.amount > 0);
     }
     return [];
+  })();
+
+  const ownerParticipant = state.participants.find((p) => p.isOwner);
+  const ownerAmount = (() => {
+    if (!ownerParticipant || liveCharges.length === 0) return null;
+    if (state.splitMode === "equal") {
+      return Math.round((total / state.participants.length) * 100) / 100;
+    }
+    if (state.splitMode === "by_item") {
+      const subtotal = state.items.reduce((s, it) => s + it.price * it.quantity, 0);
+      const taxRate = subtotal > 0 ? (state.tax ?? 0) / subtotal : 0;
+      const tipRate = subtotal > 0 ? (state.tip ?? 0) / subtotal : 0;
+      let itemSubtotal = 0;
+      for (const item of state.items) {
+        const assignees = state.assignments[item.clientId] ?? [];
+        if (assignees.includes(ownerParticipant.clientId) && assignees.length > 0) {
+          itemSubtotal += (item.price * item.quantity) / assignees.length;
+        }
+      }
+      const amount = Math.round(itemSubtotal * (1 + taxRate + tipRate) * 100) / 100;
+      return amount > 0 ? amount : null;
+    }
+    return null;
   })();
 
   return (
@@ -730,9 +831,18 @@ export function ReceiptSplitStep({ flow, hideRetake = false }: { flow: Flow; hid
       </motion.div>
 
       {/* Live charge cards */}
-      {liveCharges.length > 0 && (
+      {(liveCharges.length > 0 || ownerAmount != null) && (
         <div className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold text-primary">Charges</h2>
+          {ownerParticipant && ownerAmount != null && (
+            <OwnerChargeCard
+              participant={ownerParticipant}
+              amount={ownerAmount}
+              splitMode={state.splitMode}
+              items={state.items}
+              assignments={state.assignments}
+            />
+          )}
           {liveCharges.map((charge) => (
             <LiveChargeCard
               key={charge.participant.clientId}
