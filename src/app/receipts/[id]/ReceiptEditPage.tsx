@@ -6,9 +6,10 @@ import { useReceiptEditFlow } from "@/hooks/useReceiptEditFlow";
 import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { computeEqualCharges, computeItemCharges } from "@/lib/utils";
-import type { ComputedCharge } from "@/types";
+import { shareReceipt } from "@/app/actions/claim";
+import type { ComputedCharge, FlowParticipant } from "@/types";
 import type { ReceiptFlowState } from "@/hooks/useReceiptFlow";
-import { X, Check, AlignJustify, Image as ImageIcon } from "lucide-react";
+import { X, Check, AlignJustify, Image as ImageIcon, Share2 } from "lucide-react";
 
 interface Props {
   seed: Omit<ReceiptFlowState, "step" | "imageFile">;
@@ -18,6 +19,7 @@ export function ReceiptEditPage({ seed }: Props) {
   const flow = useReceiptEditFlow(seed);
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [paidClientIds, setPaidClientIds] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"parsed" | "original">("parsed");
 
@@ -144,6 +146,83 @@ export function ReceiptEditPage({ seed }: Props) {
     router.push("/dashboard");
   }
 
+  // Share for "crowd-claim": persist the current items/owner, then open the
+  // receipt for claiming. No claims exist yet, so a clean rewrite is safe.
+  async function handleShare() {
+    if (!receiptId) return;
+    setSharing(true);
+
+    const supabase = getSupabaseBrowserClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSharing(false); return; }
+
+    // Ensure an owner participant exists so unclaimed items split across the
+    // owner too, and so closeClaiming knows who to reimburse.
+    let parts: FlowParticipant[] = participants;
+    if (!parts.some((p) => p.isOwner)) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, venmo_username")
+        .eq("id", user.id)
+        .single();
+      if (profile?.venmo_username) {
+        parts = [...parts, {
+          clientId: "owner",
+          type: "friend",
+          userId: user.id,
+          displayName: profile.display_name,
+          venmoUsername: profile.venmo_username,
+          isOwner: true,
+        }];
+      }
+    }
+
+    const itemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
+    const totalAmount = total ?? itemSubtotal + (tax ?? 0) + (tip ?? 0);
+
+    await supabase.from("receipt_participants").delete().eq("receipt_id", receiptId);
+    await supabase.from("receipt_items").delete().eq("receipt_id", receiptId);
+    await Promise.all([
+      items.length > 0
+        ? supabase.from("receipt_items").insert(
+            items.map((item, i) => ({
+              receipt_id: receiptId,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              sort_order: i,
+            }))
+          )
+        : Promise.resolve(),
+      parts.length > 0
+        ? supabase.from("receipt_participants").insert(
+            parts.map((p) => ({
+              receipt_id: receiptId,
+              user_id: p.userId ?? null,
+              venmo_username: p.venmoUsername,
+              display_name: p.displayName,
+              is_owner: p.isOwner,
+            }))
+          )
+        : Promise.resolve(),
+      supabase.from("receipts").update({
+        split_mode: "by_item",
+        merchant_name: merchantName,
+        subtotal: Math.round(itemSubtotal * 100) / 100,
+        tax,
+        tip,
+        total: Math.round(totalAmount * 100) / 100,
+      }).eq("id", receiptId),
+    ]);
+
+    const result = await shareReceipt(receiptId);
+    setSharing(false);
+    if ("url" in result) {
+      try { await navigator.clipboard.writeText(result.url); } catch {}
+      router.refresh();
+    }
+  }
+
   return (
     <div className="min-h-dvh flex flex-col">
       <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-2">
@@ -174,14 +253,25 @@ export function ReceiptEditPage({ seed }: Props) {
         ) : (
           <div />
         )}
-        <button
-          onClick={handleDone}
-          disabled={saving}
-          className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors disabled:opacity-50"
-          aria-label="Done"
-        >
-          <Check className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            disabled={sharing || saving}
+            className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors disabled:opacity-50"
+            aria-label="Share to collect"
+            title="Share a link so friends can claim their items"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleDone}
+            disabled={saving}
+            className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors disabled:opacity-50"
+            aria-label="Done"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+        </div>
       </div>
       <div className="flex-1 px-4 pb-8 max-w-md mx-auto w-full">
         <ReceiptSplitStep
