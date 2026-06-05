@@ -22,9 +22,20 @@ export function FriendsManager({ userId, initialFriends }: Props) {
   const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
 
+  function validateUsername(raw: string): string | null {
+    if (!/^[a-zA-Z0-9_-]{5,16}$/.test(raw)) {
+      if (raw.length < 5) return "Venmo usernames are at least 5 characters.";
+      if (raw.length > 16) return "Venmo usernames are at most 16 characters.";
+      return "Venmo usernames can only contain letters, numbers, hyphens, and underscores.";
+    }
+    return null;
+  }
+
   async function handleAdd() {
     const username = query.trim().replace(/^@/, "");
     if (!username) return;
+    const validationError = validateUsername(username);
+    if (validationError) { setError(validationError); return; }
     setError("");
     setAdding(true);
 
