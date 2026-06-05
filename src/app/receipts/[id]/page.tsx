@@ -3,8 +3,11 @@ import { connection } from "next/server";
 import { redirect, notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getReceiptDetail } from "@/lib/queries";
+import { getSharedReceipt, getClaimCharges } from "@/app/actions/claim";
+import { buildTabUrl } from "@/lib/qr/inviteUrl";
 import type { EditableItem, FlowParticipant } from "@/types";
 import { ReceiptEditPage } from "./ReceiptEditPage";
+import { ClaimOwnerView } from "@/components/receipt/ClaimOwnerView";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -41,10 +44,36 @@ async function ReceiptDetailContent({ params }: Props) {
 
   if (!receipt) notFound();
 
+  const isOwner = receipt.created_by === user.id;
   const isAuthorised =
-    receipt.created_by === user.id ||
+    isOwner ||
     participants.some((p: { user_id: string | null }) => p.user_id === user.id);
   if (!isAuthorised) notFound();
+
+  // Owner view of a shared (crowd-claim) receipt: live claim progress while
+  // claiming, then collection once closed. Editing stays in ReceiptEditPage,
+  // which the owner returns to via "Reopen editing" (status → reviewing).
+  if (
+    isOwner &&
+    receipt.share_token &&
+    (receipt.status === "claiming" ||
+      receipt.status === "charging" ||
+      receipt.status === "settled")
+  ) {
+    const [shared, chargesResult] = await Promise.all([
+      getSharedReceipt(receipt.share_token),
+      getClaimCharges(id),
+    ]);
+    if (shared) {
+      return (
+        <ClaimOwnerView
+          shareUrl={buildTabUrl(receipt.share_token)}
+          initial={shared}
+          initialCharges={Array.isArray(chargesResult) ? chargesResult : []}
+        />
+      );
+    }
+  }
 
   const storagePath = extractStoragePath(receipt.image_url);
   const { data: signedUrlData } = storagePath

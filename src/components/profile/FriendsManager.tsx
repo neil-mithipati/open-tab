@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { isValidVenmoUsername } from "@/lib/utils";
 import { Plus } from "lucide-react";
 
 interface Friend {
@@ -23,7 +24,7 @@ export function FriendsManager({ userId, initialFriends }: Props) {
   const [adding, setAdding] = useState(false);
 
   function validateUsername(raw: string): string | null {
-    if (!/^[a-zA-Z0-9_-]{5,16}$/.test(raw)) {
+    if (!isValidVenmoUsername(raw)) {
       if (raw.length < 5) return "Venmo usernames are at least 5 characters.";
       if (raw.length > 16) return "Venmo usernames are at most 16 characters.";
       return "Venmo usernames can only contain letters, numbers, hyphens, and underscores.";

@@ -20,7 +20,8 @@ export interface Receipt {
   total: number | null;
   notes: string | null;
   split_mode: "equal" | "by_item";
-  status: "draft" | "reviewing" | "charging" | "settled";
+  status: "draft" | "reviewing" | "claiming" | "charging" | "settled";
+  share_token: string | null;
   created_at: string;
 }
 
@@ -40,6 +41,8 @@ export interface ReceiptParticipant {
   venmo_username: string;
   display_name: string;
   is_owner: boolean;
+  joined_via_share: boolean;
+  claim_done_at: string | null;
 }
 
 export interface ItemAssignment {
@@ -104,4 +107,33 @@ export interface ComputedCharge {
   amount: number;
   venmoLink: string;
   venmoAppLink: string;
+}
+
+// Share / claim flow ---------------------------------------------------------
+
+export interface ClaimParticipant {
+  id: string;
+  display_name: string;
+  venmo_username: string;
+  is_owner: boolean;
+  joined_via_share: boolean;
+  claim_done_at: string | null;
+}
+
+// Public, no-auth view of a shared receipt returned by the claim server actions.
+// Excludes owner-private fields; includes just what the claim page needs.
+export interface SharedReceipt {
+  id: string;
+  status: Receipt["status"];
+  merchant_name: string | null;
+  date_of_receipt: string | null;
+  subtotal: number | null;
+  tax: number | null;
+  tip: number | null;
+  total: number | null;
+  owner: { display_name: string; venmo_username: string | null };
+  items: ReceiptItem[];
+  participants: ClaimParticipant[];
+  // itemId → participantIds claiming it
+  assignments: Record<string, string[]>;
 }
