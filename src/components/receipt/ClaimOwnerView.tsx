@@ -296,7 +296,7 @@ function CollectBody({
   onRefresh: () => void;
 }) {
   const paidMap = new Map(charges.map((c) => [c.participantId, c.paidAt]));
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   async function togglePaid(participantId: string, paid: boolean) {
     await markClaimChargePaid(receiptId, participantId, paid);
@@ -304,7 +304,12 @@ function CollectBody({
   }
 
   function toggleExpanded(id: string) {
-    setExpandedId((cur) => (cur === id ? null : id));
+    setExpandedIds((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   const claimedItemsFor = (participantId: string) =>
@@ -335,7 +340,7 @@ function CollectBody({
             amount={ownerShare}
             youTag
             claimedItems={claimedItemsFor(ownerParticipant.id)}
-            expanded={expandedId === ownerParticipant.id}
+            expanded={expandedIds.has(ownerParticipant.id)}
             onToggle={() => toggleExpanded(ownerParticipant.id)}
           />
         )}
@@ -355,7 +360,7 @@ function CollectBody({
               venmoUsername={c.participant.venmoUsername}
               amount={c.amount}
               claimedItems={claimedItemsFor(pid)}
-              expanded={expandedId === pid}
+              expanded={expandedIds.has(pid)}
               onToggle={() => toggleExpanded(pid)}
               action={
                 paid ? (
