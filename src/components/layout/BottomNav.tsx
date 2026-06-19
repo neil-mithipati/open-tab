@@ -52,7 +52,10 @@ function NavItem({
     <Link href={href} className="flex flex-col items-center gap-0.5 px-3 py-1">
       <Icon
         className={cn("w-6 h-6 transition-colors", active ? "text-brand" : "text-tertiary")}
-        strokeWidth={active ? 2.5 : 2}
+        strokeWidth={active ? 1.75 : 1.5}
+        strokeLinecap="square"
+        strokeLinejoin="miter"
+        strokeMiterlimit={10}
       />
       <span className={cn("text-[10px] font-medium", active ? "text-brand" : "text-tertiary")}>
         {label}

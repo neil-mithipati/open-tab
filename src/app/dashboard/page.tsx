@@ -8,7 +8,7 @@ import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUserReceipts, getUserProfile } from "@/lib/queries";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Camera, ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 
 export default function DashboardPage() {
   return (
@@ -37,21 +37,8 @@ async function DashboardContent() {
     <div className="flex flex-col gap-6 pb-10">
       <h1 className="text-5xl font-bold animate-gradient text-center">Open Tab</h1>
 
-      <Link href="/receipts/new">
-        <GlassCard className="p-5 flex items-center gap-4 active:scale-[0.98] transition-transform cursor-pointer">
-          <div className="w-12 h-12 rounded-2xl bg-brand flex items-center justify-center flex-shrink-0">
-            <Camera className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="font-semibold text-primary">Scan a receipt</p>
-            <p className="text-sm text-secondary">Split a new bill</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-tertiary ml-auto" />
-        </GlassCard>
-      </Link>
-
       <div>
-        <h2 className="text-lg font-semibold text-primary mb-3">Activity</h2>
+        <h2 className="text-lg font-semibold text-primary mb-3">Tabs</h2>
         {allReceipts.length > 0 ? (
           <div className="flex flex-col gap-3">
             {allReceipts.map((r) => (
@@ -77,11 +64,19 @@ async function DashboardContent() {
             ))}
           </div>
         ) : (
-          <GlassCard size="sm" className="p-6 text-center">
-            <p className="text-secondary text-sm">No receipts yet</p>
-            <Link href="/receipts/new">
-              <GlassButton variant="ghost" size="sm" className="mt-2">
-                Scan your first receipt
+          <GlassCard className="p-8 flex flex-col items-center text-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-brand/15 flex items-center justify-center">
+              <Plus className="w-6 h-6 text-brand" strokeWidth={2.5} />
+            </div>
+            <div>
+              <p className="font-semibold text-primary">No tabs yet</p>
+              <p className="text-sm text-secondary mt-0.5">
+                Scan a receipt to start splitting a bill.
+              </p>
+            </div>
+            <Link href="/receipts/new" className="w-full">
+              <GlassButton variant="primary" size="md" className="w-full gap-1.5">
+                <Plus className="w-4 h-4" strokeWidth={2.5} /> Add your first tab
               </GlassButton>
             </Link>
           </GlassCard>
