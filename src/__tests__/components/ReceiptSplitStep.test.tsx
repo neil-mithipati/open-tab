@@ -14,14 +14,19 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-// Supabase mock: auth returns a user, from() chains resolve gracefully
+// Supabase mock: auth returns a user, from() chains resolve gracefully.
+// The builder is chainable AND thenable: `await from(x).select().eq()` resolves
+// to { data: [] }, while `.single()` resolves to { data: null } for single-row
+// queries (e.g. the self-profile lookup).
 vi.mock("@/lib/supabase/client", () => {
   const builder: any = {};
   builder.select = vi.fn().mockReturnValue(builder);
-  builder.eq = vi.fn().mockReturnValue(Promise.resolve({ data: [] }));
+  builder.eq = vi.fn().mockReturnValue(builder);
   builder.insert = vi.fn().mockResolvedValue({ data: null, error: null });
   builder.delete = vi.fn().mockReturnValue(builder);
   builder.update = vi.fn().mockReturnValue(builder);
+  builder.single = vi.fn().mockResolvedValue({ data: null, error: null });
+  builder.then = (resolve: any) => resolve({ data: [], error: null });
 
   return {
     getSupabaseBrowserClient: vi.fn(() => ({
@@ -157,7 +162,8 @@ async function renderSplitStep(initial: ReceiptFlowState = makeDefaultState()) {
 describe("ReceiptSplitStep — receipt display", () => {
   it("renders the merchant name", async () => {
     await renderSplitStep();
-    expect(screen.getByText("Test Cafe")).toBeInTheDocument();
+    // Merchant name is an editable input, not static text
+    expect(screen.getByDisplayValue("Test Cafe")).toBeInTheDocument();
   });
 
   it("renders all item names", async () => {
@@ -177,16 +183,15 @@ describe("ReceiptSplitStep — receipt display", () => {
     expect(screen.getByText("Tip")).toBeInTheDocument();
   });
 
-  it("renders Cancel and Retake buttons", async () => {
+  it("renders the Retake button", async () => {
     await renderSplitStep();
-    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /retake/i })).toBeInTheDocument();
   });
 
-  it("Cancel button navigates to dashboard", async () => {
-    const { user } = await renderSplitStep();
-    await user.click(screen.getByRole("button", { name: /cancel/i }));
-    expect(mockPush).toHaveBeenCalledWith("/dashboard");
+  it("Retake button returns to the capture step", async () => {
+    const { user, getState } = await renderSplitStep();
+    await user.click(screen.getByRole("button", { name: /retake/i }));
+    await waitFor(() => expect(getState().step).toBe("capture"));
   });
 });
 
@@ -219,40 +224,45 @@ describe("ReceiptSplitStep — Even Split mode", () => {
     await user.click(screen.getByRole("button", { name: /even split/i }));
     await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
-    // The Avatar for "alice" (initials "AL") should appear
-    expect(screen.getByText("AL")).toBeInTheDocument();
+    // The Avatar for "alice" (initials "AL") should appear (in the bubble and the live charge card)
+    expect(screen.getAllByText("AL").length).toBeGreaterThan(0);
   });
 
-  it("shows the Charge button once a participant is added", async () => {
+  it("shows the Charges section once a participant is added", async () => {
     const { user } = await renderSplitStep();
     await user.click(screen.getByRole("button", { name: /even split/i }));
     await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
-    expect(await screen.findByRole("button", { name: /charge/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /charges/i })).toBeInTheDocument();
   });
 
-  it("hides the Charge button when the last participant is removed", async () => {
+  it("hides the Charges section when the last participant is removed", async () => {
     const { user } = await renderSplitStep();
     await user.click(screen.getByRole("button", { name: /even split/i }));
     await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
+    await screen.findByRole("heading", { name: /charges/i });
     await user.click(await screen.findByRole("button", { name: /remove/i }));
-    expect(screen.queryByRole("button", { name: /charge/i })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: /charges/i })).not.toBeInTheDocument()
+    );
   });
 
-  it("shows tooltip with @venmoUsername when bubble avatar is clicked", async () => {
+  it("shows the @venmoUsername tooltip when a bubble avatar is clicked", async () => {
     const { user } = await renderSplitStep();
     await user.click(screen.getByRole("button", { name: /even split/i }));
     await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
-    // Click the initials div (avatar) to toggle tooltip
-    await user.click(screen.getByText("AL"));
-    expect(await screen.findByText("@alice")).toBeInTheDocument();
+    // Count "@alice" occurrences before clicking (the live charge card already shows one)
+    const before = screen.queryAllByText("@alice").length;
+    // The first "AL" avatar is the participant bubble (rendered above the live charge cards)
+    await user.click(screen.getAllByText("AL")[0]);
+    await waitFor(() => expect(screen.queryAllByText("@alice").length).toBe(before + 1));
   });
 
-  it("does not show Charge button with zero participants", async () => {
+  it("does not show the Charges section with zero participants", async () => {
     await renderSplitStep();
-    expect(screen.queryByRole("button", { name: /charge/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /charges/i })).not.toBeInTheDocument();
   });
 });
 
@@ -263,10 +273,10 @@ describe("ReceiptSplitStep — mode switching", () => {
     await user.click(screen.getByRole("button", { name: /even split/i }));
     await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
-    expect(screen.getByText("AL")).toBeInTheDocument();
+    expect(screen.getAllByText("AL").length).toBeGreaterThan(0);
     // Click an item to switch to itemize mode
     await user.click(screen.getByText("Burger"));
-    // Alice's bubble should be gone
+    // Alice's bubble (and her live charge card) should be gone
     expect(screen.queryByText("AL")).not.toBeInTheDocument();
   });
 
@@ -284,12 +294,14 @@ describe("ReceiptSplitStep — Itemize mode", () => {
     expect(await screen.findByPlaceholderText(/who had this/i)).toBeInTheDocument();
   });
 
-  it("closes the inline input when the same item is clicked again", async () => {
+  it("closes the inline input when clicking outside", async () => {
     const { user } = await renderSplitStep();
     await user.click(screen.getByText("Burger"));
     await screen.findByPlaceholderText(/who had this/i);
-    await user.click(screen.getByText("Burger"));
-    expect(screen.queryByPlaceholderText(/who had this/i)).not.toBeInTheDocument();
+    await user.click(document.body);
+    await waitFor(() =>
+      expect(screen.queryByPlaceholderText(/who had this/i)).not.toBeInTheDocument()
+    );
   });
 
   it("shows an avatar next to the item after assigning a participant", async () => {
@@ -297,20 +309,19 @@ describe("ReceiptSplitStep — Itemize mode", () => {
     await user.click(screen.getByText("Burger"));
     await user.type(await screen.findByPlaceholderText(/who had this/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
-    // Avatar initials for "alice" = "AL"
-    expect(screen.getByText("AL")).toBeInTheDocument();
+    // Avatar initials for "alice" = "AL" (item bubble + live charge card)
+    expect(screen.getAllByText("AL").length).toBeGreaterThan(0);
   });
 
-  it("does not show Charge button until every item has an assignee", async () => {
+  it("does not show the Charges section before any item is assigned", async () => {
     const { user } = await renderSplitStep();
-    // Assign alice to Burger only (Fries still unassigned)
+    // Enter itemize mode but assign nobody yet
     await user.click(screen.getByText("Burger"));
-    await user.type(await screen.findByPlaceholderText(/who had this/i), "alice");
-    await user.click(await screen.findByText("Add @alice"));
-    expect(screen.queryByRole("button", { name: /charge/i })).not.toBeInTheDocument();
+    await screen.findByPlaceholderText(/who had this/i);
+    expect(screen.queryByRole("heading", { name: /charges/i })).not.toBeInTheDocument();
   });
 
-  it("shows Charge button once every item has at least one assignee", async () => {
+  it("shows the Charges section once every item has at least one assignee", async () => {
     const { user } = await renderSplitStep();
     // Assign alice to Burger
     await user.click(screen.getByText("Burger"));
@@ -320,6 +331,6 @@ describe("ReceiptSplitStep — Itemize mode", () => {
     await user.click(screen.getByText("Fries"));
     await user.type(await screen.findByPlaceholderText(/who had this/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
-    expect(await screen.findByRole("button", { name: /charge/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /charges/i })).toBeInTheDocument();
   });
 });
