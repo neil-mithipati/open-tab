@@ -232,6 +232,8 @@ function LiveChargeCard({
       recipientUsername: charge.participant.venmoUsername,
       amount: charge.amount,
       note,
+      // Owner is collecting from this friend → request money (charge), not pay.
+      txn: "charge",
     });
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
     window.open(isMobile ? venmoAppLink : venmoLink, "_blank");

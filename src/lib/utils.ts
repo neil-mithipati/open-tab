@@ -57,7 +57,8 @@ export function computeEqualCharges(
   return nonOwners.map((p) => ({
     participant: p,
     amount: perPerson,
-    ...buildVenmoLinks({ recipientUsername: p.venmoUsername, amount: perPerson, note }),
+    // Owner is collecting from friends → request money (charge), not pay.
+    ...buildVenmoLinks({ recipientUsername: p.venmoUsername, amount: perPerson, note, txn: "charge" }),
   }));
 }
 
@@ -89,7 +90,8 @@ export function computeItemCharges(
     return {
       participant: p,
       amount,
-      ...buildVenmoLinks({ recipientUsername: p.venmoUsername, amount, note }),
+      // Owner is collecting from friends → request money (charge), not pay.
+      ...buildVenmoLinks({ recipientUsername: p.venmoUsername, amount, note, txn: "charge" }),
     };
   });
 }
