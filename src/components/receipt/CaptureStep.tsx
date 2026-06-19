@@ -23,10 +23,10 @@ export function CaptureStep({ flow }: { flow: Flow }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // create draft receipt row
+    // create open receipt row
     const { data: receipt } = await supabase
       .from("receipts")
-      .insert({ created_by: user.id, status: "draft" })
+      .insert({ created_by: user.id, status: "open" })
       .select("id")
       .single();
 

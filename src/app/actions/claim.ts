@@ -44,7 +44,7 @@ export async function getSharedReceipt(
     .single();
   if (!receipt) return null;
 
-  const [{ data: owner }, { data: items }, { data: participants }] =
+  const [{ data: owner }, { data: items }, { data: participants }, { count: chargeCount }] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -62,6 +62,11 @@ export async function getSharedReceipt(
           "id, display_name, venmo_username, is_owner, joined_via_share, claim_done_at"
         )
         .eq("receipt_id", receipt.id),
+      // Charges only exist once the owner has closed claiming → collect phase.
+      supabase
+        .from("charges")
+        .select("id", { count: "exact", head: true })
+        .eq("receipt_id", receipt.id),
     ]);
 
   const assignments: Record<string, string[]> = {};
@@ -77,6 +82,7 @@ export async function getSharedReceipt(
   return {
     id: receipt.id,
     status: receipt.status,
+    claims_closed: (chargeCount ?? 0) > 0,
     merchant_name: receipt.merchant_name,
     date_of_receipt: receipt.date_of_receipt,
     subtotal: receipt.subtotal,
@@ -91,6 +97,20 @@ export async function getSharedReceipt(
     participants: participants ?? [],
     assignments,
   };
+}
+
+// Claiming is locked once charges exist (owner closed claiming → collect phase).
+// A shared check stays status "shared" through collection, so the charges table
+// is the signal that claiming is no longer open.
+async function claimingLocked(
+  supabase: Awaited<ReturnType<typeof getSupabaseServiceClient>>,
+  receiptId: string
+): Promise<boolean> {
+  const { count } = await supabase
+    .from("charges")
+    .select("id", { count: "exact", head: true })
+    .eq("receipt_id", receiptId);
+  return (count ?? 0) > 0;
 }
 
 export async function joinReceipt(
@@ -109,7 +129,7 @@ export async function joinReceipt(
     .eq("share_token", token)
     .single();
   if (!receipt) return { error: "This link is no longer valid." };
-  if (receipt.status !== "claiming") {
+  if (receipt.status !== "shared" || (await claimingLocked(supabase, receipt.id))) {
     return { error: "Claiming is closed for this receipt." };
   }
 
@@ -160,7 +180,8 @@ export async function toggleClaim(
     .eq("share_token", token)
     .single();
   if (!receipt) return { error: "This link is no longer valid." };
-  if (receipt.status !== "claiming") return { error: "Claiming is closed." };
+  if (receipt.status !== "shared" || (await claimingLocked(supabase, receipt.id)))
+    return { error: "Claiming is closed." };
 
   // Both the participant and item must belong to this receipt.
   const [{ data: participant }, { data: item }] = await Promise.all([
@@ -208,7 +229,8 @@ export async function setClaimDone(
     .eq("share_token", token)
     .single();
   if (!receipt) return { error: "This link is no longer valid." };
-  if (receipt.status !== "claiming") return { error: "Claiming is closed." };
+  if (receipt.status !== "shared" || (await claimingLocked(supabase, receipt.id)))
+    return { error: "Claiming is closed." };
 
   const { error } = await supabase
     .from("receipt_participants")
@@ -256,7 +278,7 @@ export async function shareReceipt(
 
   const service = await getSupabaseServiceClient();
   let token = ctx.receipt.share_token;
-  const update: Record<string, unknown> = { status: "claiming" };
+  const update: Record<string, unknown> = { status: "shared" };
   if (!token) {
     token = crypto.randomUUID();
     update.share_token = token;
@@ -279,9 +301,12 @@ export async function reopenEditing(
   if ("error" in ctx) return { error: ctx.error };
 
   const service = await getSupabaseServiceClient();
+  // Clear any computed charges so reopening unlocks claiming again (charges are
+  // what mark a shared check as past the claiming phase).
+  await service.from("charges").delete().eq("receipt_id", receiptId);
   const { error } = await service
     .from("receipts")
-    .update({ status: "reviewing" })
+    .update({ status: "open" })
     .eq("id", receiptId);
   if (error) return { error: "Couldn't reopen. Try again." };
 
@@ -380,10 +405,8 @@ export async function closeClaiming(
     if (error) return { error: "Couldn't create charges. Try again." };
   }
 
-  await service
-    .from("receipts")
-    .update({ status: "charging" })
-    .eq("id", receiptId);
+  // Status stays "shared" through the collect phase; the new charges are what
+  // lock claiming and flip the views to collection.
 
   revalidatePath(`/receipts/${receiptId}`);
   return {};
@@ -430,7 +453,8 @@ export async function markClaimChargePaid(
     .eq("to_participant_id", participantId);
   if (error) return { error: "Couldn't update. Try again." };
 
-  // Settle the receipt once every charge is paid.
+  // Close the receipt once every charge is paid; otherwise it stays shared
+  // (collect phase).
   const { data: charges } = await service
     .from("charges")
     .select("paid_at")
@@ -439,7 +463,7 @@ export async function markClaimChargePaid(
     (charges ?? []).length > 0 && (charges ?? []).every((c) => c.paid_at);
   await service
     .from("receipts")
-    .update({ status: allPaid ? "settled" : "charging" })
+    .update({ status: allPaid ? "closed" : "shared" })
     .eq("id", receiptId);
 
   revalidatePath(`/receipts/${receiptId}`);
