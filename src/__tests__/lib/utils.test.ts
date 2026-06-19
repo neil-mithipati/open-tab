@@ -70,8 +70,9 @@ describe("computeEqualCharges", () => {
 
   it("encodes merchant name and date in the venmo note", () => {
     const charges = computeEqualCharges(20, [owner, alice], "Shake Shack", "2025-05-24");
-    expect(charges[0].venmoLink).toContain("open-tab");
+    expect(charges[0].venmoLink).toContain("Open%20Tab");
     expect(charges[0].venmoLink).toContain("Shake%20Shack");
+    expect(charges[0].venmoLink).toContain("2025-05-24");
   });
 });
 

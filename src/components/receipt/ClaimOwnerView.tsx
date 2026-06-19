@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
@@ -24,7 +24,7 @@ import type {
   FlowParticipant,
   ComputedCharge,
 } from "@/types";
-import { X, RotateCw, Check, Copy, Link as LinkIcon } from "lucide-react";
+import { X, RotateCw, Check, Copy, Link as LinkIcon, ChevronDown } from "lucide-react";
 
 interface Props {
   shareUrl: string;
@@ -163,6 +163,7 @@ export function ClaimOwnerView({ shareUrl, initial, initialCharges }: Props) {
         />
       ) : (
         <CollectBody
+          receipt={receipt}
           computed={computed}
           charges={charges}
           receiptId={receiptId}
@@ -278,6 +279,7 @@ function ClaimingBody({
 }
 
 function CollectBody({
+  receipt,
   computed,
   charges,
   receiptId,
@@ -285,6 +287,7 @@ function CollectBody({
   isMobile,
   onRefresh,
 }: {
+  receipt: SharedReceipt;
   computed: ComputedCharge[];
   charges: ClaimChargeRow[];
   receiptId: string;
@@ -293,11 +296,33 @@ function CollectBody({
   onRefresh: () => void;
 }) {
   const paidMap = new Map(charges.map((c) => [c.participantId, c.paidAt]));
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   async function togglePaid(participantId: string, paid: boolean) {
     await markClaimChargePaid(receiptId, participantId, paid);
     onRefresh();
   }
+
+  function toggleExpanded(id: string) {
+    setExpandedIds((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const claimedItemsFor = (participantId: string) =>
+    receipt.items.filter((it) => (receipt.assignments[it.id] ?? []).includes(participantId));
+
+  // Owner is the first user in the list, showing what they claimed for themselves.
+  const ownerParticipant = receipt.participants.find((p) => p.is_owner);
+  const subtotal = receipt.items.reduce((s, it) => s + it.price * it.quantity, 0);
+  const total = receipt.total ?? subtotal + (receipt.tax ?? 0) + (receipt.tip ?? 0);
+  // The bill splits exhaustively across everyone, so the owner's own share is
+  // whatever isn't owed by the friends.
+  const nonOwnerSum = computed.reduce((s, c) => s + c.amount, 0);
+  const ownerShare = Math.max(0, Math.round((total - nonOwnerSum) * 100) / 100);
 
   const owed = computed.filter((c) => c.amount > 0);
 
@@ -308,6 +333,17 @@ function CollectBody({
         paid when the money lands, and nudge anyone who&apos;s slow.
       </p>
       <div className="flex flex-col gap-2">
+        {ownerParticipant && (
+          <CollectRow
+            name={ownerParticipant.display_name}
+            venmoUsername={ownerParticipant.venmo_username}
+            amount={ownerShare}
+            youTag
+            claimedItems={claimedItemsFor(ownerParticipant.id)}
+            expanded={expandedIds.has(ownerParticipant.id)}
+            onToggle={() => toggleExpanded(ownerParticipant.id)}
+          />
+        )}
         {owed.map((c) => {
           const pid = c.participant.dbId!;
           const paid = !!paidMap.get(pid);
@@ -318,50 +354,154 @@ function CollectBody({
             txn: "charge",
           });
           return (
-            <GlassCard key={pid} size="sm" className="p-3 flex items-center gap-3">
-              <Avatar name={c.participant.displayName} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-primary truncate">
-                  @{c.participant.venmoUsername}
-                </p>
-                <p className="text-sm text-secondary">{formatCurrency(c.amount)}</p>
-              </div>
-              {paid ? (
-                <button
-                  onClick={() => togglePaid(pid, false)}
-                  className="text-xs font-medium text-emerald-400 flex items-center gap-1 flex-shrink-0"
-                >
-                  <Check className="w-3.5 h-3.5" /> paid
-                </button>
-              ) : (
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <a
-                    href={isMobile ? remind.venmoAppLink : remind.venmoLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-tertiary hover:text-secondary underline-offset-2 hover:underline"
+            <CollectRow
+              key={pid}
+              name={c.participant.displayName}
+              venmoUsername={c.participant.venmoUsername}
+              amount={c.amount}
+              claimedItems={claimedItemsFor(pid)}
+              expanded={expandedIds.has(pid)}
+              onToggle={() => toggleExpanded(pid)}
+              action={
+                paid ? (
+                  <button
+                    onClick={() => togglePaid(pid, false)}
+                    className="text-xs font-medium text-emerald-400 flex items-center gap-1 flex-shrink-0"
                   >
-                    Remind
-                  </a>
-                  <GlassButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => togglePaid(pid, true)}
-                  >
-                    Mark paid
-                  </GlassButton>
-                </div>
-              )}
-            </GlassCard>
+                    <Check className="w-3.5 h-3.5" /> paid
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <a
+                      href={isMobile ? remind.venmoAppLink : remind.venmoLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-tertiary hover:text-secondary underline-offset-2 hover:underline"
+                    >
+                      Remind
+                    </a>
+                    <GlassButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => togglePaid(pid, true)}
+                    >
+                      Mark paid
+                    </GlassButton>
+                  </div>
+                )
+              }
+            />
           );
         })}
         {owed.length === 0 && (
           <GlassCard size="sm" className="p-4 text-center text-secondary text-sm">
-            No charges — nobody claimed anything.
+            No charges yet — nobody else has claimed anything.
           </GlassCard>
         )}
       </div>
+
+      {/* Full check breakdown, kept visible once claiming has closed */}
+      <h2 className="text-sm font-semibold text-primary mt-6 mb-2">Receipt</h2>
+      <GlassCard size="sm" className="p-3 flex flex-col gap-1.5">
+        {receipt.items.map((it) => (
+          <div key={it.id} className="flex justify-between text-sm">
+            <span className="text-secondary truncate">
+              {it.name}
+              {it.quantity > 1 && ` ×${it.quantity}`}
+            </span>
+            <span className="text-primary flex-shrink-0 ml-2">
+              {formatCurrency(it.price * it.quantity)}
+            </span>
+          </div>
+        ))}
+        <div className="flex justify-between text-sm pt-1.5 border-t border-white/8 mt-0.5">
+          <span className="text-secondary">Subtotal</span>
+          <span className="text-primary">{formatCurrency(subtotal)}</span>
+        </div>
+        {receipt.tax != null && (
+          <div className="flex justify-between text-sm">
+            <span className="text-secondary">Tax</span>
+            <span className="text-primary">{formatCurrency(receipt.tax)}</span>
+          </div>
+        )}
+        {receipt.tip != null && (
+          <div className="flex justify-between text-sm">
+            <span className="text-secondary">Tip</span>
+            <span className="text-primary">{formatCurrency(receipt.tip)}</span>
+          </div>
+        )}
+        <div className="flex justify-between pt-1.5 border-t border-white/8">
+          <span className="font-bold text-primary">Total</span>
+          <span className="font-bold text-primary">{formatCurrency(total)}</span>
+        </div>
+      </GlassCard>
     </>
+  );
+}
+
+function CollectRow({
+  name,
+  venmoUsername,
+  amount,
+  claimedItems,
+  expanded,
+  onToggle,
+  action,
+  youTag = false,
+}: {
+  name: string;
+  venmoUsername: string;
+  amount: number;
+  claimedItems: SharedReceipt["items"];
+  expanded: boolean;
+  onToggle: () => void;
+  action?: ReactNode;
+  youTag?: boolean;
+}) {
+  return (
+    <GlassCard size="sm" className="p-3 flex flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <Avatar name={name} size="sm" />
+        <div className="min-w-0 flex-1">
+          <button
+            onClick={onToggle}
+            className="flex items-center gap-1.5 max-w-full"
+            aria-expanded={expanded}
+          >
+            <span className="text-sm font-medium text-primary truncate">@{venmoUsername}</span>
+            {youTag && (
+              <span className="text-[10px] uppercase tracking-wide font-semibold text-tertiary bg-white/8 rounded px-1.5 py-0.5 flex-shrink-0">
+                you
+              </span>
+            )}
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-tertiary flex-shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+            />
+          </button>
+          <p className="text-sm text-secondary">{formatCurrency(amount)}</p>
+        </div>
+        {action}
+      </div>
+      {expanded && (
+        <div className="flex flex-col gap-1 pl-11 pt-1 border-t border-white/8">
+          {claimedItems.length === 0 ? (
+            <p className="text-xs text-tertiary">Nothing claimed</p>
+          ) : (
+            claimedItems.map((it) => (
+              <div key={it.id} className="flex justify-between text-xs">
+                <span className="text-secondary truncate">
+                  {it.name}
+                  {it.quantity > 1 && ` ×${it.quantity}`}
+                </span>
+                <span className="text-tertiary flex-shrink-0 ml-2">
+                  {formatCurrency(it.price * it.quantity)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </GlassCard>
   );
 }
 
