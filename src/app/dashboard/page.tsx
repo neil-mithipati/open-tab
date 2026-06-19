@@ -88,11 +88,9 @@ async function DashboardContent() {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { color: string; label: string }> = {
-    draft:    { color: "text-tertiary",     label: "draft" },
-    reviewing:{ color: "text-amber-400",    label: "reviewing" },
-    claiming: { color: "text-sky-400",      label: "claiming" },
-    charging: { color: "text-brand",        label: "charging" },
-    settled:  { color: "text-emerald-400",  label: "closed" },
+    open:     { color: "text-amber-400",    label: "open" },
+    shared:   { color: "text-sky-400",      label: "shared" },
+    closed:   { color: "text-emerald-400",  label: "closed" },
   };
   const { color, label } = map[status] ?? { color: "text-tertiary", label: status };
   return (

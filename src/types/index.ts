@@ -20,7 +20,7 @@ export interface Receipt {
   total: number | null;
   notes: string | null;
   split_mode: "equal" | "by_item";
-  status: "draft" | "reviewing" | "claiming" | "charging" | "settled";
+  status: "open" | "shared" | "closed";
   share_token: string | null;
   created_at: string;
 }
@@ -125,6 +125,9 @@ export interface ClaimParticipant {
 export interface SharedReceipt {
   id: string;
   status: Receipt["status"];
+  // True once the owner has closed claiming and charges exist — the check is
+  // still "shared" but now in the collect phase (claiming is locked).
+  claims_closed: boolean;
   merchant_name: string | null;
   date_of_receipt: string | null;
   subtotal: number | null;

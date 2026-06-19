@@ -51,14 +51,12 @@ async function ReceiptDetailContent({ params }: Props) {
   if (!isAuthorised) notFound();
 
   // Owner view of a shared (crowd-claim) receipt: live claim progress while
-  // claiming, then collection once closed. Editing stays in ReceiptEditPage,
-  // which the owner returns to via "Reopen editing" (status → reviewing).
+  // sharing, then collection once closed. Editing stays in ReceiptEditPage,
+  // which the owner returns to via "Reopen editing" (status → open).
   if (
     isOwner &&
     receipt.share_token &&
-    (receipt.status === "claiming" ||
-      receipt.status === "charging" ||
-      receipt.status === "settled")
+    (receipt.status === "shared" || receipt.status === "closed")
   ) {
     const [shared, chargesResult] = await Promise.all([
       getSharedReceipt(receipt.share_token),

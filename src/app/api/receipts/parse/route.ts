@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       tax: parsed.tax,
       tip: parsed.tip,
       total: parsed.total,
-      status: "reviewing",
+      status: "open",
     })
     .eq("id", receiptId);
 

@@ -151,7 +151,7 @@ export function ClaimOwnerView({ shareUrl, initial, initialCharges }: Props) {
         )}
       </button>
 
-      {receipt.status === "claiming" ? (
+      {!receipt.claims_closed ? (
         <ClaimingBody
           claimers={claimers}
           assignments={receipt.assignments}

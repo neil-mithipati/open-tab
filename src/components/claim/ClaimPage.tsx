@@ -142,7 +142,7 @@ export function ClaimPage({ token, initial }: Props) {
     typeof navigator !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
 
   // -- Closed for claiming (owner hasn't shared, or reopened to edit) ---------
-  if (receipt.status === "draft" || receipt.status === "reviewing") {
+  if (receipt.status === "open") {
     return (
       <Centered>
         <GlassCard className="w-full max-w-sm p-8 text-center flex flex-col gap-3">
@@ -156,7 +156,7 @@ export function ClaimPage({ token, initial }: Props) {
   }
 
   // -- Owner has closed claiming: show final amount + pay ---------------------
-  if (receipt.status === "charging" || receipt.status === "settled") {
+  if (receipt.claims_closed) {
     return (
       <Centered>
         <GlassCard className="w-full max-w-sm p-8 text-center flex flex-col gap-5">
@@ -190,7 +190,7 @@ export function ClaimPage({ token, initial }: Props) {
     );
   }
 
-  // -- status === 'claiming' --------------------------------------------------
+  // -- status === 'shared' (link live, friends claiming) ----------------------
 
   // Not yet identified: ask for a Venmo username.
   if (!me) {
