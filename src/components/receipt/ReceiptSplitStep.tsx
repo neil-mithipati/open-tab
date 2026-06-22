@@ -77,6 +77,7 @@ function UsernameAutocomplete({
   onAddAll,
   inputRef,
   placeholder,
+  selfId,
 }: {
   friends: Profile[];
   existingParticipants: FlowParticipant[];
@@ -86,6 +87,7 @@ function UsernameAutocomplete({
   onAddAll?: () => void;
   inputRef?: React.RefObject<HTMLInputElement | null>;
   placeholder?: string;
+  selfId?: string | null;
 }) {
   const raw = query.trim().replace(/^@/, "");
 
@@ -116,7 +118,8 @@ function UsernameAutocomplete({
       userId: friend.id || undefined,
       displayName: friend.display_name,
       venmoUsername: friend.venmo_username,
-      isOwner: false,
+      // The logged-in user is the owner, not a chargeable recipient.
+      isOwner: !!friend.id && friend.id === selfId,
     });
     onQueryChange("");
   }
@@ -143,7 +146,7 @@ function UsernameAutocomplete({
         spellCheck={false}
       />
       {showDropdown && (
-        <div className="glass-panel-sm rounded-2xl overflow-hidden flex flex-col z-10">
+        <div className="glass-panel-sm rounded-2xl overflow-y-auto flex flex-col z-10 max-h-64">
           {onAddAll && (
             <button
               onClick={onAddAll}
@@ -166,7 +169,7 @@ function UsernameAutocomplete({
               <span className="text-sm font-medium text-primary">Add @{raw}</span>
             </button>
           )}
-          {filteredFriends.slice(0, 5).map((f) => {
+          {filteredFriends.map((f) => {
             const added = f.venmo_username ? isAdded(f.venmo_username) : false;
             const noVenmo = !f.venmo_username;
             return (
@@ -408,6 +411,7 @@ export function ReceiptSplitStep({
   const [internalPaidClientIds, setInternalPaidClientIds] = useState<Set<string>>(new Set());
   const paidClientIds = externalPaidClientIds ?? internalPaidClientIds;
   const [friends, setFriends] = useState<Profile[]>([]);
+  const [selfId, setSelfId] = useState<string | null>(null);
   const [evenSplitOpen, setEvenSplitOpen] = useState(false);
   const [evenSplitQuery, setEvenSplitQuery] = useState("");
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -452,6 +456,7 @@ export function ReceiptSplitStep({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
+      setSelfId(user.id);
       const [{ data: selfData }, { data: friendshipData }, { data: externalData }] = await Promise.all([
         supabase
           .from("profiles")
@@ -564,7 +569,7 @@ export function ReceiptSplitStep({
           userId: friend.id || undefined,
           displayName: friend.display_name,
           venmoUsername: friend.venmo_username,
-          isOwner: false,
+          isOwner: !!friend.id && friend.id === selfId,
         });
       }
       if (!assigned.includes(clientId)) {
@@ -754,6 +759,7 @@ export function ReceiptSplitStep({
               onAdd={handleAddToEvenSplit}
               inputRef={evenSplitInputRef}
               placeholder="add by Venmo username"
+              selfId={selfId}
             />
           </div>
         )}
@@ -835,6 +841,7 @@ export function ReceiptSplitStep({
                       onAddAll={state.participants.length > 0 ? () => handleAddAllToItem(item.clientId) : undefined}
                       inputRef={itemInputRef}
                       placeholder="who had this?"
+                      selfId={selfId}
                     />
                   </div>
                 )}

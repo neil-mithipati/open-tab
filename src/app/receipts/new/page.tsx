@@ -23,6 +23,19 @@ export default function NewReceiptPage() {
   const nonOwnerParticipants = participants.filter((p) => !p.isOwner);
   const allItemsAssigned = items.length > 0 && items.every((item) => (assignments[item.clientId] ?? []).length >= 1);
 
+  // Mirror the recipient charge cards shown in ReceiptSplitStep, so the Done
+  // button can highlight once every recipient has been marked paid.
+  const anyItemsAssigned = items.some((item) => (assignments[item.clientId] ?? []).length >= 1);
+  const liveItemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
+  const liveTotal = total ?? liveItemSubtotal + (tax ?? 0) + (tip ?? 0);
+  const recipientCharges =
+    splitMode === "equal" && nonOwnerParticipants.length >= 1
+      ? computeEqualCharges(liveTotal, participants, merchantName, dateOfReceipt)
+      : splitMode === "by_item" && anyItemsAssigned && nonOwnerParticipants.length >= 1
+        ? computeItemCharges(items, assignments, participants, liveItemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt).filter((c) => c.amount > 0)
+        : [];
+  const allPaid = recipientCharges.length > 0 && recipientCharges.every((c) => paidClientIds.has(c.participant.clientId));
+
   function handleTogglePaid(clientId: string) {
     setPaidClientIds((prev) => {
       const next = new Set(prev);
@@ -179,7 +192,11 @@ export default function NewReceiptPage() {
           <button
             onClick={handleDone}
             disabled={saving}
-            className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors disabled:opacity-50"
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 ${
+              allPaid
+                ? "bg-emerald-500 text-white hover:bg-emerald-400"
+                : "glass-panel-sm text-secondary hover:text-primary"
+            }`}
             aria-label="Done"
           >
             <Check className="w-4 h-4" />
