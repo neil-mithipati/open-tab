@@ -229,13 +229,13 @@ function LiveChargeCard({
           })
       : [];
 
-  // Note defaults to the recipient's own ordered items; user can still edit it.
-  const [note, setNote] = useState(() =>
-    buildVenmoNote(
-      merchantName,
-      breakdown.map(({ item }) => ({ name: item.name, quantity: item.quantity }))
-    )
-  );
+  // Note defaults to the recipient's items (every item in an even split, or
+  // just their assigned items when itemized); the user can still edit it.
+  const noteItems =
+    splitMode === "by_item"
+      ? breakdown.map(({ item }) => ({ name: item.name, quantity: item.quantity }))
+      : items.map((item) => ({ name: item.name, quantity: item.quantity }));
+  const [note, setNote] = useState(() => buildVenmoNote(merchantName, noteItems));
 
   function openVenmo() {
     const { venmoLink, venmoAppLink } = buildVenmoLinks({
@@ -643,7 +643,7 @@ export function ReceiptSplitStep({
 
   const liveCharges: ComputedCharge[] = (() => {
     if (state.splitMode === "equal" && nonOwnerParticipants.length >= 1) {
-      return computeEqualCharges(total, state.participants, state.merchantName, state.dateOfReceipt);
+      return computeEqualCharges(total, state.participants, state.merchantName, state.items);
     }
     if (state.splitMode === "by_item" && anyItemsAssigned && nonOwnerParticipants.length >= 1) {
       const subtotal = state.items.reduce((s, it) => s + it.price * it.quantity, 0);

@@ -30,7 +30,7 @@ export default function NewReceiptPage() {
   const liveTotal = total ?? liveItemSubtotal + (tax ?? 0) + (tip ?? 0);
   const recipientCharges =
     splitMode === "equal" && nonOwnerParticipants.length >= 1
-      ? computeEqualCharges(liveTotal, participants, merchantName, dateOfReceipt)
+      ? computeEqualCharges(liveTotal, participants, merchantName, items)
       : splitMode === "by_item" && anyItemsAssigned && nonOwnerParticipants.length >= 1
         ? computeItemCharges(items, assignments, participants, liveItemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt).filter((c) => c.amount > 0)
         : [];
@@ -58,7 +58,7 @@ export default function NewReceiptPage() {
     // Compute charges only if split is complete
     let computed: ComputedCharge[] = [];
     if (splitMode === "equal" && nonOwnerParticipants.length >= 1) {
-      computed = computeEqualCharges(totalAmount, participants, merchantName, dateOfReceipt);
+      computed = computeEqualCharges(totalAmount, participants, merchantName, items);
     } else if (splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1) {
       computed = computeItemCharges(items, assignments, participants, itemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
     }
