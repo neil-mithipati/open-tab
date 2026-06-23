@@ -37,25 +37,25 @@ const fries: EditableItem = { clientId: "item-2", name: "Fries", price: 8.0, qua
 describe("computeEqualCharges", () => {
   it("splits total evenly among all participants, charges only non-owners", () => {
     // total=$30, 3 participants (owner + alice + bob)  → each owes $30/3=$10
-    const charges = computeEqualCharges(30, [owner, alice, bob], "Chipotle", "2025-05-24");
+    const charges = computeEqualCharges(30, [owner, alice, bob], "Chipotle", []);
     expect(charges).toHaveLength(2);
     expect(charges.find((c) => c.participant.clientId === "alice")?.amount).toBe(10);
     expect(charges.find((c) => c.participant.clientId === "bob")?.amount).toBe(10);
   });
 
   it("excludes the owner from the returned charge list", () => {
-    const charges = computeEqualCharges(30, [owner, alice], "Chipotle", null);
+    const charges = computeEqualCharges(30, [owner, alice], "Chipotle", []);
     expect(charges.every((c) => !c.participant.isOwner)).toBe(true);
   });
 
   it("returns empty array when there are no non-owner participants", () => {
-    const charges = computeEqualCharges(50, [owner], "Chipotle", null);
+    const charges = computeEqualCharges(50, [owner], "Chipotle", []);
     expect(charges).toHaveLength(0);
   });
 
   it("rounds per-person amount to 2 decimal places", () => {
     // $10 / 3 participants = $3.3333… → should round to $3.33
-    const charges = computeEqualCharges(10, [owner, alice, bob], "Test", null);
+    const charges = computeEqualCharges(10, [owner, alice, bob], "Test", []);
     expect(charges.every((c) => Number.isFinite(c.amount))).toBe(true);
     const str = charges[0].amount.toString();
     const decimals = str.includes(".") ? str.split(".")[1].length : 0;
@@ -63,16 +63,18 @@ describe("computeEqualCharges", () => {
   });
 
   it("includes venmoLink and venmoAppLink on each charge", () => {
-    const charges = computeEqualCharges(20, [owner, alice], "Cafe", "2025-05-24");
+    const charges = computeEqualCharges(20, [owner, alice], "Cafe", []);
     expect(charges[0].venmoLink).toMatch(/^https:\/\/venmo\.com/);
     expect(charges[0].venmoAppLink).toMatch(/^venmo:\/\//);
   });
 
-  it("encodes the merchant name but not the date in the venmo note", () => {
-    const charges = computeEqualCharges(20, [owner, alice], "Shake Shack", "2025-05-24");
+  it("encodes the merchant name and lists all items in the venmo note", () => {
+    const charges = computeEqualCharges(20, [owner, alice], "Shake Shack", [burger, fries]);
+    // Note: "Open Tab: Shake Shack (Burger, Fries)"
     expect(charges[0].venmoLink).toContain("Open%20Tab");
     expect(charges[0].venmoLink).toContain("Shake%20Shack");
-    expect(charges[0].venmoLink).not.toContain("2025-05-24");
+    expect(charges[0].venmoLink).toContain("Burger");
+    expect(charges[0].venmoLink).toContain("Fries");
   });
 });
 

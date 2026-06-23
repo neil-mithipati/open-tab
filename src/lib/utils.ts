@@ -67,13 +67,16 @@ export function computeEqualCharges(
   total: number,
   participants: FlowParticipant[],
   merchantName: string | null,
-  _date: string | null
+  items: EditableItem[]
 ): ComputedCharge[] {
   const nonOwners = participants.filter((p) => !p.isOwner);
   if (nonOwners.length === 0) return [];
   const perPerson = Math.round((total / participants.length) * 100) / 100;
-  // Even split has no per-person items, so the note is just the merchant.
-  const note = buildVenmoNote(merchantName, []);
+  // Even split shares the whole bill, so the note lists every item.
+  const note = buildVenmoNote(
+    merchantName,
+    items.map((it) => ({ name: it.name, quantity: it.quantity }))
+  );
   return nonOwners.map((p) => ({
     participant: p,
     amount: perPerson,
