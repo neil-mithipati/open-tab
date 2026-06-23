@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeEqualCharges, computeItemCharges, formatCurrency } from "@/lib/utils";
+import { buildVenmoNote, computeEqualCharges, computeItemCharges, formatCurrency } from "@/lib/utils";
 import type { FlowParticipant, EditableItem } from "@/types";
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────
@@ -68,11 +68,32 @@ describe("computeEqualCharges", () => {
     expect(charges[0].venmoAppLink).toMatch(/^venmo:\/\//);
   });
 
-  it("encodes merchant name and date in the venmo note", () => {
+  it("encodes the merchant name but not the date in the venmo note", () => {
     const charges = computeEqualCharges(20, [owner, alice], "Shake Shack", "2025-05-24");
     expect(charges[0].venmoLink).toContain("Open%20Tab");
     expect(charges[0].venmoLink).toContain("Shake%20Shack");
-    expect(charges[0].venmoLink).toContain("2025-05-24");
+    expect(charges[0].venmoLink).not.toContain("2025-05-24");
+  });
+});
+
+describe("buildVenmoNote", () => {
+  it("omits the parenthetical when there are no items", () => {
+    expect(buildVenmoNote("Chipotle", [])).toBe("Open Tab: Chipotle");
+  });
+
+  it("lists items, grouping duplicates with a (xN) suffix", () => {
+    const note = buildVenmoNote("Joe's", [
+      { name: "Burger", quantity: 1 },
+      { name: "Beer", quantity: 1 },
+      { name: "Beer", quantity: 1 },
+      { name: "Fries", quantity: 1 },
+    ]);
+    expect(note).toBe("Open Tab: Joe's (Burger, Beer (x2), Fries)");
+  });
+
+  it("sums quantities from item lines when grouping", () => {
+    const note = buildVenmoNote("Bar", [{ name: "Shot", quantity: 3 }]);
+    expect(note).toBe("Open Tab: Bar (Shot (x3))");
   });
 });
 

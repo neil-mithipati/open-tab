@@ -14,6 +14,7 @@ import {
   formatDate,
   computeEqualCharges,
   computeItemCharges,
+  buildVenmoNote,
 } from "@/lib/utils";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import type { Profile, FlowParticipant, ComputedCharge } from "@/types";
@@ -204,7 +205,7 @@ function LiveChargeCard({
   assignments,
   paid,
   onMarkPaid,
-  defaultNote,
+  merchantName,
 }: {
   charge: ComputedCharge;
   splitMode: "equal" | "by_item";
@@ -212,10 +213,8 @@ function LiveChargeCard({
   assignments: Record<string, string[]>;
   paid: boolean;
   onMarkPaid: () => void;
-  defaultNote: string;
+  merchantName: string | null;
 }) {
-  const [note, setNote] = useState(defaultNote);
-
   const breakdown =
     splitMode === "by_item"
       ? items
@@ -229,6 +228,14 @@ function LiveChargeCard({
             };
           })
       : [];
+
+  // Note defaults to the recipient's own ordered items; user can still edit it.
+  const [note, setNote] = useState(() =>
+    buildVenmoNote(
+      merchantName,
+      breakdown.map(({ item }) => ({ name: item.name, quantity: item.quantity }))
+    )
+  );
 
   function openVenmo() {
     const { venmoLink, venmoAppLink } = buildVenmoLinks({
@@ -938,7 +945,7 @@ export function ReceiptSplitStep({
                   });
                 }
               }}
-              defaultNote={`Open Tab: ${state.merchantName ?? "receipt"}${state.dateOfReceipt ? ` ${state.dateOfReceipt}` : ""}`}
+              merchantName={state.merchantName}
             />
           ))}
         </div>

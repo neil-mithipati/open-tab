@@ -44,16 +44,36 @@ export function isValidVenmoUsername(raw: string): boolean {
   return /^[a-zA-Z0-9_-]{5,16}$/.test(raw);
 }
 
+// Build the Venmo note: "Open Tab: Merchant (Item, Item (x2), …)".
+// Items the recipient ordered are grouped by name with a "(xN)" quantity
+// suffix when N > 1; an empty list omits the parenthetical entirely.
+export function buildVenmoNote(
+  merchantName: string | null,
+  orderedItems: { name: string; quantity: number }[]
+): string {
+  const base = `Open Tab: ${merchantName ?? "receipt"}`;
+  if (orderedItems.length === 0) return base;
+  const grouped = new Map<string, number>();
+  for (const it of orderedItems) {
+    grouped.set(it.name, (grouped.get(it.name) ?? 0) + it.quantity);
+  }
+  const list = Array.from(grouped, ([name, qty]) =>
+    qty > 1 ? `${name} (x${qty})` : name
+  ).join(", ");
+  return `${base} (${list})`;
+}
+
 export function computeEqualCharges(
   total: number,
   participants: FlowParticipant[],
   merchantName: string | null,
-  date: string | null
+  _date: string | null
 ): ComputedCharge[] {
   const nonOwners = participants.filter((p) => !p.isOwner);
   if (nonOwners.length === 0) return [];
   const perPerson = Math.round((total / participants.length) * 100) / 100;
-  const note = `Open Tab: ${merchantName ?? "receipt"}${date ? ` ${date}` : ""}`;
+  // Even split has no per-person items, so the note is just the merchant.
+  const note = buildVenmoNote(merchantName, []);
   return nonOwners.map((p) => ({
     participant: p,
     amount: perPerson,
@@ -70,23 +90,25 @@ export function computeItemCharges(
   tax: number,
   tip: number,
   merchantName: string | null,
-  date: string | null
+  _date: string | null
 ): ComputedCharge[] {
   const nonOwners = participants.filter((p) => !p.isOwner);
   const taxRate = subtotal > 0 ? tax / subtotal : 0;
   const tipRate = subtotal > 0 ? tip / subtotal : 0;
-  const note = `Open Tab: ${merchantName ?? "receipt"}${date ? ` ${date}` : ""}`;
 
   return nonOwners.map((p) => {
     let itemSubtotal = 0;
+    const ordered: { name: string; quantity: number }[] = [];
     for (const item of items) {
       const assignees = assignments[item.clientId] ?? [];
       if (assignees.includes(p.clientId) && assignees.length > 0) {
         const share = (item.price * item.quantity) / assignees.length;
         itemSubtotal += share;
+        ordered.push({ name: item.name, quantity: item.quantity });
       }
     }
     const amount = Math.round(itemSubtotal * (1 + taxRate + tipRate) * 100) / 100;
+    const note = buildVenmoNote(merchantName, ordered);
     return {
       participant: p,
       amount,
@@ -111,14 +133,13 @@ export function computeSharedClaimCharges(
   tip: number,
   ownerVenmoUsername: string,
   merchantName: string | null,
-  date: string | null
+  _date: string | null
 ): ComputedCharge[] {
   if (participants.length === 0) return [];
 
   const subtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
   const taxRate = subtotal > 0 ? tax / subtotal : 0;
   const tipRate = subtotal > 0 ? tip / subtotal : 0;
-  const note = `Open Tab: ${merchantName ?? "receipt"}${date ? ` ${date}` : ""}`;
 
   const unclaimedTotal = items.reduce((s, it) => {
     const assignees = assignments[it.clientId] ?? [];
@@ -130,14 +151,17 @@ export function computeSharedClaimCharges(
 
   return nonOwners.map((p) => {
     let itemSubtotal = 0;
+    const ordered: { name: string; quantity: number }[] = [];
     for (const item of items) {
       const assignees = assignments[item.clientId] ?? [];
       if (assignees.includes(p.clientId) && assignees.length > 0) {
         itemSubtotal += (item.price * item.quantity) / assignees.length;
+        ordered.push({ name: item.name, quantity: item.quantity });
       }
     }
     const preTax = itemSubtotal + unclaimedSharePerPerson;
     const amount = Math.round(preTax * (1 + taxRate + tipRate) * 100) / 100;
+    const note = buildVenmoNote(merchantName, ordered);
     return {
       participant: p,
       amount,
