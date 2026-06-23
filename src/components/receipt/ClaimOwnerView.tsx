@@ -9,6 +9,7 @@ import { buildVenmoLinks } from "@/lib/venmo/deepLink";
 import {
   computeSharedClaimCharges,
   formatCurrency,
+  buildVenmoNote,
 } from "@/lib/utils";
 import {
   getSharedReceipt,
@@ -108,10 +109,6 @@ export function ClaimOwnerView({ shareUrl, initial, initialCharges }: Props) {
     (it) => (receipt.assignments[it.id] ?? []).length === 0
   );
 
-  const note = `Open Tab: ${merchant}${
-    receipt.date_of_receipt ? ` ${receipt.date_of_receipt}` : ""
-  }`;
-
   return (
     <div className="min-h-dvh flex flex-col max-w-md mx-auto w-full px-4 pt-safe pt-4 pb-10">
       <div className="flex items-center justify-between mb-4">
@@ -167,7 +164,6 @@ export function ClaimOwnerView({ shareUrl, initial, initialCharges }: Props) {
           computed={computed}
           charges={charges}
           receiptId={receiptId}
-          note={note}
           isMobile={isMobile}
           onRefresh={refresh}
         />
@@ -283,7 +279,6 @@ function CollectBody({
   computed,
   charges,
   receiptId,
-  note,
   isMobile,
   onRefresh,
 }: {
@@ -291,7 +286,6 @@ function CollectBody({
   computed: ComputedCharge[];
   charges: ClaimChargeRow[];
   receiptId: string;
-  note: string;
   isMobile: boolean;
   onRefresh: () => void;
 }) {
@@ -347,6 +341,10 @@ function CollectBody({
         {owed.map((c) => {
           const pid = c.participant.dbId!;
           const paid = !!paidMap.get(pid);
+          const note = buildVenmoNote(
+            receipt.merchant_name,
+            claimedItemsFor(pid).map((it) => ({ name: it.name, quantity: it.quantity }))
+          );
           const remind = buildVenmoLinks({
             recipientUsername: c.participant.venmoUsername,
             amount: c.amount,
