@@ -9,12 +9,13 @@ import { deriveDisplayName } from "@/lib/utils";
 interface Props {
   userId: string;
   initialVenmo: string;
+  onSaved?: (venmoUsername: string) => void;
+  onCancel?: () => void;
 }
 
-export function ProfileForm({ userId, initialVenmo }: Props) {
+export function ProfileForm({ userId, initialVenmo, onSaved, onCancel }: Props) {
   const [venmo, setVenmo] = useState(initialVenmo);
   const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -24,7 +25,6 @@ export function ProfileForm({ userId, initialVenmo }: Props) {
 
     setLoading(true);
     setError("");
-    setSaved(false);
 
     const supabase = getSupabaseBrowserClient();
     const { error: err } = await supabase
@@ -32,9 +32,9 @@ export function ProfileForm({ userId, initialVenmo }: Props) {
       .update({ venmo_username: raw, display_name: deriveDisplayName(raw) })
       .eq("id", userId);
 
-    if (err) { setError("Failed to save. Try again."); }
-    else { setSaved(true); }
     setLoading(false);
+    if (err) { setError("Failed to save. Try again."); return; }
+    onSaved?.(raw);
   }
 
   return (
@@ -43,15 +43,22 @@ export function ProfileForm({ userId, initialVenmo }: Props) {
         label="Venmo username"
         prefix="@"
         value={venmo}
-        onChange={(e) => { setVenmo(e.target.value); setSaved(false); }}
+        onChange={(e) => setVenmo(e.target.value)}
         autoCapitalize="none"
         autoCorrect="off"
         spellCheck={false}
         error={error}
       />
-      <GlassButton type="submit" size="md" loading={loading}>
-        {saved ? "Saved!" : "Save changes"}
-      </GlassButton>
+      <div className="flex items-center gap-2">
+        <GlassButton type="submit" size="md" loading={loading}>
+          Save changes
+        </GlassButton>
+        {onCancel && (
+          <GlassButton type="button" variant="secondary" size="md" onClick={onCancel}>
+            Cancel
+          </GlassButton>
+        )}
+      </div>
     </form>
   );
 }
