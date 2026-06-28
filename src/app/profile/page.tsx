@@ -5,8 +5,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUserProfile, getUserFriends } from "@/lib/queries";
-import { animalEmoji } from "@/lib/utils";
-import { ProfileForm } from "@/components/profile/ProfileForm";
+import { ProfileIdentity } from "@/components/profile/ProfileIdentity";
 import { InviteQRCode } from "@/components/profile/InviteQRCode";
 import { FriendsManager } from "@/components/profile/FriendsManager";
 import { LogoutButton } from "@/components/profile/LogoutButton";
@@ -36,25 +35,12 @@ async function ProfileContent() {
 
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full glass-panel-sm flex items-center justify-center text-2xl flex-shrink-0">
-          {animalEmoji(profile.id)}
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-primary">@{profile.display_name}</h1>
-          <p className="text-sm text-secondary">{profile.email}</p>
-        </div>
-      </div>
-
-      <div>
-        <h2 className="text-lg font-semibold text-primary mb-3">Your details</h2>
-        <GlassCard className="p-5">
-          <ProfileForm
-            userId={profile.id}
-            initialVenmo={profile.venmo_username ?? ""}
-          />
-        </GlassCard>
-      </div>
+      <ProfileIdentity
+        userId={profile.id}
+        email={profile.email}
+        initialDisplayName={profile.display_name}
+        initialVenmo={profile.venmo_username ?? ""}
+      />
 
       <div>
         <h2 className="text-lg font-semibold text-primary mb-3">Add friends</h2>

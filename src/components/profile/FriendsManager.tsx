@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { removeFriend } from "@/app/actions/profile";
 import { isValidVenmoUsername } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 interface Friend {
   id: string;
@@ -22,6 +23,21 @@ export function FriendsManager({ userId, initialFriends }: Props) {
   const [friends, setFriends] = useState<Friend[]>(initialFriends);
   const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  async function handleRemove(friend: Friend) {
+    setRemovingId(friend.id);
+    setError("");
+    // Optimistic: drop from the list, restore it if the server rejects.
+    const prev = friends;
+    setFriends((cur) => cur.filter((f) => f.id !== friend.id));
+    const result = await removeFriend(friend.id);
+    if ("error" in result) {
+      setFriends(prev);
+      setError(result.error);
+    }
+    setRemovingId(null);
+  }
 
   function validateUsername(raw: string): string | null {
     if (!isValidVenmoUsername(raw)) {
@@ -129,7 +145,7 @@ export function FriendsManager({ userId, initialFriends }: Props) {
           {friends.map((friend) => (
             <div key={friend.id} className="flex items-center gap-3 py-2.5">
               <Avatar name={friend.display_name} size="sm" />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-primary truncate">
                   @{friend.venmo_username ?? friend.display_name}
                 </p>
@@ -137,6 +153,14 @@ export function FriendsManager({ userId, initialFriends }: Props) {
                   <p className="text-xs text-secondary truncate">{friend.display_name}</p>
                 )}
               </div>
+              <button
+                onClick={() => handleRemove(friend)}
+                disabled={removingId === friend.id}
+                className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-tertiary hover:text-primary hover:bg-white/8 transition-colors disabled:opacity-40"
+                aria-label={`Remove ${friend.display_name}`}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           ))}
         </div>
