@@ -8,11 +8,13 @@ import {
 } from "@/lib/supabase/server";
 import { deriveDisplayName } from "@/lib/utils";
 
-export async function saveVenmoUsername(raw: string): Promise<{ error: string } | never> {
+// Persist the current user's Venmo username (and derived display name) without
+// navigating. Used by the guest share flow, which needs a Venmo on the owner
+// before sharing but should stay on the page.
+export async function setVenmoUsername(raw: string): Promise<{ ok: true } | { error: string }> {
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/auth");
+  if (!user) return { error: "Not signed in." };
 
   const displayName = deriveDisplayName(raw);
   const { error } = await supabase
@@ -23,10 +25,15 @@ export async function saveVenmoUsername(raw: string): Promise<{ error: string } 
     );
 
   if (error) {
-    console.error("[saveVenmoUsername] Supabase error:", error);
+    console.error("[setVenmoUsername] Supabase error:", error);
     return { error: "Something went wrong. Try again." };
   }
+  return { ok: true };
+}
 
+export async function saveVenmoUsername(raw: string): Promise<{ error: string } | never> {
+  const result = await setVenmoUsername(raw);
+  if ("error" in result) return result;
   redirect("/dashboard");
 }
 

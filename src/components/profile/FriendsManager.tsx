@@ -2,16 +2,10 @@
 
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { removeFriend } from "@/app/actions/profile";
+import { addFriendByUsername, type Friend } from "@/lib/friends";
 import { isValidVenmoUsername } from "@/lib/utils";
 import { Plus, X } from "lucide-react";
-
-interface Friend {
-  id: string;
-  display_name: string;
-  venmo_username: string | null;
-}
 
 interface Props {
   userId: string;
@@ -56,58 +50,17 @@ export function FriendsManager({ userId, initialFriends }: Props) {
     setError("");
     setAdding(true);
 
-    const supabase = getSupabaseBrowserClient();
-
-    // Look up the profile by Venmo username
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, display_name, venmo_username")
-      .ilike("venmo_username", username)
-      .neq("id", userId)
-      .single();
-
-    if (!profile) {
-      // Not on Open Tab yet — save as an external contact by Venmo username
-      const { data: contacts, error: insertError } = await supabase
-        .from("external_contacts")
-        .insert({ user_id: userId, venmo_username: username })
-        .select("id, venmo_username");
-
-      if (insertError) {
-        setError(insertError.code === "23505" ? "Already in your friends list." : "Something went wrong. Try again.");
-        setAdding(false);
-        return;
-      }
-
-      const contact = contacts?.[0];
-      const contactId = contact?.id ?? crypto.randomUUID();
-      setFriends((prev) => [...prev, { id: contactId, display_name: username, venmo_username: username }]);
-      setQuery("");
-      setAdding(false);
-      return;
-    }
-
-    if (friends.some((f) => f.id === profile.id)) {
-      setError("Already in your friends list.");
-      setAdding(false);
-      return;
-    }
-
-    // Bidirectional insert via the DB helper
-    const { error: rpcError } = await supabase.rpc("add_friendship", {
-      a: userId,
-      b: profile.id,
-    });
-
-    if (rpcError) {
-      setError("Something went wrong. Try again.");
-      setAdding(false);
-      return;
-    }
-
-    setFriends((prev) => [...prev, profile as Friend]);
-    setQuery("");
+    const result = await addFriendByUsername(userId, username);
     setAdding(false);
+
+    if ("error" in result) { setError(result.error); return; }
+    if ("already" in result || friends.some((f) => f.id === result.friend.id)) {
+      setError("Already in your friends list.");
+      return;
+    }
+
+    setFriends((prev) => [...prev, result.friend]);
+    setQuery("");
   }
 
   return (

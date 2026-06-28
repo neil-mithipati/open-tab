@@ -6,8 +6,9 @@ import { useReceiptEditFlow } from "@/hooks/useReceiptEditFlow";
 import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { computeEqualCharges, computeItemCharges } from "@/lib/utils";
-import { shareReceipt } from "@/app/actions/claim";
-import type { ComputedCharge, FlowParticipant } from "@/types";
+import { persistAndShare } from "@/lib/receiptShare";
+import { VenmoPromptModal } from "@/components/receipt/VenmoPromptModal";
+import type { ComputedCharge } from "@/types";
 import type { ReceiptFlowState } from "@/hooks/useReceiptFlow";
 import { X, Check, AlignJustify, Image as ImageIcon, Share2 } from "lucide-react";
 
@@ -20,6 +21,7 @@ export function ReceiptEditPage({ seed }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [showVenmoPrompt, setShowVenmoPrompt] = useState(false);
   const [paidClientIds, setPaidClientIds] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"parsed" | "original">("parsed");
 
@@ -161,80 +163,16 @@ export function ReceiptEditPage({ seed }: Props) {
   }
 
   // Share for "crowd-claim": persist the current items/owner, then open the
-  // receipt for claiming. No claims exist yet, so a clean rewrite is safe.
+  // receipt for claiming. Guests are prompted for a Venmo first via the modal.
   async function handleShare() {
     if (!receiptId) return;
     setSharing(true);
-
-    const supabase = getSupabaseBrowserClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSharing(false); return; }
-
-    // Ensure an owner participant exists so unclaimed items split across the
-    // owner too, and so closeClaiming knows who to reimburse.
-    let parts: FlowParticipant[] = participants;
-    if (!parts.some((p) => p.isOwner)) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name, venmo_username")
-        .eq("id", user.id)
-        .single();
-      if (profile?.venmo_username) {
-        parts = [...parts, {
-          clientId: "owner",
-          type: "friend",
-          userId: user.id,
-          displayName: profile.display_name,
-          venmoUsername: profile.venmo_username,
-          isOwner: true,
-        }];
-      }
-    }
-
-    const itemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
-    const totalAmount = total ?? itemSubtotal + (tax ?? 0) + (tip ?? 0);
-
-    await supabase.from("receipt_participants").delete().eq("receipt_id", receiptId);
-    await supabase.from("receipt_items").delete().eq("receipt_id", receiptId);
-    await Promise.all([
-      items.length > 0
-        ? supabase.from("receipt_items").insert(
-            items.map((item, i) => ({
-              receipt_id: receiptId,
-              name: item.name,
-              price: item.price,
-              quantity: item.quantity,
-              sort_order: i,
-            }))
-          )
-        : Promise.resolve(),
-      parts.length > 0
-        ? supabase.from("receipt_participants").insert(
-            parts.map((p) => ({
-              receipt_id: receiptId,
-              user_id: p.userId ?? null,
-              venmo_username: p.venmoUsername,
-              display_name: p.displayName,
-              is_owner: p.isOwner,
-            }))
-          )
-        : Promise.resolve(),
-      supabase.from("receipts").update({
-        split_mode: "by_item",
-        merchant_name: merchantName,
-        subtotal: Math.round(itemSubtotal * 100) / 100,
-        tax,
-        tip,
-        total: Math.round(totalAmount * 100) / 100,
-      }).eq("id", receiptId),
-    ]);
-
-    const result = await shareReceipt(receiptId);
+    const result = await persistAndShare(flow.state);
     setSharing(false);
-    if ("url" in result) {
-      try { await navigator.clipboard.writeText(result.url); } catch {}
-      router.refresh();
-    }
+    if ("needsVenmo" in result) { setShowVenmoPrompt(true); return; }
+    if ("error" in result) return;
+    try { await navigator.clipboard.writeText(result.url); } catch {}
+    router.refresh();
   }
 
   return (
@@ -301,6 +239,13 @@ export function ReceiptEditPage({ seed }: Props) {
           onViewChange={setView}
         />
       </div>
+
+      {showVenmoPrompt && (
+        <VenmoPromptModal
+          onSaved={() => { setShowVenmoPrompt(false); handleShare(); }}
+          onCancel={() => setShowVenmoPrompt(false)}
+        />
+      )}
     </div>
   );
 }

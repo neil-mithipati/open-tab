@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const PROTECTED = ["/dashboard", "/receipts", "/profile"];
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,7 +31,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth", request.url));
   }
 
-  if (user && path === "/auth") {
+  // Permanent accounts skip /auth; anonymous (guest) users may visit it to upgrade.
+  if (user && !user.is_anonymous && path === "/auth") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
