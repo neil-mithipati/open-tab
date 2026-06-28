@@ -19,13 +19,20 @@ export function EmailForm() {
     setError("");
 
     const supabase = getSupabaseBrowserClient();
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
-      },
-    });
+    const emailRedirectTo = `${window.location.origin}/api/auth/callback`;
+
+    // An anonymous (guest) session upgrades in place via updateUser so their
+    // existing tabs and friends carry over; everyone else gets a magic link.
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error: err } = user?.is_anonymous
+      ? await supabase.auth.updateUser(
+          { email: email.trim() },
+          { emailRedirectTo }
+        )
+      : await supabase.auth.signInWithOtp({
+          email: email.trim(),
+          options: { shouldCreateUser: true, emailRedirectTo },
+        });
 
     if (err) {
       setError(err.message);

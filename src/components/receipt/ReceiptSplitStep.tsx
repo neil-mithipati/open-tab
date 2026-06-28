@@ -19,6 +19,7 @@ import {
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import type { Profile, FlowParticipant, ComputedCharge } from "@/types";
 import { VenmoIcon } from "@/components/ui/VenmoIcon";
+import { addFriendByUsername } from "@/lib/friends";
 import { buildVenmoLinks } from "@/lib/venmo/deepLink";
 import { parseQuantity, parseAmount } from "@/lib/receiptValidation";
 import { X, UserPlus, Users2, Check } from "lucide-react";
@@ -555,8 +556,40 @@ export function ReceiptSplitStep({
     setItemQuery("");
   }
 
+  // Persist a newly-typed Venmo username to the user's friend list so it's
+  // available on future checks (applies to guests and logged-in users alike).
+  // Existing friends are skipped; the write is fire-and-forget.
+  function maybeAddFriend(venmoUsername: string) {
+    if (!selfId) return;
+    const clean = venmoUsername.trim().replace(/^@/, "");
+    if (!clean) return;
+    const exists = friends.some(
+      (f) => (f.venmo_username ?? "").toLowerCase() === clean.toLowerCase()
+    );
+    if (exists) return;
+    addFriendByUsername(selfId, clean)
+      .then((res) => {
+        if ("friend" in res) {
+          setFriends((prev) => [
+            ...prev,
+            {
+              id: res.friend.id,
+              display_name: res.friend.display_name,
+              venmo_username: res.friend.venmo_username,
+              email: "",
+              invite_token: "",
+              created_at: "",
+              updated_at: "",
+            },
+          ]);
+        }
+      })
+      .catch(() => {}); // best-effort; a failed auto-add shouldn't disrupt splitting
+  }
+
   function handleAddToEvenSplit(p: Omit<FlowParticipant, "clientId">) {
     addParticipant(p);
+    maybeAddFriend(p.venmoUsername);
     setTimeout(() => evenSplitInputRef.current?.focus(), 50);
   }
 
@@ -601,6 +634,7 @@ export function ReceiptSplitStep({
     if (!assigned.includes(clientId)) {
       toggleAssignment(itemClientId, clientId);
     }
+    maybeAddFriend(p.venmoUsername);
     setActiveItemId(null);
     setItemQuery("");
   }

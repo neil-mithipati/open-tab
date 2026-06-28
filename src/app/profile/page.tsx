@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUserProfile, getUserFriends } from "@/lib/queries";
 import { ProfileIdentity } from "@/components/profile/ProfileIdentity";
@@ -25,6 +27,22 @@ async function ProfileContent() {
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
+
+  // Guests have no profile to manage — prompt them to create an account.
+  if (user.is_anonymous) {
+    return (
+      <GlassCard className="p-8 flex flex-col items-center text-center gap-4">
+        <p className="text-secondary">
+          Create an account to keep a history of your tabs and friends
+        </p>
+        <Link href="/auth" className="w-full">
+          <GlassButton variant="primary" size="md" className="w-full">
+            Create account
+          </GlassButton>
+        </Link>
+      </GlassCard>
+    );
+  }
 
   const [profile, friends] = await Promise.all([
     getUserProfile(user.id),

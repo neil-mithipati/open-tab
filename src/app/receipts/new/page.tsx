@@ -8,15 +8,30 @@ import { ScanningStep } from "@/components/receipt/ScanningStep";
 import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { computeEqualCharges, computeItemCharges } from "@/lib/utils";
+import { persistAndShare } from "@/lib/receiptShare";
+import { VenmoPromptModal } from "@/components/receipt/VenmoPromptModal";
 import type { ComputedCharge } from "@/types";
-import { X, Check, AlignJustify, Image as ImageIcon } from "lucide-react";
+import { X, Check, AlignJustify, Image as ImageIcon, Share2 } from "lucide-react";
 
 export default function NewReceiptPage() {
   const flow = useReceiptFlow();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [showVenmoPrompt, setShowVenmoPrompt] = useState(false);
   const [paidClientIds, setPaidClientIds] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"parsed" | "original">("parsed");
+
+  async function doShare() {
+    setSharing(true);
+    const result = await persistAndShare(flow.state);
+    setSharing(false);
+    if ("needsVenmo" in result) { setShowVenmoPrompt(true); return; }
+    if ("error" in result) return;
+    try { await navigator.clipboard.writeText(result.url); } catch {}
+    flow.reset();
+    router.push(`/receipts/${receiptId}`);
+  }
 
   const { step, splitMode, participants, items, assignments, tax, tip, total, receiptId, merchantName, dateOfReceipt } = flow.state;
 
@@ -189,18 +204,29 @@ export default function NewReceiptPage() {
           <div />
         )}
         {step === "split" ? (
-          <button
-            onClick={handleDone}
-            disabled={saving}
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 ${
-              allPaid
-                ? "bg-emerald-500 text-white hover:bg-emerald-400"
-                : "glass-panel-sm text-secondary hover:text-primary"
-            }`}
-            aria-label="Done"
-          >
-            <Check className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={doShare}
+              disabled={saving || sharing}
+              className="w-9 h-9 rounded-full glass-panel-sm flex items-center justify-center text-secondary hover:text-primary transition-colors disabled:opacity-50"
+              aria-label="Share to collect"
+              title="Share a link so friends can claim their items"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleDone}
+              disabled={saving}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 ${
+                allPaid
+                  ? "bg-emerald-500 text-white hover:bg-emerald-400"
+                  : "glass-panel-sm text-secondary hover:text-primary"
+              }`}
+              aria-label="Done"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+          </div>
         ) : (
           <div className="w-9 h-9" />
         )}
@@ -221,6 +247,13 @@ export default function NewReceiptPage() {
           />
         )}
       </div>
+
+      {showVenmoPrompt && (
+        <VenmoPromptModal
+          onSaved={() => { setShowVenmoPrompt(false); doShare(); }}
+          onCancel={() => setShowVenmoPrompt(false)}
+        />
+      )}
     </div>
   );
 }

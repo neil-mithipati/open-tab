@@ -31,7 +31,8 @@ async function DashboardContent() {
     getUserReceipts(user.id),
   ]);
 
-  if (!profile?.venmo_username) redirect("/auth/venmo");
+  // Guests (anonymous) set their Venmo at share time, not during onboarding.
+  if (!user.is_anonymous && !profile?.venmo_username) redirect("/auth/venmo");
 
   return (
     <div className="flex flex-col gap-6 pb-10">

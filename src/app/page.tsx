@@ -3,10 +3,10 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { GlassButton } from "@/components/ui/GlassButton";
 import { Camera, Users } from "lucide-react";
 import { VenmoIcon } from "@/components/ui/VenmoIcon";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { GuestStartButton } from "@/components/auth/GuestStartButton";
 
 export default function LandingPage() {
   // Static shell renders the landing page; the dynamic gate redirects an
@@ -61,9 +61,7 @@ function Landing() {
       </GlassCard>
 
       <div className="w-full max-w-sm flex flex-col items-center gap-3">
-        <Link href="/auth">
-          <GlassButton size="md" className="px-8">Get started</GlassButton>
-        </Link>
+        <GuestStartButton />
         <Link href="/auth" className="text-center text-sm text-secondary">
           Already have an account?{" "}
           <span className="text-brand underline">Sign in</span>
