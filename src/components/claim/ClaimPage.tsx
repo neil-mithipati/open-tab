@@ -38,6 +38,7 @@ export function ClaimPage({ token, initial }: Props) {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [joining, setJoining] = useState(false);
+  const [introDismissed, setIntroDismissed] = useState(false);
   const [, startRefresh] = useTransition();
 
   // Restore a prior identity for this receipt.
@@ -191,6 +192,42 @@ export function ClaimPage({ token, initial }: Props) {
   }
 
   // -- status === 'shared' (link live, friends claiming) ----------------------
+
+  // First arrival: a welcome modal over the empty gradient, before claiming.
+  if (!me && !introDismissed) {
+    return (
+      <Centered>
+        <GlassCard className="w-full max-w-sm p-8 flex flex-col items-center gap-5 text-center">
+          <h1
+            className="text-5xl font-black tracking-tight animate-gradient"
+            style={{
+              fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
+              letterSpacing: "-0.03em",
+            }}
+          >
+            Open Tab
+          </h1>
+          <Avatar name={receipt.owner.display_name} size="lg" />
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl font-bold text-primary">
+              @{receipt.owner.venmo_username ?? receipt.owner.display_name} shared
+              a check with you!
+            </h2>
+            <p className="text-secondary text-sm">
+              Click continue to start claiming your items.
+            </p>
+          </div>
+          <GlassButton
+            size="lg"
+            className="w-full"
+            onClick={() => setIntroDismissed(true)}
+          >
+            Continue
+          </GlassButton>
+        </GlassCard>
+      </Centered>
+    );
+  }
 
   // Not yet identified: ask for a Venmo username.
   if (!me) {

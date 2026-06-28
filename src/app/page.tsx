@@ -1,10 +1,32 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { Camera, Users } from "lucide-react";
 import { VenmoIcon } from "@/components/ui/VenmoIcon";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export default function LandingPage() {
+  // Static shell renders the landing page; the dynamic gate redirects an
+  // already-logged-in account to Home before it's shown.
+  return (
+    <Suspense fallback={<Landing />}>
+      <LandingGate />
+    </Suspense>
+  );
+}
+
+async function LandingGate() {
+  await connection();
+  const supabase = await getSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/dashboard");
+  return <Landing />;
+}
+
+function Landing() {
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-5 py-12 gap-7">
       <div className="text-center">
