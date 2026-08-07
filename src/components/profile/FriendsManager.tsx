@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Avatar } from "@/components/ui/Avatar";
+import { useMemo, useState } from "react";
 import { removeFriend } from "@/app/actions/profile";
 import { addFriendByUsername, type Friend } from "@/lib/friends";
 import { isValidVenmoUsername } from "@/lib/utils";
@@ -18,6 +17,16 @@ export function FriendsManager({ userId, initialFriends }: Props) {
   const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const sortedFriends = useMemo(
+    () =>
+      [...friends].sort((a, b) =>
+        a.display_name.localeCompare(b.display_name, undefined, {
+          sensitivity: "base",
+        })
+      ),
+    [friends]
+  );
 
   async function handleRemove(friend: Friend) {
     setRemovingId(friend.id);
@@ -94,10 +103,9 @@ export function FriendsManager({ userId, initialFriends }: Props) {
 
       {/* Friends list */}
       {friends.length > 0 && (
-        <div className="flex flex-col divide-y divide-white/8">
-          {friends.map((friend) => (
+        <div className="flex flex-col divide-y divide-white/8 max-h-64 overflow-y-auto">
+          {sortedFriends.map((friend) => (
             <div key={friend.id} className="flex items-center gap-3 py-2.5">
-              <Avatar name={friend.display_name} size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-primary truncate">
                   @{friend.venmo_username ?? friend.display_name}
