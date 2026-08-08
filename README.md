@@ -14,6 +14,8 @@ Splitting a dinner bill is a solved social problem and an unsolved technical one
 
 Photograph the receipt. A vision model reads it and pulls out every line item, the subtotal, tax, and tip. Choose equal split or assign specific items to each person. The app computes each friend's share and generates a deep link straight into Venmo with the amount and note pre-filled — one tap per person to send the request.
 
+For groups, the person who paid can skip the assigning entirely: share a link or QR code and let everyone **claim their own items** with no login. When claiming closes, the app splits anything left over, tallies each person, and hands the owner one-tap Venmo requests to collect.
+
 **Stack:** Next.js 16 + React 19 + TypeScript + Tailwind CSS v4 + Supabase (PostgreSQL + Auth + Storage) + Gemini 2.0 Flash
 
 <p align="center">
@@ -24,6 +26,29 @@ Photograph the receipt. A vision model reads it and pulls out every line item, t
   <img src="public/home-page.png" alt="Home page" width="49%" />
   <img src="public/profile-page.png" alt="Profile page" width="49%" />
 </p>
+
+### User journeys
+
+- **Guest — zero-signup split.** Tap **Get started** on the landing page to open an anonymous session. Scan, split, and share a check immediately; Venmo is only requested at share time. Upgrade to a full account later to keep history.
+- **New account — full onboarding.** Sign in with an email one-time code, add a Venmo username once, and land on the dashboard with a persistent history of every tab.
+- **Scan → split → charge (the core flow).** Capture a receipt → Gemini itemizes it → edit anything that's off → split equally or assign items per person → tap Venmo to charge each friend and mark them paid. The whole flow survives a page refresh.
+- **Crowd-claim share.** Share a receipt's link or QR code. Anyone opens it — no login — and claims their own items. The owner watches claims arrive live, closes claiming, and collects each person's total through pre-filled Venmo requests; unclaimed items fall back to the owner.
+- **Friends & invites.** Add friends by Venmo username (a real two-way friendship if they're on Open Tab, otherwise a saved contact) or share a QR invite link to connect. Saved friends speed up assigning on future splits.
+- **Revisit a tab.** Every tab lives on the dashboard with a status badge. Reopen it to keep editing, check claim progress, or re-send a charge — access is limited to the owner and listed participants.
+
+### Key features
+
+| Feature | Benefit |
+|---|---|
+| AI receipt scanning (Gemini 2.0 Flash) | Turns a photo into itemized data in seconds — no manual typing, handles printed and handwritten receipts |
+| Equal & by-item splitting | Fits any table, from an even split to everyone paying for exactly what they ordered |
+| Proportional tax & tip | Each person's tax and tip scale to their share, so the split is actually fair |
+| One-tap Venmo deep links | Opens Venmo with amount, note, and username pre-filled — the payment request is one tap, not five |
+| Crowd-claim share links | Groups self-serve their own items with no login, removing the paying person's assigning work entirely |
+| Guest mode (anonymous auth) | Split a bill with zero signup friction; upgrade to a full account only when you want history |
+| Friends & QR invites | Reusable contacts and quick connections make repeat splits faster |
+| Persistent flow state | A mid-split page refresh never loses progress — the flow resumes exactly where it left off |
+| Tab history dashboard | Every past split stays organized and re-openable, with clear paid/unpaid status |
 
 ---
 
