@@ -1,10 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import {
   getSupabaseServerClient,
   getSupabaseServiceClient,
 } from "@/lib/supabase/server";
+import { userReceiptsTag } from "@/lib/cacheTags";
 import {
   isValidVenmoUsername,
   deriveDisplayName,
@@ -291,6 +292,8 @@ export async function shareReceipt(
   if (error) return { error: "Couldn't share. Try again." };
 
   revalidatePath(`/receipts/${receiptId}`);
+  // The status shown on the owner's dashboard just changed.
+  updateTag(userReceiptsTag(ctx.receipt.created_by));
   return { url: buildTabUrl(token) };
 }
 
@@ -311,6 +314,7 @@ export async function reopenEditing(
   if (error) return { error: "Couldn't reopen. Try again." };
 
   revalidatePath(`/receipts/${receiptId}`);
+  updateTag(userReceiptsTag(ctx.receipt.created_by));
   return {};
 }
 
@@ -409,6 +413,7 @@ export async function closeClaiming(
   // lock claiming and flip the views to collection.
 
   revalidatePath(`/receipts/${receiptId}`);
+  updateTag(userReceiptsTag(ctx.receipt.created_by));
   return {};
 }
 
@@ -467,5 +472,6 @@ export async function markClaimChargePaid(
     .eq("id", receiptId);
 
   revalidatePath(`/receipts/${receiptId}`);
+  updateTag(userReceiptsTag(ctx.receipt.created_by));
   return {};
 }

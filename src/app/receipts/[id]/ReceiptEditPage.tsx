@@ -7,6 +7,7 @@ import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { computeEqualCharges, computeItemCharges } from "@/lib/utils";
 import { persistAndShare } from "@/lib/receiptShare";
+import { refreshUserCaches } from "@/app/actions/cache";
 import { VenmoPromptModal } from "@/components/receipt/VenmoPromptModal";
 import type { ComputedCharge } from "@/types";
 import type { ReceiptFlowState } from "@/hooks/useReceiptFlow";
@@ -158,6 +159,10 @@ export function ReceiptEditPage({ seed }: Props) {
         total: Math.round(totalAmount * 100) / 100,
       }).eq("id", receiptId),
     ]);
+
+    // Written from the browser, so the cached tab list still holds the old
+    // totals and status — drop it before heading back to the dashboard.
+    await refreshUserCaches();
 
     router.push("/dashboard");
   }

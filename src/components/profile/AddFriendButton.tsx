@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { refreshUserCaches } from "@/app/actions/cache";
 import { UserPlus, Check } from "lucide-react";
 
 interface Props {
@@ -17,6 +18,7 @@ export function AddFriendButton({ inviterId, currentUserId }: Props) {
     setStatus("loading");
     const supabase = getSupabaseBrowserClient();
     await supabase.rpc("add_friendship", { a: currentUserId, b: inviterId });
+    await refreshUserCaches();
     setStatus("done");
   }
 

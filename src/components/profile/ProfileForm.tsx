@@ -4,6 +4,7 @@ import { useState } from "react";
 import { GlassInput } from "@/components/ui/GlassInput";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { refreshUserCaches } from "@/app/actions/cache";
 import { deriveDisplayName } from "@/lib/utils";
 
 interface Props {
@@ -32,8 +33,13 @@ export function ProfileForm({ userId, initialVenmo, onSaved, onCancel }: Props) 
       .update({ venmo_username: raw, display_name: deriveDisplayName(raw) })
       .eq("id", userId);
 
+    if (err) { setLoading(false); setError("Failed to save. Try again."); return; }
+
+    // The profile is written from the browser; without this the server keeps
+    // serving the cached one (and treats the user as having no Venmo yet).
+    await refreshUserCaches();
+
     setLoading(false);
-    if (err) { setError("Failed to save. Try again."); return; }
     onSaved?.(raw);
   }
 

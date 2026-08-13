@@ -9,10 +9,18 @@ export async function getSupabaseServerClient() {
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: (list) =>
-          list.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          ),
+        setAll: (list) => {
+          try {
+            list.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Called during a Server Component render, where cookies are
+            // read-only. The proxy refreshes the session on every request and
+            // writes the cookies there, so it's safe to skip — swallowing this
+            // keeps a token refresh from failing the whole `getUser()` call.
+          }
+        },
       },
     }
   );

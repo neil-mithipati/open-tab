@@ -1,11 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import {
   getSupabaseServerClient,
   getSupabaseServiceClient,
 } from "@/lib/supabase/server";
+import { userFriendsTag, userProfileTag } from "@/lib/cacheTags";
 import { deriveDisplayName } from "@/lib/utils";
 
 // Persist the current user's Venmo username (and derived display name) without
@@ -28,6 +29,10 @@ export async function setVenmoUsername(raw: string): Promise<{ ok: true } | { er
     console.error("[setVenmoUsername] Supabase error:", error);
     return { error: "Something went wrong. Try again." };
   }
+
+  // Without this the dashboard reads the pre-save profile, sees no Venmo
+  // username, and sends the user straight back to this onboarding step.
+  updateTag(userProfileTag(user.id));
   return { ok: true };
 }
 
@@ -60,6 +65,6 @@ export async function removeFriend(friendId: string): Promise<{ error: string } 
     return { error: "Couldn't remove friend. Try again." };
   }
 
-  revalidatePath("/profile");
+  updateTag(userFriendsTag(user.id));
   return { ok: true };
 }

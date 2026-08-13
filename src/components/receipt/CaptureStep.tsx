@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { refreshUserCaches } from "@/app/actions/cache";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import { Camera } from "lucide-react";
 
@@ -32,6 +33,9 @@ export function CaptureStep({ flow }: { flow: Flow }) {
 
     if (!receipt) { flow.goTo("capture"); setError("Failed to create receipt."); return; }
     flow.update("receiptId", receipt.id);
+    // The tab exists from here on, even if the user abandons the scan, so the
+    // cached dashboard list is already out of date.
+    refreshUserCaches();
 
     // upload image
     const ext = file.name.split(".").pop() ?? "jpg";

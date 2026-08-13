@@ -9,6 +9,7 @@ import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { computeEqualCharges, computeItemCharges } from "@/lib/utils";
 import { persistAndShare } from "@/lib/receiptShare";
+import { refreshUserCaches } from "@/app/actions/cache";
 import { VenmoPromptModal } from "@/components/receipt/VenmoPromptModal";
 import type { ComputedCharge } from "@/types";
 import { X, Check, AlignJustify, Image as ImageIcon, Share2 } from "lucide-react";
@@ -164,6 +165,10 @@ export default function NewReceiptPage() {
         total: Math.round(totalAmount * 100) / 100,
       }).eq("id", receiptId),
     ]);
+
+    // Everything above was written from the browser, so drop the cached tab
+    // list before navigating or the dashboard renders without this tab.
+    await refreshUserCaches();
 
     flow.reset();
     router.push("/dashboard");

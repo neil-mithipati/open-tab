@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { removeFriend } from "@/app/actions/profile";
+import { refreshUserCaches } from "@/app/actions/cache";
 import { addFriendByUsername, type Friend } from "@/lib/friends";
 import { isValidVenmoUsername } from "@/lib/utils";
 import { Plus, X } from "lucide-react";
@@ -70,6 +71,9 @@ export function FriendsManager({ userId, initialFriends }: Props) {
 
     setFriends((prev) => [...prev, result.friend]);
     setQuery("");
+    // The friendship is written from the browser, so the cached list on the
+    // server would otherwise stay one friend behind.
+    refreshUserCaches();
   }
 
   return (

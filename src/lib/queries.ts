@@ -1,5 +1,6 @@
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
+import { userFriendsTag, userProfileTag, userReceiptsTag } from "@/lib/cacheTags";
 
 // Service client — no cookies, no session, bypasses RLS.
 // Safe here because userId is always sourced from a verified server session
@@ -24,6 +25,7 @@ type Receipt = {
 export async function getUserReceipts(userId: string): Promise<Receipt[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(userReceiptsTag(userId));
 
   const supabase = serviceClient();
 
@@ -80,6 +82,7 @@ type FriendProfile = { id: string; display_name: string; venmo_username: string 
 export async function getUserFriends(userId: string): Promise<FriendProfile[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag(userFriendsTag(userId));
 
   const supabase = serviceClient();
 
@@ -109,6 +112,7 @@ export async function getUserFriends(userId: string): Promise<FriendProfile[]> {
 export async function getUserProfile(userId: string) {
   "use cache";
   cacheLife("minutes");
+  cacheTag(userProfileTag(userId));
 
   const { data } = await serviceClient()
     .from("profiles")
