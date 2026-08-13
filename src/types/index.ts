@@ -102,6 +102,22 @@ export interface FlowParticipant {
   isOwner: boolean;
 }
 
+// Friend groups -------------------------------------------------------------
+
+// Members are a snapshot: a Venmo username plus the label it was saved under.
+// They're resolved against the live friends list when a group is expanded onto
+// a check, so a member who isn't (or is no longer) a friend still works.
+export interface FriendGroupMember {
+  venmoUsername: string;
+  displayName: string | null;
+}
+
+export interface FriendGroup {
+  id: string;
+  name: string;
+  members: FriendGroupMember[];
+}
+
 export interface ComputedCharge {
   participant: FlowParticipant;
   amount: number;

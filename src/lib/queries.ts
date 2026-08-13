@@ -1,6 +1,13 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
-import { userFriendsTag, userProfileTag, userReceiptsTag } from "@/lib/cacheTags";
+import {
+  userFriendGroupsTag,
+  userFriendsTag,
+  userProfileTag,
+  userReceiptsTag,
+} from "@/lib/cacheTags";
+import { mapGroupRows } from "@/lib/friendGroups";
+import type { FriendGroup } from "@/types";
 
 // Service client — no cookies, no session, bypasses RLS.
 // Safe here because userId is always sourced from a verified server session
@@ -107,6 +114,19 @@ export async function getUserFriends(userId: string): Promise<FriendProfile[]> {
   }));
 
   return [...realFriends, ...externalFriends];
+}
+
+export async function getUserFriendGroups(userId: string): Promise<FriendGroup[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(userFriendGroupsTag(userId));
+
+  const { data } = await serviceClient()
+    .from("friend_groups")
+    .select("id, name, friend_group_members(venmo_username, display_name)")
+    .eq("user_id", userId);
+
+  return mapGroupRows(data);
 }
 
 // A fresh signature on every render makes the URL unique, so neither the image

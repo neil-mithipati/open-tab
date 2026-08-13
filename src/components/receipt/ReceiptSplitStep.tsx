@@ -6,8 +6,9 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
-import { GlassInput } from "@/components/ui/GlassInput";
 import { Avatar } from "@/components/ui/Avatar";
+import { ParticipantBubble } from "@/components/friends/ParticipantBubble";
+import { UsernameAutocomplete } from "@/components/friends/UsernameAutocomplete";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   formatCurrency,
@@ -17,185 +18,15 @@ import {
   buildVenmoNote,
 } from "@/lib/utils";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
-import type { Profile, FlowParticipant, ComputedCharge } from "@/types";
+import type { Profile, FlowParticipant, ComputedCharge, FriendGroup } from "@/types";
 import { VenmoIcon } from "@/components/ui/VenmoIcon";
 import { addFriendByUsername } from "@/lib/friends";
+import { groupToParticipants, mapGroupRows } from "@/lib/friendGroups";
 import { buildVenmoLinks } from "@/lib/venmo/deepLink";
 import { parseQuantity, parseAmount } from "@/lib/receiptValidation";
-import { X, UserPlus, Users2, Check } from "lucide-react";
+import { Users2, Check } from "lucide-react";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
-
-// ─── ParticipantBubble ────────────────────────────────────────────────────────
-
-function ParticipantBubble({
-  participant,
-  onRemove,
-}: {
-  participant: FlowParticipant;
-  onRemove?: () => void;
-}) {
-  const [showTooltip, setShowTooltip] = useState(false);
-
-  return (
-    <div className="relative flex-shrink-0">
-      {/* Avatar — toggles tooltip on click */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setShowTooltip((v) => !v)}
-        onKeyDown={(e) => e.key === "Enter" && setShowTooltip((v) => !v)}
-        className="relative cursor-pointer"
-      >
-        <Avatar name={participant.displayName} size="sm" />
-      </div>
-      {/* Remove button — separate from avatar so no nested button */}
-      {onRemove && (
-        <button
-          onClick={onRemove}
-          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-black/70 flex items-center justify-center border border-white/20"
-          aria-label="Remove"
-        >
-          <X className="w-2.5 h-2.5 text-white" />
-        </button>
-      )}
-      {showTooltip && (
-        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-sm text-white text-xs rounded-lg px-2.5 py-1 whitespace-nowrap z-30 pointer-events-none shadow-lg">
-          @{participant.venmoUsername}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── UsernameAutocomplete ─────────────────────────────────────────────────────
-
-function UsernameAutocomplete({
-  friends,
-  existingParticipants,
-  query,
-  onQueryChange,
-  onAdd,
-  onAddAll,
-  inputRef,
-  placeholder,
-  selfId,
-}: {
-  friends: Profile[];
-  existingParticipants: FlowParticipant[];
-  query: string;
-  onQueryChange: (q: string) => void;
-  onAdd: (p: Omit<FlowParticipant, "clientId">) => void;
-  onAddAll?: () => void;
-  inputRef?: React.RefObject<HTMLInputElement | null>;
-  placeholder?: string;
-  selfId?: string | null;
-}) {
-  const raw = query.trim().replace(/^@/, "");
-
-  function isAdded(venmoUsername: string) {
-    return existingParticipants.some(
-      (p) => p.venmoUsername.toLowerCase() === venmoUsername.toLowerCase()
-    );
-  }
-
-  const filteredFriends = raw
-    ? friends.filter(
-        (f) =>
-          f.display_name.toLowerCase().includes(raw.toLowerCase()) ||
-          (f.venmo_username ?? "").toLowerCase().includes(raw.toLowerCase())
-      )
-    : friends;
-
-  const exactFriendMatch = raw
-    ? friends.find((f) => f.venmo_username?.toLowerCase() === raw.toLowerCase())
-    : null;
-  const showAddManual = raw.length > 0 && !exactFriendMatch && !isAdded(raw);
-  const showDropdown = showAddManual || filteredFriends.length > 0 || !!onAddAll;
-
-  function handleAddFriend(friend: Profile) {
-    if (!friend.venmo_username || isAdded(friend.venmo_username)) return;
-    onAdd({
-      type: friend.id ? "friend" : "manual",
-      userId: friend.id || undefined,
-      displayName: friend.display_name,
-      venmoUsername: friend.venmo_username,
-      // The logged-in user is the owner, not a chargeable recipient.
-      isOwner: !!friend.id && friend.id === selfId,
-    });
-    onQueryChange("");
-  }
-
-  function handleAddManual() {
-    if (!raw || isAdded(raw)) return;
-    onAdd({ type: "manual", displayName: raw, venmoUsername: raw, isOwner: false });
-    onQueryChange("");
-  }
-
-  return (
-    <div className="flex flex-col gap-1">
-      <GlassInput
-        ref={inputRef}
-        prefix="@"
-        placeholder={placeholder ?? "search friends or username"}
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-        onKeyDown={(e: React.KeyboardEvent) => {
-          if (e.key === "Enter" && showAddManual) handleAddManual();
-        }}
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-      />
-      {showDropdown && (
-        <div className="glass-panel-sm rounded-2xl overflow-y-auto flex flex-col z-10 max-h-64">
-          {onAddAll && (
-            <button
-              onClick={onAddAll}
-              className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/5 active:bg-white/10 transition-colors text-left border-b border-white/8"
-            >
-              <div className="w-7 h-7 rounded-full bg-brand/20 flex items-center justify-center flex-shrink-0">
-                <Users2 className="w-3.5 h-3.5 text-brand" />
-              </div>
-              <span className="text-sm font-medium text-primary">All</span>
-            </button>
-          )}
-          {showAddManual && (
-            <button
-              onClick={handleAddManual}
-              className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/5 active:bg-white/10 transition-colors text-left"
-            >
-              <div className="w-7 h-7 rounded-full bg-brand/20 flex items-center justify-center flex-shrink-0">
-                <UserPlus className="w-3.5 h-3.5 text-brand" />
-              </div>
-              <span className="text-sm font-medium text-primary">Add @{raw}</span>
-            </button>
-          )}
-          {filteredFriends.map((f) => {
-            const added = f.venmo_username ? isAdded(f.venmo_username) : false;
-            const noVenmo = !f.venmo_username;
-            return (
-              <button
-                key={f.id}
-                onClick={() => handleAddFriend(f)}
-                disabled={added || noVenmo}
-                className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/5 active:bg-white/10 transition-colors disabled:opacity-50 text-left"
-              >
-                <Avatar name={f.display_name} size="sm" />
-                <span className="text-sm font-medium text-primary flex-1 min-w-0 truncate">
-                  @{f.display_name}
-                </span>
-                {added && (
-                  <span className="text-xs text-brand font-medium flex-shrink-0">Added</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── LiveChargeCard ───────────────────────────────────────────────────────────
 
@@ -419,6 +250,7 @@ export function ReceiptSplitStep({
   const [internalPaidClientIds, setInternalPaidClientIds] = useState<Set<string>>(new Set());
   const paidClientIds = externalPaidClientIds ?? internalPaidClientIds;
   const [friends, setFriends] = useState<Profile[]>([]);
+  const [groups, setGroups] = useState<FriendGroup[]>([]);
   const [selfId, setSelfId] = useState<string | null>(null);
   // Venmo usernames in the order they were last picked, most recent first.
   const [recentUsernames, setRecentUsernames] = useState<string[]>([]);
@@ -489,7 +321,7 @@ export function ReceiptSplitStep({
       } = await supabase.auth.getUser();
       if (!user) return;
       setSelfId(user.id);
-      const [{ data: selfData }, { data: friendshipData }, { data: externalData }] = await Promise.all([
+      const [{ data: selfData }, { data: friendshipData }, { data: externalData }, { data: groupData }] = await Promise.all([
         supabase
           .from("profiles")
           .select("id, display_name, venmo_username, email, invite_token, created_at, updated_at")
@@ -502,6 +334,10 @@ export function ReceiptSplitStep({
         supabase
           .from("external_contacts")
           .select("id, venmo_username, display_name")
+          .eq("user_id", user.id),
+        supabase
+          .from("friend_groups")
+          .select("id, name, friend_group_members(venmo_username, display_name)")
           .eq("user_id", user.id),
       ]);
 
@@ -518,6 +354,7 @@ export function ReceiptSplitStep({
       }));
 
       setFriends([...self, ...realFriends, ...externalFriends]);
+      setGroups(mapGroupRows(groupData));
     }
     load();
   }, []);
@@ -594,6 +431,25 @@ export function ReceiptSplitStep({
     setTimeout(() => evenSplitInputRef.current?.focus(), 50);
   }
 
+  // Merged inside one functional update so `prev` is authoritative: the group's
+  // members dedupe against what's already staged and against each other.
+  function stageGroup(group: FriendGroup) {
+    const expanded = groupToParticipants(group, friends, selfId);
+    setEvenSplitStaged((prev) => {
+      const seen = new Set(prev.map((p) => p.venmoUsername.toLowerCase()));
+      const next = [...prev];
+      for (const p of expanded) {
+        const key = p.venmoUsername.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        next.push(p);
+      }
+      return next;
+    });
+    setEvenSplitQuery("");
+    setTimeout(() => evenSplitInputRef.current?.focus(), 50);
+  }
+
   function unstageParticipant(venmoUsername: string) {
     setEvenSplitStaged((prev) =>
       prev.filter((s) => s.venmoUsername.toLowerCase() !== venmoUsername.toLowerCase())
@@ -664,29 +520,35 @@ export function ReceiptSplitStep({
       .catch(() => {}); // best-effort; a failed auto-add shouldn't disrupt splitting
   }
 
-  function handleAddAllToItem(itemClientId: string) {
-    const assigned = state.assignments[itemClientId] ?? [];
-    for (const friend of friends) {
-      if (!friend.venmo_username) continue;
-      const existing = state.participants.find(
-        (p) => p.venmoUsername.toLowerCase() === friend.venmo_username!.toLowerCase()
-      );
-      let clientId: string;
-      if (existing) {
-        clientId = existing.clientId;
-      } else {
-        clientId = addParticipant({
-          type: friend.id ? "friend" : "manual",
-          userId: friend.id || undefined,
-          displayName: friend.display_name,
-          venmoUsername: friend.venmo_username,
-          isOwner: !!friend.id && friend.id === selfId,
-        });
+  // Adding a group is the same as adding each member by hand: they become
+  // ordinary participants, so the charges below the check list out one per
+  // person. The local map is the batch's source of truth — state.participants
+  // is stale the moment the first addParticipant fires, so re-reading it inside
+  // the loop would add the same person twice.
+  function handleAddGroupToItem(itemClientId: string, group: FriendGroup) {
+    const byUsername = new Map(
+      state.participants.map((p) => [p.venmoUsername.toLowerCase(), p.clientId])
+    );
+    const clientIds: string[] = [];
+
+    for (const p of groupToParticipants(group, friends, selfId)) {
+      const key = p.venmoUsername.toLowerCase();
+      let clientId = byUsername.get(key);
+      if (!clientId) {
+        clientId = addParticipant(p);
+        byUsername.set(key, clientId);
+        maybeAddFriend(p.venmoUsername);
       }
-      if (!assigned.includes(clientId)) {
-        toggleAssignment(itemClientId, clientId);
-      }
+      clientIds.push(clientId);
     }
+
+    // Safe to read stale: every id here is either brand new (so it can't be
+    // assigned yet) or pre-existing (so the stale read is accurate).
+    const assigned = state.assignments[itemClientId] ?? [];
+    for (const clientId of clientIds) {
+      if (!assigned.includes(clientId)) toggleAssignment(itemClientId, clientId);
+    }
+
     setActiveItemId(null);
     setItemQuery("");
   }
@@ -910,11 +772,12 @@ export function ReceiptSplitStep({
                   <div ref={activeInputRef} className="mt-2">
                     <UsernameAutocomplete
                       friends={orderedFriends}
+                      groups={groups}
                       existingParticipants={assignedParticipants}
                       query={itemQuery}
                       onQueryChange={setItemQuery}
                       onAdd={(p) => handleAddToItem(item.clientId, p)}
-                      onAddAll={state.participants.length > 0 ? () => handleAddAllToItem(item.clientId) : undefined}
+                      onAddGroup={(g) => handleAddGroupToItem(item.clientId, g)}
                       inputRef={itemInputRef}
                       placeholder="who had this?"
                       selfId={selfId}
@@ -1032,10 +895,12 @@ export function ReceiptSplitStep({
       {evenSplitOpen && (
         <EvenSplitModal
           friends={orderedFriends}
+          groups={groups}
           staged={evenSplitStaged}
           query={evenSplitQuery}
           onQueryChange={setEvenSplitQuery}
           onStage={stageParticipant}
+          onStageGroup={stageGroup}
           onUnstage={unstageParticipant}
           onDone={handleEvenSplitDone}
           onCancel={handleEvenSplitCancel}
@@ -1051,10 +916,12 @@ export function ReceiptSplitStep({
 
 function EvenSplitModal({
   friends,
+  groups,
   staged,
   query,
   onQueryChange,
   onStage,
+  onStageGroup,
   onUnstage,
   onDone,
   onCancel,
@@ -1062,22 +929,18 @@ function EvenSplitModal({
   selfId,
 }: {
   friends: Profile[];
+  groups: FriendGroup[];
   staged: Omit<FlowParticipant, "clientId">[];
   query: string;
   onQueryChange: (q: string) => void;
   onStage: (p: Omit<FlowParticipant, "clientId">) => void;
+  onStageGroup: (group: FriendGroup) => void;
   onUnstage: (venmoUsername: string) => void;
   onDone: () => void;
   onCancel: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
   selfId: string | null;
 }) {
-  // The autocomplete matches on clientId-bearing participants; the staged list
-  // has no ids yet, so give it throwaway ones.
-  const stagedAsParticipants: FlowParticipant[] = staged.map((p, i) => ({
-    ...p,
-    clientId: `staged-${i}`,
-  }));
 
   return (
     <div
@@ -1095,11 +958,11 @@ function EvenSplitModal({
           </p>
         </div>
 
-        {stagedAsParticipants.length > 0 && (
+        {staged.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {stagedAsParticipants.map((p) => (
+            {staged.map((p) => (
               <ParticipantBubble
-                key={p.clientId}
+                key={p.venmoUsername.toLowerCase()}
                 participant={p}
                 onRemove={() => onUnstage(p.venmoUsername)}
               />
@@ -1109,10 +972,12 @@ function EvenSplitModal({
 
         <UsernameAutocomplete
           friends={friends}
-          existingParticipants={stagedAsParticipants}
+          groups={groups}
+          existingParticipants={staged}
           query={query}
           onQueryChange={onQueryChange}
           onAdd={onStage}
+          onAddGroup={onStageGroup}
           inputRef={inputRef}
           placeholder="add by Venmo username"
           selfId={selfId}

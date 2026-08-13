@@ -5,3 +5,4 @@
 export const userReceiptsTag = (userId: string) => `receipts:${userId}`;
 export const userProfileTag = (userId: string) => `profile:${userId}`;
 export const userFriendsTag = (userId: string) => `friends:${userId}`;
+export const userFriendGroupsTag = (userId: string) => `friend-groups:${userId}`;

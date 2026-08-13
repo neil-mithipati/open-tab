@@ -6,10 +6,11 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getUserProfile, getUserFriends } from "@/lib/queries";
+import { getUserProfile, getUserFriends, getUserFriendGroups } from "@/lib/queries";
 import { ProfileIdentity } from "@/components/profile/ProfileIdentity";
 import { InviteQRCode } from "@/components/profile/InviteQRCode";
 import { FriendsManager } from "@/components/profile/FriendsManager";
+import { FriendGroupsManager } from "@/components/profile/FriendGroupsManager";
 import { LogoutButton } from "@/components/profile/LogoutButton";
 
 export default function ProfilePage() {
@@ -44,9 +45,10 @@ async function ProfileContent() {
     );
   }
 
-  const [profile, friends] = await Promise.all([
+  const [profile, friends, groups] = await Promise.all([
     getUserProfile(user.id),
     getUserFriends(user.id),
+    getUserFriendGroups(user.id),
   ]);
 
   if (!profile) redirect("/auth");
@@ -67,6 +69,20 @@ async function ProfileContent() {
         </p>
         <GlassCard className="p-5">
           <FriendsManager userId={user.id} initialFriends={friends} />
+        </GlassCard>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-primary">Friend groups</h2>
+        <p className="text-xs text-secondary mt-0.5 mb-3">
+          Add everyone in a group to a check in one tap
+        </p>
+        <GlassCard className="p-5">
+          <FriendGroupsManager
+            userId={user.id}
+            initialGroups={groups}
+            initialFriends={friends}
+          />
         </GlassCard>
       </div>
 

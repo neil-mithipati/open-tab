@@ -2,7 +2,12 @@
 
 import { updateTag } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { userFriendsTag, userProfileTag, userReceiptsTag } from "@/lib/cacheTags";
+import {
+  userFriendGroupsTag,
+  userFriendsTag,
+  userProfileTag,
+  userReceiptsTag,
+} from "@/lib/cacheTags";
 
 // Receipts, profiles and friends are written from the browser straight to
 // Supabase, so the server never learns those rows changed and keeps serving the
@@ -18,4 +23,5 @@ export async function refreshUserCaches(): Promise<void> {
   updateTag(userReceiptsTag(user.id));
   updateTag(userProfileTag(user.id));
   updateTag(userFriendsTag(user.id));
+  updateTag(userFriendGroupsTag(user.id));
 }
