@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { Avatar } from "@/components/ui/Avatar";
@@ -196,9 +197,10 @@ export function ClaimPage({ token, initial }: Props) {
   // First arrival: a welcome modal over the empty gradient, before claiming.
   if (!me && !introDismissed) {
     return (
-      <Centered>
+      <Centered showHeader={false}>
         <GlassCard className="w-full max-w-sm p-8 flex flex-col items-center gap-5 text-center">
-          <h1
+          <Link
+            href="/"
             className="text-5xl font-black tracking-tight animate-gradient"
             style={{
               fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
@@ -206,7 +208,7 @@ export function ClaimPage({ token, initial }: Props) {
             }}
           >
             Open Tab
-          </h1>
+          </Link>
           <Avatar name={receipt.owner.display_name} size="lg" />
           <div className="flex flex-col gap-2">
             <h2 className="text-xl font-bold text-primary">
@@ -275,7 +277,10 @@ export function ClaimPage({ token, initial }: Props) {
   const isDone = !!me.claim_done_at;
 
   return (
-    <div className="min-h-dvh flex flex-col max-w-md mx-auto w-full px-4 pt-safe pt-6 pb-10">
+    <div className="min-h-dvh flex flex-col max-w-md mx-auto w-full px-4 pt-safe pt-4 pb-10">
+      <div className="flex justify-center mb-3">
+        <BrandHeader />
+      </div>
       <div className="flex items-center justify-between mb-4">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-primary truncate">{merchant}</h1>
@@ -368,10 +373,38 @@ export function ClaimPage({ token, initial }: Props) {
   );
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
+function Centered({
+  children,
+  showHeader = true,
+}: {
+  children: React.ReactNode;
+  showHeader?: boolean;
+}) {
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-4">
+    <div className="min-h-dvh flex flex-col items-center justify-center px-4 relative">
+      {showHeader && (
+        <div className="absolute top-0 left-0 right-0 flex justify-center pt-safe pt-4">
+          <BrandHeader />
+        </div>
+      )}
       {children}
     </div>
+  );
+}
+
+// Claimers arrive from a link with no other way into the app — the wordmark
+// doubles as the way to find out what Open Tab is.
+function BrandHeader() {
+  return (
+    <Link
+      href="/"
+      className="text-2xl font-black tracking-tight animate-gradient"
+      style={{
+        fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
+        letterSpacing: "-0.03em",
+      }}
+    >
+      Open Tab
+    </Link>
   );
 }

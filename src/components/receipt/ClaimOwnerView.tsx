@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { Avatar } from "@/components/ui/Avatar";
+import { CheckPreview } from "@/components/receipt/CheckPreview";
 import { buildVenmoLinks } from "@/lib/venmo/deepLink";
 import {
   computeSharedClaimCharges,
@@ -31,9 +32,10 @@ interface Props {
   shareUrl: string;
   initial: SharedReceipt;
   initialCharges: ClaimChargeRow[];
+  imageUrl?: string | null;
 }
 
-export function ClaimOwnerView({ shareUrl, initial, initialCharges }: Props) {
+export function ClaimOwnerView({ shareUrl, initial, initialCharges, imageUrl }: Props) {
   const router = useRouter();
   const [receipt, setReceipt] = useState<SharedReceipt>(initial);
   const [charges, setCharges] = useState<ClaimChargeRow[]>(initialCharges);
@@ -155,7 +157,6 @@ export function ClaimOwnerView({ shareUrl, initial, initialCharges }: Props) {
           items={receipt.items}
           unclaimed={unclaimed}
           busy={busy}
-          onReopen={handleReopen}
           onClose={handleClose}
         />
       ) : (
@@ -168,6 +169,27 @@ export function ClaimOwnerView({ shareUrl, initial, initialCharges }: Props) {
           onRefresh={refresh}
         />
       )}
+
+      {/* The check itself, locked while it's shared. Editing it means pulling
+          it back from the people claiming, so the only way in is the button
+          floating over it. */}
+      <div className="mt-6">
+        <CheckPreview
+          merchantName={receipt.merchant_name}
+          dateOfReceipt={receipt.date_of_receipt}
+          items={receipt.items}
+          tax={receipt.tax}
+          tip={receipt.tip}
+          total={receipt.total}
+          imageUrl={imageUrl}
+          dimmed
+          overlay={
+            <GlassButton variant="secondary" disabled={busy} onClick={handleReopen}>
+              Reopen editing
+            </GlassButton>
+          }
+        />
+      </div>
     </div>
   );
 }
@@ -178,7 +200,6 @@ function ClaimingBody({
   items,
   unclaimed,
   busy,
-  onReopen,
   onClose,
 }: {
   claimers: SharedReceipt["participants"];
@@ -186,7 +207,6 @@ function ClaimingBody({
   items: SharedReceipt["items"];
   unclaimed: SharedReceipt["items"];
   busy: boolean;
-  onReopen: () => void;
   onClose: () => void;
 }) {
   return (
@@ -262,12 +282,9 @@ function ClaimingBody({
         </>
       )}
 
-      <div className="mt-6 flex flex-col gap-2">
-        <GlassButton size="lg" loading={busy} onClick={onClose}>
+      <div className="mt-6">
+        <GlassButton size="lg" className="w-full" loading={busy} onClick={onClose}>
           Close claiming &amp; create charges
-        </GlassButton>
-        <GlassButton variant="secondary" disabled={busy} onClick={onReopen}>
-          Reopen editing
         </GlassButton>
       </div>
     </>
@@ -398,41 +415,6 @@ function CollectBody({
         )}
       </div>
 
-      {/* Full check breakdown, kept visible once claiming has closed */}
-      <h2 className="text-sm font-semibold text-primary mt-6 mb-2">Receipt</h2>
-      <GlassCard size="sm" className="p-3 flex flex-col gap-1.5">
-        {receipt.items.map((it) => (
-          <div key={it.id} className="flex justify-between text-sm">
-            <span className="text-secondary truncate">
-              {it.name}
-              {it.quantity > 1 && ` ×${it.quantity}`}
-            </span>
-            <span className="text-primary flex-shrink-0 ml-2">
-              {formatCurrency(it.price * it.quantity)}
-            </span>
-          </div>
-        ))}
-        <div className="flex justify-between text-sm pt-1.5 border-t border-white/8 mt-0.5">
-          <span className="text-secondary">Subtotal</span>
-          <span className="text-primary">{formatCurrency(subtotal)}</span>
-        </div>
-        {receipt.tax != null && (
-          <div className="flex justify-between text-sm">
-            <span className="text-secondary">Tax</span>
-            <span className="text-primary">{formatCurrency(receipt.tax)}</span>
-          </div>
-        )}
-        {receipt.tip != null && (
-          <div className="flex justify-between text-sm">
-            <span className="text-secondary">Tip</span>
-            <span className="text-primary">{formatCurrency(receipt.tip)}</span>
-          </div>
-        )}
-        <div className="flex justify-between pt-1.5 border-t border-white/8">
-          <span className="font-bold text-primary">Total</span>
-          <span className="font-bold text-primary">{formatCurrency(total)}</span>
-        </div>
-      </GlassCard>
     </>
   );
 }
