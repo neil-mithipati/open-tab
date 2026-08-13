@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -420,6 +420,8 @@ export function ReceiptSplitStep({
   const paidClientIds = externalPaidClientIds ?? internalPaidClientIds;
   const [friends, setFriends] = useState<Profile[]>([]);
   const [selfId, setSelfId] = useState<string | null>(null);
+  // Venmo usernames in the order they were last picked, most recent first.
+  const [recentUsernames, setRecentUsernames] = useState<string[]>([]);
   const [evenSplitOpen, setEvenSplitOpen] = useState(false);
   const [evenSplitQuery, setEvenSplitQuery] = useState("");
   // Staged locally so Cancel can leave the check exactly as it was.
@@ -432,6 +434,28 @@ export function ReceiptSplitStep({
 
   const { state, addParticipant, removeParticipant, toggleAssignment, clearSplitState, update, goTo, reset } = flow;
   const nonOwnerParticipants = state.participants.filter((p) => !p.isOwner);
+
+  function noteRecent(venmoUsername: string) {
+    const clean = venmoUsername.trim().replace(/^@/, "").toLowerCase();
+    if (!clean) return;
+    setRecentUsernames((prev) => [clean, ...prev.filter((u) => u !== clean)]);
+  }
+
+  // Alphabetical until someone is picked, then whoever was picked most recently
+  // rises to the top — the same people tend to be assigned item after item.
+  const orderedFriends = useMemo(() => {
+    const rank = new Map(recentUsernames.map((u, i) => [u, i]));
+    return [...friends]
+      .sort((a, b) =>
+        a.display_name.localeCompare(b.display_name, undefined, { sensitivity: "base" })
+      )
+      .sort((a, b) => {
+        // Sorting is stable, so anyone never picked keeps alphabetical order.
+        const ra = rank.get((a.venmo_username ?? "").toLowerCase()) ?? Infinity;
+        const rb = rank.get((b.venmo_username ?? "").toLowerCase()) ?? Infinity;
+        return ra === rb ? 0 : ra - rb;
+      });
+  }, [friends, recentUsernames]);
 
   function dismissActiveInput() {
     setActiveItemId(null);
@@ -560,6 +584,7 @@ export function ReceiptSplitStep({
   }
 
   function stageParticipant(p: Omit<FlowParticipant, "clientId">) {
+    noteRecent(p.venmoUsername);
     setEvenSplitStaged((prev) =>
       prev.some((s) => s.venmoUsername.toLowerCase() === p.venmoUsername.toLowerCase())
         ? prev
@@ -681,6 +706,7 @@ export function ReceiptSplitStep({
       toggleAssignment(itemClientId, clientId);
     }
     maybeAddFriend(p.venmoUsername);
+    noteRecent(p.venmoUsername);
     setActiveItemId(null);
     setItemQuery("");
   }
@@ -883,7 +909,7 @@ export function ReceiptSplitStep({
                 {isActive && (
                   <div ref={activeInputRef} className="mt-2">
                     <UsernameAutocomplete
-                      friends={friends}
+                      friends={orderedFriends}
                       existingParticipants={assignedParticipants}
                       query={itemQuery}
                       onQueryChange={setItemQuery}
@@ -1005,7 +1031,7 @@ export function ReceiptSplitStep({
 
       {evenSplitOpen && (
         <EvenSplitModal
-          friends={friends}
+          friends={orderedFriends}
           staged={evenSplitStaged}
           query={evenSplitQuery}
           onQueryChange={setEvenSplitQuery}

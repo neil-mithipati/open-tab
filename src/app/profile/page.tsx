@@ -61,7 +61,10 @@ async function ProfileContent() {
       />
 
       <div>
-        <h2 className="text-lg font-semibold text-primary mb-3">Add friends</h2>
+        <h2 className="text-lg font-semibold text-primary">Add friends</h2>
+        <p className="text-xs text-secondary mt-0.5 mb-3">
+          Click any friend to check if it&apos;s their Venmo profile page
+        </p>
         <GlassCard className="p-5">
           <FriendsManager userId={user.id} initialFriends={friends} />
         </GlassCard>

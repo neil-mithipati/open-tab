@@ -1,3 +1,9 @@
+// Venmo's profile URL is a universal link: the app catches it on mobile and
+// the web profile opens everywhere else — so one https link works for both.
+export function buildVenmoProfileUrl(username: string): string {
+  return `https://venmo.com/u/${encodeURIComponent(username.replace(/^@/, ""))}`;
+}
+
 interface VenmoParams {
   recipientUsername: string;
   amount: number;

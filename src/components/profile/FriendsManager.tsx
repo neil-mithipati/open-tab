@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { removeFriend } from "@/app/actions/profile";
 import { refreshUserCaches } from "@/app/actions/cache";
 import { addFriendByUsername, type Friend } from "@/lib/friends";
+import { buildVenmoProfileUrl } from "@/lib/venmo/deepLink";
 import { isValidVenmoUsername } from "@/lib/utils";
 import { Plus, X } from "lucide-react";
 
@@ -111,9 +112,21 @@ export function FriendsManager({ userId, initialFriends }: Props) {
           {sortedFriends.map((friend) => (
             <div key={friend.id} className="flex items-center gap-3 py-2.5">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-primary truncate">
-                  @{friend.venmo_username ?? friend.display_name}
-                </p>
+                {friend.venmo_username ? (
+                  <a
+                    href={buildVenmoProfileUrl(friend.venmo_username)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-sm font-medium text-primary truncate hover:text-brand transition-colors"
+                    title={`Open @${friend.venmo_username} on Venmo`}
+                  >
+                    @{friend.venmo_username}
+                  </a>
+                ) : (
+                  <p className="text-sm font-medium text-primary truncate">
+                    @{friend.display_name}
+                  </p>
+                )}
                 {friend.venmo_username && friend.display_name !== friend.venmo_username && (
                   <p className="text-xs text-secondary truncate">{friend.display_name}</p>
                 )}
