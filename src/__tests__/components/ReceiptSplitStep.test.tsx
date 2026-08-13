@@ -18,22 +18,41 @@ vi.mock("next/navigation", () => ({
 // The builder is chainable AND thenable: `await from(x).select().eq()` resolves
 // to { data: [] }, while `.single()` resolves to { data: null } for single-row
 // queries (e.g. the self-profile lookup).
+// One friend group ("Roommates": alice, bob, cara) exists so the group row can
+// be exercised; every other table comes back empty. The fixture lives inside the
+// factory because vi.mock is hoisted above any outer declaration.
 vi.mock("@/lib/supabase/client", () => {
-  const builder: any = {};
-  builder.select = vi.fn().mockReturnValue(builder);
-  builder.eq = vi.fn().mockReturnValue(builder);
-  builder.insert = vi.fn().mockResolvedValue({ data: null, error: null });
-  builder.delete = vi.fn().mockReturnValue(builder);
-  builder.update = vi.fn().mockReturnValue(builder);
-  builder.single = vi.fn().mockResolvedValue({ data: null, error: null });
-  builder.then = (resolve: any) => resolve({ data: [], error: null });
+  const testGroup = {
+    id: "g1",
+    name: "Roommates",
+    friend_group_members: [
+      { venmo_username: "alice", display_name: null },
+      { venmo_username: "bob", display_name: null },
+      { venmo_username: "cara", display_name: null },
+    ],
+  };
+
+  function makeBuilder(data: unknown) {
+    const builder: any = {};
+    builder.select = vi.fn().mockReturnValue(builder);
+    builder.eq = vi.fn().mockReturnValue(builder);
+    builder.insert = vi.fn().mockResolvedValue({ data: null, error: null });
+    builder.delete = vi.fn().mockReturnValue(builder);
+    builder.update = vi.fn().mockReturnValue(builder);
+    builder.single = vi.fn().mockResolvedValue({ data: null, error: null });
+    builder.then = (resolve: any) => resolve({ data, error: null });
+    return builder;
+  }
+
+  const empty = makeBuilder([]);
+  const groups = makeBuilder([testGroup]);
 
   return {
     getSupabaseBrowserClient: vi.fn(() => ({
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: { id: "test-user-id" } } }),
       },
-      from: vi.fn().mockReturnValue(builder),
+      from: vi.fn((table: string) => (table === "friend_groups" ? groups : empty)),
     })),
   };
 });
@@ -294,6 +313,48 @@ describe("ReceiptSplitStep — Even Split mode", () => {
     await waitFor(() => expect(screen.queryAllByText("@alice").length).toBe(before + 1));
   });
 
+  it("offers a matching friend group and stages every member", async () => {
+    const { user } = await renderSplitStep();
+    await user.click(screen.getByRole("button", { name: /even split/i }));
+    // The modal opens seeded with whoever is already on the check.
+    const before = screen.queryAllByLabelText("Remove").length;
+    await user.type(screen.getByPlaceholderText(/add by venmo username/i), "room");
+    await user.click(await screen.findByText("Roommates"));
+    // One new bubble per member: alice, bob, cara
+    await waitFor(() =>
+      expect(screen.getAllByLabelText("Remove")).toHaveLength(before + 3)
+    );
+  });
+
+  it("charges each group member individually once Done is pressed", async () => {
+    const { user, getState } = await renderSplitStep();
+    await user.click(screen.getByRole("button", { name: /even split/i }));
+    await user.type(screen.getByPlaceholderText(/add by venmo username/i), "room");
+    await user.click(await screen.findByText("Roommates"));
+    await user.click(screen.getByRole("button", { name: /^done$/i }));
+
+    await waitFor(() =>
+      expect(
+        getState().participants.map((p) => p.venmoUsername).sort()
+      ).toEqual(["alice", "bob", "cara", "me"])
+    );
+  });
+
+  it("does not add someone twice when they were already picked by hand", async () => {
+    const { user, getState } = await renderSplitStep();
+    await user.click(screen.getByRole("button", { name: /even split/i }));
+    await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
+    await user.click(await screen.findByText("Add @alice"));
+    await user.click(await screen.findByText("Roommates"));
+    await user.click(screen.getByRole("button", { name: /^done$/i }));
+
+    await waitFor(() =>
+      expect(
+        getState().participants.filter((p) => p.venmoUsername.toLowerCase() === "alice")
+      ).toHaveLength(1)
+    );
+  });
+
   it("does not show the Charges section with zero participants", async () => {
     await renderSplitStep();
     expect(screen.queryByRole("heading", { name: /charges/i })).not.toBeInTheDocument();
@@ -345,6 +406,30 @@ describe("ReceiptSplitStep — Itemize mode", () => {
     await user.click(await screen.findByText("Add @alice"));
     // Avatar initials for "alice" = "AL" (item bubble + live charge card)
     expect(screen.getAllByText("AL").length).toBeGreaterThan(0);
+  });
+
+  it("assigns every member of a friend group to the item", async () => {
+    const { user, getState } = await renderSplitStep();
+    await user.click(screen.getByText("Burger"));
+    await user.type(await screen.findByPlaceholderText(/who had this/i), "room");
+    await user.click(await screen.findByText("Roommates"));
+
+    await waitFor(() => {
+      const assigned = getState().assignments["item-1"] ?? [];
+      expect(new Set(assigned).size).toBe(3);
+    });
+    expect(
+      getState().participants.map((p) => p.venmoUsername).sort()
+    ).toEqual(["alice", "bob", "cara", "me"]);
+  });
+
+  it("charges each group member for their own share", async () => {
+    const { user } = await renderSplitStep();
+    await user.click(screen.getByText("Burger"));
+    await user.type(await screen.findByPlaceholderText(/who had this/i), "room");
+    await user.click(await screen.findByText("Roommates"));
+    // A charge card each, not one lumped card for the group.
+    await waitFor(() => expect(screen.getAllByText("$4.00").length).toBeGreaterThan(0));
   });
 
   it("does not show the Charges section before any item is assigned", async () => {
