@@ -1,5 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { buildVenmoLinks } from "@/lib/venmo/deepLink";
+import { buildVenmoLinks, buildVenmoProfileUrl } from "@/lib/venmo/deepLink";
+
+describe("buildVenmoProfileUrl", () => {
+  it("points at the user's Venmo profile", () => {
+    expect(buildVenmoProfileUrl("alice")).toBe("https://venmo.com/u/alice");
+  });
+
+  it("strips a leading @", () => {
+    expect(buildVenmoProfileUrl("@alice")).toBe("https://venmo.com/u/alice");
+  });
+
+  it("encodes characters that would break the path", () => {
+    expect(buildVenmoProfileUrl("a b")).toBe("https://venmo.com/u/a%20b");
+  });
+});
 
 describe("buildVenmoLinks", () => {
   const base = { recipientUsername: "alice", amount: 12.5, note: "open-tab: Chipotle 2025-05-24" };
