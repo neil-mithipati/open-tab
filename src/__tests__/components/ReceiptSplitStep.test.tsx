@@ -228,11 +228,38 @@ describe("ReceiptSplitStep — Even Split mode", () => {
     expect(screen.getAllByText("AL").length).toBeGreaterThan(0);
   });
 
-  it("shows the Charges section once a participant is added", async () => {
+  it("applies nothing until Done is pressed", async () => {
+    const { user, getState } = await renderSplitStep();
+    await user.click(screen.getByRole("button", { name: /even split/i }));
+    await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
+    await user.click(await screen.findByText("Add @alice"));
+    expect(
+      getState().participants.some((p) => p.venmoUsername === "alice")
+    ).toBe(false);
+    expect(screen.queryByRole("heading", { name: /charges/i })).not.toBeInTheDocument();
+  });
+
+  it("leaves the check unchanged when Cancel is pressed", async () => {
+    const { user, getState } = await renderSplitStep();
+    await user.click(screen.getByRole("button", { name: /even split/i }));
+    await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
+    await user.click(await screen.findByText("Add @alice"));
+    await user.click(screen.getByRole("button", { name: /^cancel$/i }));
+    await waitFor(() =>
+      expect(screen.queryByPlaceholderText(/add by venmo username/i)).not.toBeInTheDocument()
+    );
+    expect(
+      getState().participants.some((p) => p.venmoUsername === "alice")
+    ).toBe(false);
+    expect(screen.queryByRole("heading", { name: /charges/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the Charges section once Done is pressed", async () => {
     const { user } = await renderSplitStep();
     await user.click(screen.getByRole("button", { name: /even split/i }));
     await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
+    await user.click(screen.getByRole("button", { name: /^done$/i }));
     expect(await screen.findByRole("heading", { name: /charges/i })).toBeInTheDocument();
   });
 
@@ -241,8 +268,15 @@ describe("ReceiptSplitStep — Even Split mode", () => {
     await user.click(screen.getByRole("button", { name: /even split/i }));
     await user.type(screen.getByPlaceholderText(/add by venmo username/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
+    await user.click(screen.getByRole("button", { name: /^done$/i }));
     await screen.findByRole("heading", { name: /charges/i });
-    await user.click(await screen.findByRole("button", { name: /remove/i }));
+
+    // Reopening seeds the modal with whoever is already on the check — the
+    // owner bubble comes first, alice was added after it.
+    await user.click(screen.getByRole("button", { name: /even split/i }));
+    const removeButtons = await screen.findAllByRole("button", { name: /remove/i });
+    await user.click(removeButtons[removeButtons.length - 1]);
+    await user.click(screen.getByRole("button", { name: /^done$/i }));
     await waitFor(() =>
       expect(screen.queryByRole("heading", { name: /charges/i })).not.toBeInTheDocument()
     );

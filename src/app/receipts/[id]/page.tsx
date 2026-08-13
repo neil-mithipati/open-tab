@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { redirect, notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getReceiptDetail } from "@/lib/queries";
+import { getReceiptDetail, getReceiptImageUrl } from "@/lib/queries";
 import { getSharedReceipt, getClaimCharges } from "@/app/actions/claim";
 import { buildTabUrl } from "@/lib/qr/inviteUrl";
 import type { EditableItem, FlowParticipant } from "@/types";
@@ -50,6 +50,8 @@ async function ReceiptDetailContent({ params }: Props) {
     participants.some((p: { user_id: string | null }) => p.user_id === user.id);
   if (!isAuthorised) notFound();
 
+  const imageStoragePath = extractStoragePath(receipt.image_url);
+
   // Owner view of a shared (crowd-claim) receipt: live claim progress while
   // sharing, then collection once closed. Editing stays in ReceiptEditPage,
   // which the owner returns to via "Reopen editing" (status → open).
@@ -58,9 +60,10 @@ async function ReceiptDetailContent({ params }: Props) {
     receipt.share_token &&
     (receipt.status === "shared" || receipt.status === "closed")
   ) {
-    const [shared, chargesResult] = await Promise.all([
+    const [shared, chargesResult, sharedImageUrl] = await Promise.all([
       getSharedReceipt(receipt.share_token),
       getClaimCharges(id),
+      imageStoragePath ? getReceiptImageUrl(imageStoragePath) : null,
     ]);
     if (shared) {
       return (
@@ -68,15 +71,13 @@ async function ReceiptDetailContent({ params }: Props) {
           shareUrl={buildTabUrl(receipt.share_token)}
           initial={shared}
           initialCharges={Array.isArray(chargesResult) ? chargesResult : []}
+          imageUrl={sharedImageUrl}
         />
       );
     }
   }
 
-  const storagePath = extractStoragePath(receipt.image_url);
-  const { data: signedUrlData } = storagePath
-    ? await supabase.storage.from("receipt-images").createSignedUrl(storagePath, 3600)
-    : { data: null };
+  const signedUrl = imageStoragePath ? await getReceiptImageUrl(imageStoragePath) : null;
 
   const flowItems: EditableItem[] = items.map((item: { id: string; name: string; price: number; quantity: number }) => ({
     clientId: `item-${item.id}`,
@@ -108,7 +109,7 @@ async function ReceiptDetailContent({ params }: Props) {
     <ReceiptEditPage
       seed={{
         receiptId: id,
-        signedUrl: signedUrlData?.signedUrl ?? null,
+        signedUrl,
         mimeType: null,
         merchantName: receipt.merchant_name ?? null,
         dateOfReceipt: receipt.date_of_receipt ?? null,

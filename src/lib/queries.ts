@@ -109,6 +109,22 @@ export async function getUserFriends(userId: string): Promise<FriendProfile[]> {
   return [...realFriends, ...externalFriends];
 }
 
+// A fresh signature on every render makes the URL unique, so neither the image
+// optimizer nor the browser ever gets a cache hit and the original photo is
+// re-fetched and re-encoded each time the user opens it. Signing for two hours
+// but reusing the result for at most thirty minutes keeps one stable URL in
+// play, well inside its validity window.
+export async function getReceiptImageUrl(storagePath: string): Promise<string | null> {
+  "use cache";
+  cacheLife({ stale: 300, revalidate: 900, expire: 1800 });
+
+  const { data } = await serviceClient()
+    .storage.from("receipt-images")
+    .createSignedUrl(storagePath, 7200);
+
+  return data?.signedUrl ?? null;
+}
+
 export async function getUserProfile(userId: string) {
   "use cache";
   cacheLife("minutes");

@@ -50,12 +50,12 @@ function NavItem({
 }) {
   return (
     <Link href={href} className="flex flex-col items-center gap-0.5 px-3 py-1">
+      {/* The translucency lives in the element's opacity rather than in the
+          colour: with a semi-transparent stroke, the two points where the
+          door meets the floor line overlap and composite into bright spots. */}
       <Icon
-        className={cn("w-6 h-6 transition-colors", active ? "text-brand" : "text-tertiary")}
+        className={cn("w-6 h-6 transition-all", active ? "text-brand" : "text-white opacity-[0.33]")}
         strokeWidth={active ? 1.75 : 1.5}
-        strokeLinecap="square"
-        strokeLinejoin="miter"
-        strokeMiterlimit={10}
       />
       <span className={cn("text-[10px] font-medium", active ? "text-brand" : "text-tertiary")}>
         {label}

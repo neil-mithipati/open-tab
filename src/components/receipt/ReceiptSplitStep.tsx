@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
@@ -422,6 +422,8 @@ export function ReceiptSplitStep({
   const [selfId, setSelfId] = useState<string | null>(null);
   const [evenSplitOpen, setEvenSplitOpen] = useState(false);
   const [evenSplitQuery, setEvenSplitQuery] = useState("");
+  // Staged locally so Cancel can leave the check exactly as it was.
+  const [evenSplitStaged, setEvenSplitStaged] = useState<Omit<FlowParticipant, "clientId">[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [itemQuery, setItemQuery] = useState("");
   const evenSplitInputRef = useRef<HTMLInputElement>(null);
@@ -432,14 +434,12 @@ export function ReceiptSplitStep({
   const nonOwnerParticipants = state.participants.filter((p) => !p.isOwner);
 
   function dismissActiveInput() {
-    setEvenSplitOpen(false);
-    setEvenSplitQuery("");
     setActiveItemId(null);
     setItemQuery("");
   }
 
   useEffect(() => {
-    if (!evenSplitOpen && !activeItemId) return;
+    if (!activeItemId) return;
     function handleOutside(e: MouseEvent | TouchEvent) {
       if (!activeInputRef.current?.contains(e.target as Node)) {
         dismissActiveInput();
@@ -455,7 +455,7 @@ export function ReceiptSplitStep({
       document.removeEventListener("mousedown", handleOutside);
       document.removeEventListener("touchstart", handleOutside);
     };
-  }, [evenSplitOpen, activeItemId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeItemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     async function load() {
@@ -535,14 +535,66 @@ export function ReceiptSplitStep({
     router.push("/dashboard");
   }
 
+  // The modal only ever edits its own staged list — the check is untouched
+  // until Done, so Cancel is a genuine no-op.
   function handleEvenSplitPress() {
-    if (state.splitMode === "by_item" && nonOwnerParticipants.length > 0) {
-      clearSplitState();
-    }
-    update("splitMode", "equal");
+    setEvenSplitStaged(
+      state.participants.map((p) => ({
+        type: p.type,
+        userId: p.userId,
+        displayName: p.displayName,
+        venmoUsername: p.venmoUsername,
+        isOwner: p.isOwner,
+      }))
+    );
+    setEvenSplitQuery("");
     setEvenSplitOpen(true);
     setActiveItemId(null);
     setItemQuery("");
+  }
+
+  function handleEvenSplitCancel() {
+    setEvenSplitOpen(false);
+    setEvenSplitQuery("");
+    setEvenSplitStaged([]);
+  }
+
+  function stageParticipant(p: Omit<FlowParticipant, "clientId">) {
+    setEvenSplitStaged((prev) =>
+      prev.some((s) => s.venmoUsername.toLowerCase() === p.venmoUsername.toLowerCase())
+        ? prev
+        : [...prev, p]
+    );
+    setEvenSplitQuery("");
+    setTimeout(() => evenSplitInputRef.current?.focus(), 50);
+  }
+
+  function unstageParticipant(venmoUsername: string) {
+    setEvenSplitStaged((prev) =>
+      prev.filter((s) => s.venmoUsername.toLowerCase() !== venmoUsername.toLowerCase())
+    );
+  }
+
+  function handleEvenSplitDone() {
+    const staged = new Set(evenSplitStaged.map((p) => p.venmoUsername.toLowerCase()));
+    const existing = new Set(state.participants.map((p) => p.venmoUsername.toLowerCase()));
+
+    for (const p of state.participants) {
+      if (!staged.has(p.venmoUsername.toLowerCase())) removeParticipant(p.clientId);
+    }
+    for (const p of evenSplitStaged) {
+      if (existing.has(p.venmoUsername.toLowerCase())) continue;
+      addParticipant(p);
+      maybeAddFriend(p.venmoUsername);
+    }
+
+    // An even split covers every item, so any per-item assignments left over
+    // from itemising no longer apply.
+    update("assignments", {});
+    update("splitMode", "equal");
+    setEvenSplitOpen(false);
+    setEvenSplitQuery("");
+    setEvenSplitStaged([]);
   }
 
   function handleItemClick(itemClientId: string) {
@@ -585,12 +637,6 @@ export function ReceiptSplitStep({
         }
       })
       .catch(() => {}); // best-effort; a failed auto-add shouldn't disrupt splitting
-  }
-
-  function handleAddToEvenSplit(p: Omit<FlowParticipant, "clientId">) {
-    addParticipant(p);
-    maybeAddFriend(p.venmoUsername);
-    setTimeout(() => evenSplitInputRef.current?.focus(), 50);
   }
 
   function handleAddAllToItem(itemClientId: string) {
@@ -711,39 +757,29 @@ export function ReceiptSplitStep({
   })();
 
   return (
-    <div className="flex flex-col gap-4 pt-4 pb-7">
-      {/* Animated view container — height animates via layout, content fades via AnimatePresence */}
+    <div className="flex flex-col gap-4 pt-1 pb-7">
+      {/* Animated view container — height animates via layout. Both views stay
+          mounted: the original is a full-size photo, and keeping it in the tree
+          (with priority, so Next preloads it) means switching to it is instant
+          instead of starting a download on the first press. */}
       <motion.div layout transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }} className="relative">
-        <AnimatePresence mode="popLayout" initial={false}>
-          {view === "original" ? (
-            <motion.div
-              key="original"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-            >
-              {state.signedUrl && (
-                <GlassCard className="overflow-hidden p-0">
-                  <div className="relative w-full" style={{ minHeight: "60vh" }}>
-                    <Image
-                      src={state.signedUrl}
-                      alt="Original receipt"
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                </GlassCard>
-              )}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="parsed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-            >
+        {state.signedUrl && (
+          <div className={view === "original" ? "" : "hidden"}>
+            <GlassCard className="overflow-hidden p-0">
+              <div className="relative w-full" style={{ minHeight: "60vh" }}>
+                <Image
+                  src={state.signedUrl}
+                  alt="Original receipt"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 448px"
+                  className="object-contain"
+                />
+              </div>
+            </GlassCard>
+          </div>
+        )}
+        <div className={view === "original" ? "hidden" : ""}>
       <div className="flex flex-col gap-4">
       {/* Receipt card */}
       <GlassCard className="p-0 overflow-hidden">
@@ -777,33 +813,6 @@ export function ReceiptSplitStep({
             <p className="text-xs text-secondary">Click an item to itemize</p>
           </div>
         </div>
-
-        {/* Even Split panel */}
-        {evenSplitOpen && (
-          <div ref={activeInputRef} className="px-4 pb-3 flex flex-col gap-3 border-t border-white/8 pt-3">
-            {nonOwnerParticipants.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {nonOwnerParticipants.map((p) => (
-                  <ParticipantBubble
-                    key={p.clientId}
-                    participant={p}
-                    onRemove={() => removeParticipant(p.clientId)}
-                  />
-                ))}
-              </div>
-            )}
-            <UsernameAutocomplete
-              friends={friends}
-              existingParticipants={state.participants}
-              query={evenSplitQuery}
-              onQueryChange={setEvenSplitQuery}
-              onAdd={handleAddToEvenSplit}
-              inputRef={evenSplitInputRef}
-              placeholder="add by Venmo username"
-              selfId={selfId}
-            />
-          </div>
-        )}
 
         {/* Divider */}
         <div className="h-px bg-white/8" />
@@ -942,9 +951,7 @@ export function ReceiptSplitStep({
         </GlassButton>
       )}
       </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </div>
       </motion.div>
 
       {/* Live charge cards */}
@@ -995,6 +1002,105 @@ export function ReceiptSplitStep({
           </button>
         </div>
       )}
+
+      {evenSplitOpen && (
+        <EvenSplitModal
+          friends={friends}
+          staged={evenSplitStaged}
+          query={evenSplitQuery}
+          onQueryChange={setEvenSplitQuery}
+          onStage={stageParticipant}
+          onUnstage={unstageParticipant}
+          onDone={handleEvenSplitDone}
+          onCancel={handleEvenSplitCancel}
+          inputRef={evenSplitInputRef}
+          selfId={selfId}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── EvenSplitModal ───────────────────────────────────────────────────────────
+
+function EvenSplitModal({
+  friends,
+  staged,
+  query,
+  onQueryChange,
+  onStage,
+  onUnstage,
+  onDone,
+  onCancel,
+  inputRef,
+  selfId,
+}: {
+  friends: Profile[];
+  staged: Omit<FlowParticipant, "clientId">[];
+  query: string;
+  onQueryChange: (q: string) => void;
+  onStage: (p: Omit<FlowParticipant, "clientId">) => void;
+  onUnstage: (venmoUsername: string) => void;
+  onDone: () => void;
+  onCancel: () => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  selfId: string | null;
+}) {
+  // The autocomplete matches on clientId-bearing participants; the staged list
+  // has no ids yet, so give it throwaway ones.
+  const stagedAsParticipants: FlowParticipant[] = staged.map((p, i) => ({
+    ...p,
+    clientId: `staged-${i}`,
+  }));
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <GlassCard
+        className="w-full max-w-sm p-6 flex flex-col gap-4"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        <div>
+          <h2 className="text-lg font-bold text-primary">Even split</h2>
+          <p className="text-sm text-secondary mt-1">
+            Pick who&apos;s in — the whole check is divided evenly between them.
+          </p>
+        </div>
+
+        {stagedAsParticipants.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {stagedAsParticipants.map((p) => (
+              <ParticipantBubble
+                key={p.clientId}
+                participant={p}
+                onRemove={() => onUnstage(p.venmoUsername)}
+              />
+            ))}
+          </div>
+        )}
+
+        <UsernameAutocomplete
+          friends={friends}
+          existingParticipants={stagedAsParticipants}
+          query={query}
+          onQueryChange={onQueryChange}
+          onAdd={onStage}
+          inputRef={inputRef}
+          placeholder="add by Venmo username"
+          selfId={selfId}
+        />
+
+        <div className="flex items-center gap-2">
+          <GlassButton size="md" className="flex-1" onClick={onDone}>
+            Done
+          </GlassButton>
+          <GlassButton variant="secondary" size="md" onClick={onCancel}>
+            Cancel
+          </GlassButton>
+        </div>
+      </GlassCard>
     </div>
   );
 }
