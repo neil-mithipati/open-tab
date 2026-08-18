@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 21:12 UTC · regenerated on every task completion.
+Updated 2026-08-18 21:14 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -16,13 +16,14 @@ curl -s localhost:9464/metrics | head   # must return output
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-light | . | 2026-08-18T21:12:12Z | 2 |
-| publisher | . | 2026-08-18T21:12:15Z | 2 |
+| publisher | . | 2026-08-18T21:12:15Z | 1 |
+| builder | . | 2026-08-18T21:13:59Z | 2 |
 
 ## Tasks
 
 | ID | State | Task | Tier |
 |---|---|---|---|
-| `OT-101` | running | Fail loudly when NEXT_PUBLIC_APP_URL is unset in production — null | builder-light |
+| `OT-101` | running | Fail loudly when NEXT_PUBLIC_APP_URL is unset in production — null | builder |
 | `OT-102` | todo | "Parse route: derive image URL server-side, stop echoing error internals, set maxDuration" — null | builder |
 | `OT-103` | todo | "RLS: stop publishing every profile; caller check on add_friendship" — null | builder-deep |
 | `OT-104` | todo | Compress receipt photos client-side before upload; cap size and MIME server-side — null | builder |
@@ -37,14 +38,6 @@ curl -s localhost:9464/metrics | head   # must return output
 ## Recent activity
 
 ```
-2026-08-18T20:41:47Z  .  SubagentStop  
-2026-08-18T20:44:39Z  .  SubagentStop  
-2026-08-18T20:44:39Z  .  SubagentStop  
-2026-08-18T20:44:39Z  .  SubagentStop  
-2026-08-18T20:44:39Z  .  SubagentStop  
-2026-08-18T20:44:39Z  .  SubagentStop  
-2026-08-18T21:12:12Z  .  SubagentStart  builder-light
-2026-08-18T21:12:12Z  .  SubagentStart  builder-light
 2026-08-18T21:12:15Z  .  SubagentStart  publisher
 2026-08-18T21:12:15Z  .  SubagentStart  publisher
 2026-08-18T21:12:46Z  .  SubagentStop  
@@ -57,6 +50,14 @@ curl -s localhost:9464/metrics | head   # must return output
 2026-08-18T21:12:48Z  .  SubagentStop  
 2026-08-18T21:12:48Z  .  SubagentStop  
 2026-08-18T21:12:48Z  .  SubagentStop  
+2026-08-18T21:12:51Z  .  SubagentStop  publisher
+2026-08-18T21:13:59Z  .  SubagentStart  builder
+2026-08-18T21:13:59Z  .  SubagentStart  builder
+2026-08-18T21:14:32Z  .  SubagentStop  
+2026-08-18T21:14:32Z  .  SubagentStop  
+2026-08-18T21:14:32Z  .  SubagentStop  
+2026-08-18T21:14:32Z  .  SubagentStop  
+2026-08-18T21:14:32Z  .  SubagentStop  
 ```
 
 ---
