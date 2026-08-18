@@ -1,15 +1,12 @@
 # Agent status
 
-Updated 2026-08-18 21:17 UTC · regenerated on every task completion.
+Updated 2026-08-18 21:22 UTC · regenerated on every task completion.
 
 ## Spend
 
-No spend data. The poller may not be running:
-
-```
-./.claude/hooks/spend-poll.sh &
-curl -s localhost:9464/metrics | head   # must return output
-```
+| Lane | Spent | Cap | Used |
+|---|---|---|---|
+| . | $9.61 | $5.00 | ██████████ 192% |
 
 ## Agents
 
@@ -17,7 +14,7 @@ curl -s localhost:9464/metrics | head   # must return output
 |---|---|---|---|
 | builder-light | . | 2026-08-18T21:12:12Z | 2 |
 | publisher | . | 2026-08-18T21:12:15Z | 1 |
-| reviewer | . | 2026-08-18T21:15:45Z | 2 |
+| reviewer | . | 2026-08-18T21:15:45Z | 1 |
 
 ## Tasks
 
@@ -39,17 +36,6 @@ curl -s localhost:9464/metrics | head   # must return output
 ## Recent activity
 
 ```
-2026-08-18T21:16:17Z  .  SubagentStop  
-2026-08-18T21:16:17Z  .  SubagentStop  
-2026-08-18T21:16:17Z  .  SubagentStop  
-2026-08-18T21:16:17Z  .  SubagentStop  
-2026-08-18T21:16:17Z  .  SubagentStop  
-2026-08-18T21:16:48Z  .  SubagentStop  
-2026-08-18T21:16:48Z  .  SubagentStop  
-2026-08-18T21:16:48Z  .  SubagentStop  
-2026-08-18T21:16:48Z  .  SubagentStop  
-2026-08-18T21:16:48Z  .  SubagentStop  
-2026-08-18T21:17:19Z  .  SubagentStop  
 2026-08-18T21:17:19Z  .  SubagentStop  
 2026-08-18T21:17:19Z  .  SubagentStop  
 2026-08-18T21:17:19Z  .  SubagentStop  
@@ -59,6 +45,17 @@ curl -s localhost:9464/metrics | head   # must return output
 2026-08-18T21:17:50Z  .  SubagentStop  
 2026-08-18T21:17:50Z  .  SubagentStop  
 2026-08-18T21:17:50Z  .  SubagentStop  
+2026-08-18T21:18:22Z  .  SubagentStop  
+2026-08-18T21:18:22Z  .  SubagentStop  
+2026-08-18T21:18:22Z  .  SubagentStop  
+2026-08-18T21:18:22Z  .  SubagentStop  
+2026-08-18T21:18:22Z  .  SubagentStop  
+2026-08-18T21:18:33Z  .  SubagentStop  reviewer
+2026-08-18T21:22:43Z  .  SubagentStop  
+2026-08-18T21:22:43Z  .  SubagentStop  
+2026-08-18T21:22:43Z  .  SubagentStop  
+2026-08-18T21:22:43Z  .  SubagentStop  
+2026-08-18T21:22:43Z  .  SubagentStop  
 ```
 
 ---
