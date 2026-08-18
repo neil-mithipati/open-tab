@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 21:29 UTC · regenerated on every task completion.
+Updated 2026-08-18 21:30 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -16,12 +16,13 @@ Updated 2026-08-18 21:29 UTC · regenerated on every task completion.
 | reviewer | . | 2026-08-18T21:15:45Z | 1 |
 | builder | . | 2026-08-18T21:26:26Z | 2 |
 | publisher | . | 2026-08-18T21:26:30Z | 2 |
+| builder-deep | . | 2026-08-18T21:30:24Z | 2 |
 
 ## Tasks
 
 | ID | State | Task | Tier |
 |---|---|---|---|
-| `OT-100` | running | Make main lint-clean — fix pre-existing lint errors blocking the gate — null | builder |
+| `OT-100` | running | Make main lint-clean — fix pre-existing lint errors blocking the gate — null | builder-deep |
 | `OT-101` | running | Fail loudly when NEXT_PUBLIC_APP_URL is unset in production — null | builder |
 | `OT-102` | todo | "Parse route: derive image URL server-side, stop echoing error internals, set maxDuration" — null | builder |
 | `OT-103` | todo | "RLS: stop publishing every profile; caller check on add_friendship" — null | builder-deep |
@@ -38,13 +39,6 @@ Updated 2026-08-18 21:29 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-18T21:27:29Z  .  SubagentStop  
-2026-08-18T21:27:29Z  .  SubagentStop  
-2026-08-18T21:27:29Z  .  SubagentStop  
-2026-08-18T21:27:29Z  .  SubagentStop  
-2026-08-18T21:27:29Z  .  SubagentStop  
-2026-08-18T21:28:00Z  .  SubagentStop  
-2026-08-18T21:28:00Z  .  SubagentStop  
 2026-08-18T21:28:00Z  .  SubagentStop  
 2026-08-18T21:28:00Z  .  SubagentStop  
 2026-08-18T21:28:00Z  .  SubagentStop  
@@ -58,6 +52,13 @@ Updated 2026-08-18 21:29 UTC · regenerated on every task completion.
 2026-08-18T21:29:04Z  .  SubagentStop  
 2026-08-18T21:29:04Z  .  SubagentStop  
 2026-08-18T21:29:04Z  .  SubagentStop  
+2026-08-18T21:30:24Z  .  SubagentStart  builder-deep
+2026-08-18T21:30:24Z  .  SubagentStart  builder-deep
+2026-08-18T21:30:55Z  .  SubagentStop  
+2026-08-18T21:30:55Z  .  SubagentStop  
+2026-08-18T21:30:55Z  .  SubagentStop  
+2026-08-18T21:30:55Z  .  SubagentStop  
+2026-08-18T21:30:55Z  .  SubagentStop  
 ```
 
 ---
