@@ -53,8 +53,12 @@ describe("computeSharedClaimCharges", () => {
     const b = charges.find((c) => c.participant.clientId === "bob")!;
     // alice: $12 claimed + $2.667 unclaimed share = $14.67
     expect(a.amount).toBeCloseTo(14.67, 2);
-    // bob: $0 claimed + $2.667 unclaimed share = $2.67
-    expect(b.amount).toBeCloseTo(2.67, 2);
+    // bob: $0 claimed + $2.667 unclaimed share. Exact 1/3 shares of $8 are
+    // $2.667, $2.667, $2.667 (owner, alice, bob) summing to $8.00; the owner
+    // and alice absorb the two leftover cents (largest-remainder allocation,
+    // ties broken by participant order), leaving bob at the floored $2.66 so
+    // the three shares sum exactly instead of drifting a cent over $8.00.
+    expect(b.amount).toBeCloseTo(2.66, 2);
   });
 
   it("applies tax/tip proportionally on top of claimed + unclaimed shares", () => {
@@ -65,9 +69,12 @@ describe("computeSharedClaimCharges", () => {
     );
     const a = charges.find((c) => c.participant.clientId === "alice")!;
     const b = charges.find((c) => c.participant.clientId === "bob")!;
-    // alice: (12 + 8/3) * 1.3 = 19.07 ; bob: (8/3) * 1.3 = 3.47
+    // alice: (12 + 8/3) * 1.3 = 19.07 ; bob: (8/3) * 1.3 = 3.4667, which
+    // floors to $3.46 — the owner absorbs the leftover cent (see the
+    // largest-remainder note above) so the three shares sum exactly to
+    // $26.00 instead of overcollecting by a cent.
     expect(a.amount).toBeCloseTo(19.07, 2);
-    expect(b.amount).toBeCloseTo(3.47, 2);
+    expect(b.amount).toBeCloseTo(3.46, 2);
   });
 
   it("splits a shared item equally between its claimers", () => {
@@ -78,8 +85,12 @@ describe("computeSharedClaimCharges", () => {
     );
     const a = charges.find((c) => c.participant.clientId === "alice")!;
     const b = charges.find((c) => c.participant.clientId === "bob")!;
-    expect(a.amount).toBeCloseTo(8.67, 2); // 6 + 8/3
-    expect(b.amount).toBeCloseTo(8.67, 2);
+    // Both alice and bob owe an exact $8.6667 (6 + 8/3); the owner absorbs
+    // the leftover cent from the $8/3 unclaimed split, so only one of the
+    // two non-owners picks up the remaining leftover cent — alice here,
+    // by participant order — leaving bob at the floored $8.66.
+    expect(a.amount).toBeCloseTo(8.67, 2);
+    expect(b.amount).toBeCloseTo(8.66, 2);
   });
 
   it("divides a fully-unclaimed bill evenly among non-owners (owner absorbs own share)", () => {
@@ -87,9 +98,12 @@ describe("computeSharedClaimCharges", () => {
     const charges = computeSharedClaimCharges(
       [burger, fries], assignments, [owner, alice, bob], 0, 0, "me", "Test", null
     );
-    // total $20 / 3 participants = $6.67 each for the two non-owners.
+    // total $20 / 3 participants = $6.6667 each. The owner and alice absorb
+    // the two leftover cents (largest-remainder allocation, ties broken by
+    // participant order), so alice is $6.67 and bob is the floored $6.66 —
+    // the three shares now sum exactly to $20.00 instead of $20.01.
     expect(charges.find((c) => c.participant.clientId === "alice")?.amount).toBeCloseTo(6.67, 2);
-    expect(charges.find((c) => c.participant.clientId === "bob")?.amount).toBeCloseTo(6.67, 2);
+    expect(charges.find((c) => c.participant.clientId === "bob")?.amount).toBeCloseTo(6.66, 2);
   });
 
   it("excludes the owner from the returned charges", () => {
@@ -113,6 +127,40 @@ describe("computeSharedClaimCharges", () => {
   it("returns an empty array when there are no participants", () => {
     expect(computeSharedClaimCharges([burger], {}, [], 0, 0, "me", "Test", null)).toHaveLength(0);
   });
+
+  // ─── exact-sum rounding ───────────────────────────────────────────────────
+
+  function allFriends(n: number): FlowParticipant[] {
+    const list: FlowParticipant[] = [];
+    for (let i = 0; i < n; i++) {
+      list.push({
+        clientId: `f${i}`,
+        type: "manual",
+        displayName: `Friend ${i}`,
+        venmoUsername: `friend${i}`,
+        isOwner: false,
+      });
+    }
+    return list;
+  }
+
+  it.each([3, 7])(
+    "all-friend, fully-unclaimed charges sum exactly to the total for %i people",
+    (n) => {
+      const participants = allFriends(n);
+      const item: EditableItem = { clientId: "item-1", name: "Tab", price: 116.71, quantity: 1 };
+      const assignments: Record<string, string[]> = { "item-1": [] }; // fully unclaimed
+      const tax = 8.5;
+      const tip = 15.0;
+      const charges = computeSharedClaimCharges(
+        [item], assignments, participants, tax, tip, "me", "Test", null
+      );
+      const grandTotalCents = Math.round((116.71 + tax + tip) * 100);
+      const chargeCents = charges.map((c) => Math.round(c.amount * 100));
+      expect(chargeCents.reduce((sum, c) => sum + c, 0)).toBe(grandTotalCents);
+      expect(Math.max(...chargeCents) - Math.min(...chargeCents)).toBeLessThanOrEqual(1);
+    }
+  );
 });
 
 // ─── isValidVenmoUsername ────────────────────────────────────────────────────
