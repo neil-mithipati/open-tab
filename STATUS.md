@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 22:01 UTC · regenerated on every task completion.
+Updated 2026-08-18 22:02 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -16,7 +16,7 @@ Updated 2026-08-18 22:01 UTC · regenerated on every task completion.
 | builder | . | 2026-08-18T21:53:21Z | 4 |
 | reviewer | . | 2026-08-18T21:55:46Z | 5 |
 | builder-deep | . | 2026-08-18T22:00:31Z | 4 |
-| publisher | . | 2026-08-18T22:00:38Z | 7 |
+| publisher | . | 2026-08-18T22:00:38Z | 6 |
 
 ## Tasks
 
@@ -39,17 +39,6 @@ Updated 2026-08-18 22:01 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-18T21:58:53Z  .  SubagentStop  
-2026-08-18T21:58:53Z  .  SubagentStop  
-2026-08-18T21:58:53Z  .  SubagentStop  
-2026-08-18T21:58:53Z  .  SubagentStop  
-2026-08-18T21:58:53Z  .  SubagentStop  
-2026-08-18T21:59:24Z  .  SubagentStop  
-2026-08-18T21:59:24Z  .  SubagentStop  
-2026-08-18T21:59:24Z  .  SubagentStop  
-2026-08-18T21:59:24Z  .  SubagentStop  
-2026-08-18T21:59:24Z  .  SubagentStop  
-2026-08-18T21:59:36Z  .  SubagentStop  reviewer
 2026-08-18T22:00:31Z  .  SubagentStart  builder-deep
 2026-08-18T22:00:31Z  .  SubagentStart  builder-deep
 2026-08-18T22:00:38Z  .  SubagentStart  publisher
@@ -59,6 +48,17 @@ Updated 2026-08-18 22:01 UTC · regenerated on every task completion.
 2026-08-18T22:01:02Z  .  SubagentStop  
 2026-08-18T22:01:02Z  .  SubagentStop  
 2026-08-18T22:01:02Z  .  SubagentStop  
+2026-08-18T22:01:10Z  .  SubagentStop  
+2026-08-18T22:01:10Z  .  SubagentStop  
+2026-08-18T22:01:10Z  .  SubagentStop  
+2026-08-18T22:01:10Z  .  SubagentStop  
+2026-08-18T22:01:10Z  .  SubagentStop  
+2026-08-18T22:01:21Z  .  SubagentStop  publisher
+2026-08-18T22:02:33Z  .  SubagentStop  
+2026-08-18T22:02:33Z  .  SubagentStop  
+2026-08-18T22:02:33Z  .  SubagentStop  
+2026-08-18T22:02:33Z  .  SubagentStop  
+2026-08-18T22:02:33Z  .  SubagentStop  
 ```
 
 ---
