@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 21:35 UTC · regenerated on every task completion.
+Updated 2026-08-18 21:38 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -13,18 +13,18 @@ Updated 2026-08-18 21:35 UTC · regenerated on every task completion.
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-light | . | 2026-08-18T21:12:12Z | 2 |
-| builder | . | 2026-08-18T21:26:26Z | 2 |
-| publisher | . | 2026-08-18T21:26:30Z | 2 |
 | builder-deep | . | 2026-08-18T21:30:24Z | 1 |
-| reviewer | . | 2026-08-18T21:32:51Z | 3 |
+| reviewer | . | 2026-08-18T21:32:51Z | 2 |
+| builder | . | 2026-08-18T21:37:31Z | 4 |
+| publisher | . | 2026-08-18T21:37:39Z | 4 |
 
 ## Tasks
 
 | ID | State | Task | Tier |
 |---|---|---|---|
-| `OT-100` | running | Make main lint-clean — fix pre-existing lint errors blocking the gate — null | builder-deep |
-| `OT-101` | running | Fail loudly when NEXT_PUBLIC_APP_URL is unset in production — null | builder |
-| `OT-102` | todo | "Parse route: derive image URL server-side, stop echoing error internals, set maxDuration" — null | builder |
+| `OT-100` | done | Make main lint-clean — fix pre-existing lint errors blocking the gate — null | builder-deep |
+| `OT-101` | done | Fail loudly when NEXT_PUBLIC_APP_URL is unset in production — null | builder |
+| `OT-102` | running | "Parse route: derive image URL server-side, stop echoing error internals, set maxDuration" — null | builder |
 | `OT-103` | todo | "RLS: stop publishing every profile; caller check on add_friendship" — null | builder-deep |
 | `OT-104` | todo | Compress receipt photos client-side before upload; cap size and MIME server-side — null | builder |
 | `OT-105` | todo | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint — null | builder-deep |
@@ -39,16 +39,6 @@ Updated 2026-08-18 21:35 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-18T21:33:53Z  .  SubagentStop  
-2026-08-18T21:33:53Z  .  SubagentStop  
-2026-08-18T21:33:53Z  .  SubagentStop  
-2026-08-18T21:33:53Z  .  SubagentStop  
-2026-08-18T21:33:53Z  .  SubagentStop  
-2026-08-18T21:34:54Z  .  SubagentStop  
-2026-08-18T21:34:54Z  .  SubagentStop  
-2026-08-18T21:34:54Z  .  SubagentStop  
-2026-08-18T21:34:54Z  .  SubagentStop  
-2026-08-18T21:34:54Z  .  SubagentStop  
 2026-08-18T21:35:26Z  .  SubagentStop  
 2026-08-18T21:35:26Z  .  SubagentStop  
 2026-08-18T21:35:26Z  .  SubagentStop  
@@ -59,6 +49,16 @@ Updated 2026-08-18 21:35 UTC · regenerated on every task completion.
 2026-08-18T21:35:57Z  .  SubagentStop  
 2026-08-18T21:35:57Z  .  SubagentStop  
 2026-08-18T21:35:57Z  .  SubagentStop  
+2026-08-18T21:36:17Z  .  SubagentStop  reviewer
+2026-08-18T21:37:31Z  .  SubagentStart  builder
+2026-08-18T21:37:31Z  .  SubagentStart  builder
+2026-08-18T21:37:39Z  .  SubagentStart  publisher
+2026-08-18T21:37:39Z  .  SubagentStart  publisher
+2026-08-18T21:38:03Z  .  SubagentStop  
+2026-08-18T21:38:03Z  .  SubagentStop  
+2026-08-18T21:38:03Z  .  SubagentStop  
+2026-08-18T21:38:03Z  .  SubagentStop  
+2026-08-18T21:38:03Z  .  SubagentStop  
 ```
 
 ---
