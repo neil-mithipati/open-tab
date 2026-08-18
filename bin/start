@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# bin/start — one command that gets everything running: the dev server, the
+# live agent dashboard, and the background spend tracker. Identical whether this
+# is a freshly scaffolded app or the fleet added to one you already had —
+# nothing here differs between those two cases.
+#
+#   ./bin/start
+#
+# Uses tmux if it's installed — the one thing that opens multiple panes the same
+# way on macOS and Linux. Without tmux: on macOS it opens a new Terminal/iTerm
+# tab for the dev server and runs the dashboard here; anywhere else it
+# backgrounds the dev server to a log file and runs the dashboard here.
+#
+# This does NOT start the orchestrator. Talking to the orchestrator is an
+# interactive session, not something to detach into a background tab — start it
+# yourself, in whichever tab you actually want to work in:
+#
+#   ./bin/lane <lane-name>
+
+set -u
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+cd "$ROOT" 2>/dev/null || { echo "cannot cd to $ROOT" >&2; exit 1; }
+
+# ── spend tracker ────────────────────────────────────────────────────────────
+# Same check bin/lane does. Duplicated rather than shared because bin/ has no
+# access to the generator's lib/ once installed into a target repo — only the
+# files listed in install-fleet.sh's copy loop exist here.
+if ! pgrep -f "spend-poll.sh" >/dev/null 2>&1; then
+  nohup ./.claude/hooks/spend-poll.sh >/dev/null 2>&1 &
+  disown 2>/dev/null || true
+  sleep 1
+fi
+if curl -sf localhost:9464/metrics >/dev/null 2>&1; then
+  echo "spend tracking: live"
+else
+  echo "warning: spend tracking endpoint not responding — cap will run uncapped" >&2
+fi
+
+# ── dev server command ───────────────────────────────────────────────────────
+# 'dev' first since that's the generated app's script name; 'start' as a
+# fallback for whatever an existing repo happens to call it.
+DEV_CMD=""
+if [ -f package.json ] && command -v jq >/dev/null 2>&1; then
+  for s in dev start; do
+    if jq -e --arg s "$s" '.scripts[$s]' package.json >/dev/null 2>&1; then
+      DEV_CMD="npm run $s"
+      break
+    fi
+  done
+fi
+[ -z "$DEV_CMD" ] && echo "no 'dev' or 'start' script in package.json — skipping the app server"
+
+DASH_CMD="./bin/dashboard"
+
+# ── tmux: one session, dashboard + dev server as separate windows ───────────
+if command -v tmux >/dev/null 2>&1; then
+  SESSION="agent-fleet-$(basename "$ROOT")"
+  if tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "tmux session '$SESSION' is already running:"
+    echo "  tmux attach -t $SESSION"
+    exit 0
+  fi
+  tmux new-session -d -s "$SESSION" -n dashboard "$DASH_CMD"
+  if [ -n "$DEV_CMD" ]; then
+    tmux new-window -t "$SESSION" -n dev "$DEV_CMD"
+    tmux select-window -t "$SESSION:dashboard"
+  fi
+  echo "started tmux session '$SESSION'"
+  echo "  ctrl-b then 0/1   switch between dashboard and dev server"
+  echo "  ctrl-b then d     detach, leave it running in the background"
+  if [ -t 1 ]; then
+    exec tmux attach -t "$SESSION"
+  fi
+  exit 0
+fi
+
+# ── macOS without tmux: a real new tab for the dev server ───────────────────
+if [ "$(uname)" = "Darwin" ] && [ -n "$DEV_CMD" ]; then
+  case "${TERM_PROGRAM:-}" in
+    iTerm.app)
+      osascript -e "tell application \"iTerm\"
+        set w to (create window with default profile)
+        tell current session of w to write text \"cd '$ROOT' && $DEV_CMD\"
+      end tell" >/dev/null 2>&1 \
+        && echo "opened a new iTerm window for the dev server" \
+        || echo "could not open iTerm automatically — run '$DEV_CMD' yourself in another tab"
+      ;;
+    *)
+      osascript -e "tell application \"Terminal\"
+        do script \"cd '$ROOT' && $DEV_CMD\"
+      end tell" >/dev/null 2>&1 \
+        && echo "opened a new Terminal tab for the dev server" \
+        || echo "could not open Terminal automatically — run '$DEV_CMD' yourself in another tab"
+      ;;
+  esac
+  echo "running the dashboard here — ctrl-c to stop"
+  exec "$DASH_CMD"
+fi
+
+# ── last resort: background the dev server, dashboard in this tab ───────────
+if [ -n "$DEV_CMD" ]; then
+  mkdir -p .claude/state
+  nohup $DEV_CMD > .claude/state/dev.log 2>&1 &
+  disown 2>/dev/null || true
+  echo "dev server running in the background — logs: tail -f .claude/state/dev.log"
+fi
+echo "running the dashboard here — ctrl-c to stop"
+exec "$DASH_CMD"

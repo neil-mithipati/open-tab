@@ -1,0 +1,155 @@
+#!/bin/bash
+# bin/dashboard — live view of the fleet, for watching a build happen.
+#
+#   ./bin/dashboard              refresh every 3s
+#   ./bin/dashboard 10           refresh every 10s
+#
+# This is a *local* complement to STATUS.md, not a replacement. STATUS.md is
+# debounced to one push per minute and needs a push to a remote before you can
+# see it, which is right for "check from your phone later." This is for watching
+# a build happen in your terminal, so it re-reads the same local state on every
+# tick instead of waiting on a push.
+#
+# Three states per role, and they come from two different sources deliberately:
+#
+#   running  — a SubagentStart with no matching SubagentStop for that role, from
+#              .claude/state/events.jsonl. This is "an agent is executing right now."
+#   blocked  — a ledger task assigned to that tier has state: blocked. This is
+#              "work exists for this role but nothing can proceed," which is a
+#              property of the ledger, not of any single agent invocation.
+#   idle     — neither of the above. Nothing to report; not a fault.
+#
+# A role can show both running and blocked at once — a builder can be actively
+# retrying a task another builder task on the same tier is blocked on. Both lines
+# are shown rather than collapsed into one state.
+
+set -u
+
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+STATE="$ROOT/.claude/state"
+EVENTS="$STATE/events.jsonl"
+SPEND="$STATE/spend.json"
+BUDGET="$ROOT/.claude/budget.json"
+LEDGER="$ROOT/ledger"
+INTERVAL="${1:-3}"
+
+command -v jq >/dev/null 2>&1 || { echo "jq is required" >&2; exit 1; }
+
+ROLES="orchestrator builder-light builder builder-deep reviewer publisher"
+
+render() {
+  printf '\033[1magent fleet — %s\033[0m\n' "$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+  printf 'refreshing every %ss · ctrl-c to stop\n\n' "$INTERVAL"
+
+  # ---------- per-agent status ----------
+  printf '\033[1m%-15s %-9s %-8s\033[0m\n' "ROLE" "STATUS" "LANE"
+
+  if [ -s "$EVENTS" ]; then
+    running_json=$(jq -rsc '
+      map(select(.event == "SubagentStart" or .event == "SubagentStop")
+          | select(.agent_type != null))
+      | group_by(.agent_type)
+      | map({
+          type: .[0].agent_type,
+          lane: (map(.lane) | last),
+          running: ((map(select(.event == "SubagentStart")) | length)
+                    - (map(select(.event == "SubagentStop")) | length))
+        })
+      | map(select(.running > 0))
+    ' "$EVENTS" 2>/dev/null)
+  else
+    running_json="[]"
+  fi
+
+  # NOTE ON PARALLEL INSTANCES: this counts how many of a given role are running
+  # at once — starts minus stops, per type — and that count is real. What it
+  # cannot do is tell two concurrent same-type instances apart: SubagentStart and
+  # SubagentStop fire in the MAIN session and share one session_id with no
+  # per-invocation id in the payload, so "builder #1 finished" and "builder #2
+  # finished" look identical on the wire. Tracked upstream, unresolved as of this
+  # writing: github.com/anthropics/claude-code/issues/7881. If three builders are
+  # running, you get "builder ×3," not which task each one is on.
+
+  blocked_tiers=""
+  if [ -d "$LEDGER" ]; then
+    for f in "$LEDGER"/*.md; do
+      [ -e "$f" ] || continue
+      st=$(sed -n 's/^state:[[:space:]]*//p' "$f" | head -1)
+      tr=$(sed -n 's/^tier:[[:space:]]*//p'  "$f" | head -1)
+      [ "$st" = "blocked" ] && [ -n "$tr" ] && blocked_tiers="$blocked_tiers $tr"
+    done
+  fi
+
+  for role in $ROLES; do
+    lane=$(printf '%s' "$running_json" | jq -r --arg r "$role" '.[] | select(.type==$r) | .lane' 2>/dev/null | head -1)
+    count=$(printf '%s' "$running_json" | jq -r --arg r "$role" '.[] | select(.type==$r) | .running' 2>/dev/null | head -1)
+    is_running=$(printf '%s' "$running_json" | jq -r --arg r "$role" 'map(select(.type==$r)) | length > 0' 2>/dev/null)
+    is_blocked=no
+    case " $blocked_tiers " in *" $role "*) is_blocked=yes ;; esac
+
+    running_label="running"
+    [ -n "$count" ] && [ "$count" -gt 1 ] 2>/dev/null && running_label="running ×$count"
+
+    if [ "$is_running" = "true" ] && [ "$is_blocked" = "yes" ]; then
+      printf '%-15s \033[32m%-9s\033[0m %-8s\n' "$role" "$running_label" "${lane:--}"
+      printf '%-15s \033[31m%-9s\033[0m %-8s\n' "" "blocked" "(ledger)"
+    elif [ "$is_running" = "true" ]; then
+      printf '%-15s \033[32m%-9s\033[0m %-8s\n' "$role" "$running_label" "${lane:--}"
+    elif [ "$is_blocked" = "yes" ]; then
+      printf '%-15s \033[31m%-9s\033[0m %-8s\n' "$role" "blocked" "(ledger)"
+    else
+      printf '%-15s \033[90m%-9s\033[0m %-8s\n' "$role" "idle" "-"
+    fi
+  done
+
+  # ---------- spend ----------
+  printf '\n\033[1m%-10s %10s %10s  %s\033[0m\n' "LANE" "SPENT" "CAP" "USED"
+  if [ -s "$SPEND" ] && [ -s "$BUDGET" ]; then
+    jq -r --slurpfile b "$BUDGET" '
+      ($b[0].lanes // {}) as $caps
+      | ($b[0].default // 0) as $fallback
+      | (.lanes // {}) | to_entries[]
+      | . as $e
+      | ($caps[$e.key] // $fallback) as $cap
+      | (if $cap > 0 then (($e.value / $cap) * 100) else 0 end) as $pct
+      | (($pct / 10) | floor | if . > 10 then 10 else . end) as $filled
+      | "\(.key)\t\(.value)\t\(.value * 100 | round / 100)\t\($cap)\t\($filled)\t\($pct | floor)"
+    ' "$SPEND" 2>/dev/null | while IFS=$'\t' read -r lane raw spent cap filled pct; do
+      bar=$(printf '█%.0s' $(seq 1 "$filled") 2>/dev/null)
+      bar="$bar$(printf '░%.0s' $(seq 1 $((10 - filled))) 2>/dev/null)"
+      color=32; [ "$pct" -ge 80 ] && color=33; [ "$pct" -ge 100 ] && color=31
+      printf '%-10s %10s %10s  \033[%sm%s %3s%%\033[0m\n' "$lane" "\$$spent" "\$$cap" "$color" "$bar" "$pct"
+    done
+  else
+    echo "no spend data — is spend-poll.sh running?"
+  fi
+
+  # ---------- ledger summary ----------
+  if [ -d "$LEDGER" ]; then
+    todo=0; prog=0; done=0; blocked=0
+    for f in "$LEDGER"/*.md; do
+      [ -e "$f" ] || continue
+      st=$(sed -n 's/^state:[[:space:]]*//p' "$f" | head -1)
+      case "$st" in
+        todo) todo=$((todo+1)) ;;
+        in-progress) prog=$((prog+1)) ;;
+        done) done=$((done+1)) ;;
+        blocked) blocked=$((blocked+1)) ;;
+      esac
+    done
+    printf '\n\033[1mtasks\033[0m  todo %s · in-progress %s · done %s · \033[31mblocked %s\033[0m\n' \
+      "$todo" "$prog" "$done" "$blocked"
+  fi
+}
+
+# ---------- loop ----------
+# No `watch` on macOS by default, so this is the plain clear-and-redraw pattern.
+if [ -t 1 ]; then
+  while :; do
+    clear
+    render
+    sleep "$INTERVAL"
+  done
+else
+  render
+fi

@@ -1,0 +1,166 @@
+#!/bin/bash
+# bin/audit — finds ledger tasks that are stuck, orphaned, or duplicated.
+#
+# Built for one specific symptom: tasks piling up in `todo` and never moving. The
+# ledger alone cannot tell you why — `state: todo` looks the same whether the task
+# was created five seconds ago or abandoned an hour back. So this cross-references
+# ledger files against .claude/state/events.jsonl and git, which is what makes the
+# difference visible:
+#
+#   ORPHANED    created, never dispatched — no builder subagent ever started after
+#               the file appeared. This is the "random tasks hung in todo" case,
+#               and it usually means the orchestrator decomposed intent into more
+#               tasks than it went on to dispatch.
+#   STALE       in-progress with no subagent currently running for its tier. The
+#               builder finished or died and the orchestrator never advanced it.
+#   DUPLICATE   two tasks with near-identical titles — decomposition ran twice.
+#   UNTOUCHED   claims files that do not exist, or exist and are unmodified.
+#   NO-CRITERIA the body has no acceptance criteria, so nobody could satisfy it.
+#
+# Read-only. It prints findings and exits 0 — it never edits the ledger, because
+# the ledger has exactly one writer and this is not it.
+
+set -u
+
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+LEDGER="$ROOT/ledger"
+EVENTS="$ROOT/.claude/state/events.jsonl"
+STALE_MIN="${STALE_MIN:-30}"
+
+command -v jq >/dev/null 2>&1 || { echo "jq required" >&2; exit 1; }
+[ -d "$LEDGER" ] || { echo "no ledger/ directory at $ROOT"; exit 0; }
+
+field() { sed -n "s/^$2:[[:space:]]*//p" "$1" | head -1; }
+
+now=$(date -u +%s)
+to_epoch() { date -u -d "$1" +%s 2>/dev/null || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$1" +%s 2>/dev/null || echo 0; }
+
+# When did a builder last start for each tier?
+declare_started=""
+if [ -s "$EVENTS" ]; then
+  declare_started=$(jq -rs '
+    map(select(.event == "SubagentStart" and .agent_type != null))
+    | group_by(.agent_type) | map({t: .[0].agent_type, last: (map(.ts) | max)})
+    | .[] | "\(.t)\t\(.last)"
+  ' "$EVENTS" 2>/dev/null)
+fi
+
+running_types=""
+if [ -s "$EVENTS" ]; then
+  running_types=$(jq -rs '
+    map(select(.event == "SubagentStart" or .event == "SubagentStop")
+        | select(.agent_type != null))
+    | group_by(.agent_type)
+    | map(select(((map(select(.event=="SubagentStart"))|length)
+                - (map(select(.event=="SubagentStop"))|length)) > 0))
+    | map(.[0].agent_type) | join(" ")
+  ' "$EVENTS" 2>/dev/null)
+fi
+
+total=0; orphaned=0; stale=0; dup=0; nocrit=0; untouched=0
+titles=""
+findings=""
+
+for f in "$LEDGER"/*.md; do
+  [ -e "$f" ] || continue
+  total=$((total + 1))
+  id=$(field "$f" id); st=$(field "$f" state); ti=$(field "$f" title)
+  tier=$(field "$f" tier); att=$(field "$f" attempts)
+  id="${id:-$(basename "$f" .md)}"
+
+  # file mtime as a proxy for last touch
+  mt=$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo "$now")
+  age_min=$(( (now - mt) / 60 ))
+
+  # duplicate titles
+  norm=$(printf '%s' "$ti" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:] ' | tr -s ' ')
+  case "$titles" in
+    *"|$norm|"*)
+      dup=$((dup + 1))
+      findings="$findings
+  DUPLICATE   $id — same title as an earlier task: \"$ti\"" ;;
+  esac
+  titles="$titles|$norm|"
+
+  # acceptance criteria present in the body?
+  # Body = everything after the closing --- of the frontmatter. Done with awk
+  # counting delimiters; the equivalent double-`sed` range deletes the body too,
+  # because the second range finds no further --- and runs to end of file.
+  body=$(awk 'BEGIN{n=0} /^---[[:space:]]*$/{n++; next} n>=2{print}' "$f" 2>/dev/null | tr -d '[:space:]')
+  if [ -z "$body" ]; then
+    nocrit=$((nocrit + 1))
+    findings="$findings
+  NO-CRITERIA $id — empty body, no acceptance criteria for a worker to satisfy"
+  fi
+
+  case "$st" in
+    todo)
+      # dispatched at all? compare task mtime to the last builder start
+      dispatched=no
+      if [ -n "$declare_started" ]; then
+        while IFS=$'\t' read -r t ts; do
+          [ -z "$ts" ] && continue
+          e=$(to_epoch "$ts")
+          [ "$e" -gt "$mt" ] && dispatched=yes
+        done <<< "$declare_started"
+      fi
+      if [ "$dispatched" = "no" ] && [ "$age_min" -ge "$STALE_MIN" ]; then
+        orphaned=$((orphaned + 1))
+        findings="$findings
+  ORPHANED    $id — todo for ${age_min}m, no builder dispatched since it was created"
+      fi
+      ;;
+    in-progress)
+      is_running=no
+      case " $running_types " in *" ${tier:-builder} "*) is_running=yes ;; esac
+      if [ "$is_running" = "no" ] && [ "$age_min" -ge "$STALE_MIN" ]; then
+        stale=$((stale + 1))
+        findings="$findings
+  STALE       $id — in-progress for ${age_min}m, no ${tier:-builder} running"
+      fi
+      ;;
+  esac
+
+  # claimed files that do not exist
+  awk '/^files:/{flag=1;next}/^[a-z_]+:/{flag=0}flag' "$f" 2>/dev/null \
+  | sed -n 's/^[[:space:]]*-[[:space:]]*//p' | while read -r p; do
+      [ -z "$p" ] && continue
+      [ -e "$ROOT/$p" ] || echo "  UNTOUCHED   $id — claims $p, which does not exist"
+    done >> /tmp/audit-files.$$ 2>/dev/null
+done
+
+[ -f /tmp/audit-files.$$ ] && findings="$findings
+$(cat /tmp/audit-files.$$)" && untouched=$(wc -l < /tmp/audit-files.$$ | tr -d ' ')
+rm -f /tmp/audit-files.$$
+
+printf '\033[1mledger audit\033[0m — %s task(s) in %s\n' "$total" "$LEDGER"
+printf 'stale threshold: %sm (override with STALE_MIN)\n\n' "$STALE_MIN"
+
+if [ -z "$(printf '%s' "$findings" | tr -d '[:space:]')" ]; then
+  printf '\033[32mno findings\033[0m — every task is either moving or legitimately blocked\n'
+  exit 0
+fi
+
+printf '%s\n\n' "$findings"
+printf '\033[1msummary\033[0m  orphaned %s · stale %s · duplicate %s · no-criteria %s\n' \
+  "$orphaned" "$stale" "$dup" "$nocrit"
+
+cat <<'EOF'
+
+Reading this:
+
+  Many ORPHANED tasks means decomposition outran dispatch — the orchestrator
+  planned more than it executed. That is a planning problem, not a worker problem.
+  Ask it to either dispatch them or delete them, and to stop creating tasks it does
+  not immediately route.
+
+  Many STALE tasks means transitions are being missed — work finished but nothing
+  advanced the state. Check whether the reviewer and publisher actually ran for
+  those ids.
+
+  DUPLICATE tasks mean the same intent was decomposed twice, usually across two
+  sessions. The second decomposition did not read the existing ledger first.
+
+Nothing here is edited automatically. The ledger has one writer, and it is the
+orchestrator, not this script.
+EOF

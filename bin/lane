@@ -1,0 +1,51 @@
+#!/bin/bash
+# Launch the orchestrator for one lane.
+#
+#   ./bin/lane toast-builder
+#
+# Exists because OTEL_* variables are not inherited by subprocesses Claude Code
+# spawns, so telemetry config has to be set at launch rather than discovered. The
+# lane name flows two ways: as an OTel resource attribute for spend attribution,
+# and as $LANE for the hooks, which do inherit the ordinary environment.
+
+set -euo pipefail
+
+LANE_NAME="${1:-}"
+if [ -z "$LANE_NAME" ]; then
+  echo "usage: ./bin/lane <lane-name>   (e.g. toast-builder)" >&2
+  exit 1
+fi
+
+export LANE="$LANE_NAME"
+export CLAUDE_CODE_ENABLE_TELEMETRY=1
+export OTEL_METRICS_EXPORTER=prometheus
+export OTEL_METRIC_EXPORT_INTERVAL=10000
+export OTEL_RESOURCE_ATTRIBUTES="lane=${LANE_NAME}"
+
+if [ ! -f .claude/budget.json ]; then
+  echo "No .claude/budget.json — the spend cap will refuse to run uncapped." >&2
+  exit 1
+fi
+
+if ! pgrep -f "spend-poll.sh" >/dev/null 2>&1; then
+  echo "starting spend-poll.sh..."
+  nohup ./.claude/hooks/spend-poll.sh >/dev/null 2>&1 &
+  disown
+  # Give it a moment to bind before checking, rather than checking instantly and
+  # reporting a false failure.
+  sleep 2
+fi
+
+if curl -sf localhost:9464/metrics >/dev/null 2>&1; then
+  echo "spend tracking is live"
+else
+  echo "warning: localhost:9464/metrics is not responding — the spend cap will run uncapped" >&2
+fi
+
+# This variable outranks every model: field in .claude/agents/. If it is set, the
+# builder tiers collapse to one model and the cost design silently stops working.
+if [ -n "${CLAUDE_CODE_SUBAGENT_MODEL:-}" ]; then
+  echo "warning: CLAUDE_CODE_SUBAGENT_MODEL=$CLAUDE_CODE_SUBAGENT_MODEL overrides all per-agent tiers" >&2
+fi
+
+exec claude --agent orchestrator

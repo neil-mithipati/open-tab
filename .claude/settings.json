@@ -1,0 +1,272 @@
+{
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "prometheus",
+    "OTEL_METRIC_EXPORT_INTERVAL": "10000"
+  },
+  "permissions": {
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(git rebase *)",
+      "Bash(git filter-branch *)",
+      "Bash(rm -rf *)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/id_rsa*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/deny-irreversible.sh",
+            "args": [],
+            "statusMessage": "Checking command against denial list"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-secrets.sh",
+            "args": []
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/spend-cap.sh",
+            "args": [],
+            "statusMessage": "Checking spend cap"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "builder-light|builder|builder-deep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/gate-tests.sh",
+            "args": []
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-trivial.sh",
+            "args": []
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/status-page.sh",
+            "args": [],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^builder-light$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "builder-light"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^builder$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "builder"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^builder-deep$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "builder-deep"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^reviewer$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "reviewer"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^publisher$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "publisher"
+            ],
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^builder-light$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "builder-light"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^builder$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "builder"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^builder-deep$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "builder-deep"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^reviewer$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "reviewer"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^publisher$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "publisher"
+            ],
+            "async": true
+          }
+        ]
+      }
+    ],
+    "TaskCreated": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [],
+            "async": true
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [],
+            "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/status-page.sh",
+            "args": [],
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/loop-until-done.sh",
+            "args": []
+          }
+        ]
+      }
+    ]
+  }
+}
