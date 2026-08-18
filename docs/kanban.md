@@ -1,8 +1,8 @@
 | id | title | status | blocked reason |
 |---|---|---|---|
-| OT-100 | Make main lint-clean — fix pre-existing lint errors blocking the gate | In Progress | — |
-| OT-101 | Fail loudly when NEXT_PUBLIC_APP_URL is unset in production | In Progress | — |
-| OT-102 | Parse route: derive image URL server-side, stop echoing error internals, set maxDuration | Todo | — |
+| OT-100 | Make main lint-clean — fix pre-existing lint errors blocking the gate | Done | — |
+| OT-101 | Fail loudly when NEXT_PUBLIC_APP_URL is unset in production | Done | — |
+| OT-102 | Parse route: derive image URL server-side, stop echoing error internals, set maxDuration | In Progress | — |
 | OT-103 | RLS: stop publishing every profile; caller check on add_friendship | Todo | — |
 | OT-104 | Compress receipt photos client-side before upload; cap size and MIME server-side | Todo | — |
 | OT-105 | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint | Todo | — |
