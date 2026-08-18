@@ -1,5 +1,6 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { shareReceipt } from "@/app/actions/claim";
+import { saveReceiptState } from "@/app/actions/saveReceipt";
 import type { ReceiptFlowState } from "@/hooks/useReceiptFlow";
 import type { FlowParticipant } from "@/types";
 
@@ -31,56 +32,61 @@ export async function persistAndShare(state: ReceiptFlowState): Promise<ShareRes
 
   let parts: FlowParticipant[] = state.participants;
   if (!parts.some((p) => p.isOwner)) {
-    parts = [
-      ...parts,
-      {
-        clientId: "owner",
-        type: "friend",
-        userId: user.id,
-        displayName: profile.display_name,
-        venmoUsername: profile.venmo_username,
-        isOwner: true,
-      },
-    ];
+    // If the owner is already in the list under their own Venmo username, flag
+    // that row instead of appending a second one — one participant per username
+    // per receipt is now a unique index, not a convention.
+    const ownerVenmo = profile.venmo_username.toLowerCase();
+    const self = parts.find((p) => p.venmoUsername.toLowerCase() === ownerVenmo);
+    parts = self
+      ? parts.map((p) =>
+          p === self ? { ...p, userId: user.id, isOwner: true } : p
+        )
+      : [
+          ...parts,
+          {
+            clientId: "owner",
+            type: "friend",
+            userId: user.id,
+            displayName: profile.display_name,
+            venmoUsername: profile.venmo_username,
+            isOwner: true,
+          },
+        ];
   }
 
   const itemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
   const totalAmount = total ?? itemSubtotal + (tax ?? 0) + (tip ?? 0);
 
-  await supabase.from("receipt_participants").delete().eq("receipt_id", receiptId);
-  await supabase.from("receipt_items").delete().eq("receipt_id", receiptId);
-  await Promise.all([
-    items.length > 0
-      ? supabase.from("receipt_items").insert(
-          items.map((item, i) => ({
-            receipt_id: receiptId,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            sort_order: i,
-          }))
-        )
-      : Promise.resolve(),
-    parts.length > 0
-      ? supabase.from("receipt_participants").insert(
-          parts.map((p) => ({
-            receipt_id: receiptId,
-            user_id: p.userId ?? null,
-            venmo_username: p.venmoUsername,
-            display_name: p.displayName,
-            is_owner: p.isOwner,
-          }))
-        )
-      : Promise.resolve(),
-    supabase.from("receipts").update({
-      split_mode: "by_item",
-      merchant_name: merchantName,
+  // One transaction on the server. Claiming starts from a clean slate, so no
+  // assignments or charges are sent; the swap clears any left from an earlier
+  // save. Status is left alone — shareReceipt moves it to "shared".
+  const saved = await saveReceiptState({
+    receiptId,
+    items: items.map((item) => ({
+      clientId: item.clientId,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+    })),
+    participants: parts.map((p) => ({
+      clientId: p.clientId,
+      userId: p.userId ?? null,
+      venmoUsername: p.venmoUsername,
+      displayName: p.displayName,
+      isOwner: p.isOwner,
+    })),
+    assignments: {},
+    charges: [],
+    receipt: {
+      splitMode: "by_item",
+      merchantName,
       subtotal: Math.round(itemSubtotal * 100) / 100,
       tax,
       tip,
       total: Math.round(totalAmount * 100) / 100,
-    }).eq("id", receiptId),
-  ]);
+    },
+  });
+  if (saved.error) return { error: saved.error };
 
   return shareReceipt(receiptId);
 }
