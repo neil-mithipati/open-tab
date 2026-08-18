@@ -26,3 +26,12 @@ new deployer to set it; the throw happens in `buildTabUrl`, which currently
 runs *after* `shareReceipt` has already persisted `shared` status and written
 a token (retry is safe since the token is reused, but boot-time env
 validation would fail faster).
+
+## `/api/receipts/parse` needs a 60s function timeout
+
+As of OT-102 (merged), the route exports `export const maxDuration = 60;` to
+give slow Gemini calls room to finish instead of hitting the platform
+default timeout. Confirm the hosting provider's function/route timeout
+config allows at least 60s for this route (e.g. Vercel plan limits — Hobby
+caps at 60s already, Pro/Enterprise can go higher but won't unless
+`maxDuration` is honored by the deployment config).
