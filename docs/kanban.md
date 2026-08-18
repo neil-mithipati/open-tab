@@ -1,5 +1,6 @@
 | id | title | status | blocked reason |
 |---|---|---|---|
+| OT-100 | Make main lint-clean — fix pre-existing lint errors blocking the gate | In Progress | — |
 | OT-101 | Fail loudly when NEXT_PUBLIC_APP_URL is unset in production | In Progress | — |
 | OT-102 | Parse route: derive image URL server-side, stop echoing error internals, set maxDuration | Todo | — |
 | OT-103 | RLS: stop publishing every profile; caller check on add_friendship | Todo | — |
@@ -11,3 +12,4 @@
 | OT-109 | Toast system: share/save errors surface, link-copied confirms | Todo | — |
 | OT-110 | Privacy policy page | Todo | — |
 | OT-111 | Account deletion — user-initiated, complete, confirmed | Todo | — |
+| OT-112 | Document NEXT_PUBLIC_APP_URL in .env.example | Todo | — |

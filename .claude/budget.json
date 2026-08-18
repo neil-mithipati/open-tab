@@ -1,6 +1,7 @@
 {
-  "default": 5.00,
+  "default": 10.00,
   "lanes": {
-    "open-tab": 8.00
+    "open-tab": 40.00,
+    ".": 40.00
   }
 }
