@@ -49,6 +49,7 @@ For groups, the person who paid can skip the assigning entirely: share a link or
 | Friends & QR invites | Reusable contacts and quick connections make repeat splits faster |
 | Persistent flow state | A mid-split page refresh never loses progress — the flow resumes exactly where it left off |
 | Tab history dashboard | Every past split stays organized and re-openable, with clear paid/unpaid status |
+| On-device photo compression | Receipt photos are compressed before upload, so scans are faster and the same storage budget holds far more receipts |
 
 ---
 

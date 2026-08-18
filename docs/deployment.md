@@ -1,5 +1,19 @@
 # Deployment notes
 
+## Receipt photo storage ceiling raised (OT-104, merged)
+
+Receipt photos are now compressed on-device before upload (downscaled and
+re-encoded to JPEG) instead of uploading the raw phone photo. Same Supabase
+free-tier storage budget now holds roughly 25x more receipts, and Gemini
+parses run faster against the smaller image.
+
+`/api/receipts/parse` also now enforces server-side caps: the fetched image
+must be 10 MB or smaller and its MIME type must be `image/jpeg`,
+`image/png`, `image/webp`, or `image/heic`, or the route returns 400
+`{ error: "bad_image" }`. No config change needed for this — it's
+enforced in route code — but note it if a future upload path needs to stay
+under these limits.
+
 ## Pending migrations — apply before the next deploy
 
 **`supabase/migrations/0015_profiles_rls_and_friendship_check.sql` — apply
