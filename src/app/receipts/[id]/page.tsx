@@ -5,24 +5,13 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getReceiptDetail, getReceiptImageUrl } from "@/lib/queries";
 import { getSharedReceipt, getClaimCharges } from "@/app/actions/claim";
 import { buildTabUrl } from "@/lib/qr/inviteUrl";
+import { extractStoragePath } from "@/lib/storage";
 import type { EditableItem, FlowParticipant } from "@/types";
 import { ReceiptEditPage } from "./ReceiptEditPage";
 import { ClaimOwnerView } from "@/components/receipt/ClaimOwnerView";
 
 interface Props {
   params: Promise<{ id: string }>;
-}
-
-function extractStoragePath(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    const pathname = new URL(url).pathname;
-    const marker = "/receipt-images/";
-    const idx = pathname.indexOf(marker);
-    return idx === -1 ? null : pathname.slice(idx + marker.length);
-  } catch {
-    return null;
-  }
 }
 
 export default function ReceiptDetailPage({ params }: Props) {

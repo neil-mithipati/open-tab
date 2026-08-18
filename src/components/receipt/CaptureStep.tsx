@@ -62,7 +62,6 @@ export function CaptureStep({ flow }: { flow: Flow }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        signedUrl: signed.signedUrl,
         receiptId: receipt.id,
         mimeType: file.type,
       }),
