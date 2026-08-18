@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 21:53 UTC · regenerated on every task completion.
+Updated 2026-08-18 21:54 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -16,7 +16,7 @@ Updated 2026-08-18 21:53 UTC · regenerated on every task completion.
 | builder-deep | . | 2026-08-18T21:43:29Z | 2 |
 | reviewer | . | 2026-08-18T21:48:04Z | 4 |
 | builder | . | 2026-08-18T21:53:21Z | 5 |
-| publisher | . | 2026-08-18T21:53:26Z | 6 |
+| publisher | . | 2026-08-18T21:53:26Z | 5 |
 
 ## Tasks
 
@@ -39,26 +39,26 @@ Updated 2026-08-18 21:53 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-18T21:51:42Z  .  SubagentStop  
-2026-08-18T21:51:42Z  .  SubagentStop  
-2026-08-18T21:51:42Z  .  SubagentStop  
-2026-08-18T21:51:42Z  .  SubagentStop  
-2026-08-18T21:51:42Z  .  SubagentStop  
-2026-08-18T21:52:14Z  .  SubagentStop  
-2026-08-18T21:52:14Z  .  SubagentStop  
-2026-08-18T21:52:14Z  .  SubagentStop  
-2026-08-18T21:52:14Z  .  SubagentStop  
-2026-08-18T21:52:14Z  .  SubagentStop  
-2026-08-18T21:52:32Z  .  SubagentStop  reviewer
-2026-08-18T21:53:21Z  .  SubagentStart  builder
-2026-08-18T21:53:21Z  .  SubagentStart  builder
-2026-08-18T21:53:26Z  .  SubagentStart  publisher
-2026-08-18T21:53:26Z  .  SubagentStart  publisher
 2026-08-18T21:53:52Z  .  SubagentStop  
 2026-08-18T21:53:52Z  .  SubagentStop  
 2026-08-18T21:53:52Z  .  SubagentStop  
 2026-08-18T21:53:52Z  .  SubagentStop  
-2026-08-18T21:53:52Z  .  SubagentStop  
+2026-08-18T21:53:56Z  .  SubagentStop  
+2026-08-18T21:53:56Z  .  SubagentStop  
+2026-08-18T21:53:56Z  .  SubagentStop  
+2026-08-18T21:53:56Z  .  SubagentStop  
+2026-08-18T21:53:56Z  .  SubagentStop  
+2026-08-18T21:54:03Z  .  SubagentStop  publisher
+2026-08-18T21:54:24Z  .  SubagentStop  
+2026-08-18T21:54:24Z  .  SubagentStop  
+2026-08-18T21:54:24Z  .  SubagentStop  
+2026-08-18T21:54:24Z  .  SubagentStop  
+2026-08-18T21:54:24Z  .  SubagentStop  
+2026-08-18T21:54:55Z  .  SubagentStop  
+2026-08-18T21:54:55Z  .  SubagentStop  
+2026-08-18T21:54:55Z  .  SubagentStop  
+2026-08-18T21:54:55Z  .  SubagentStop  
+2026-08-18T21:54:55Z  .  SubagentStop  
 ```
 
 ---
