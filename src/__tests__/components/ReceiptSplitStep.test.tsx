@@ -64,6 +64,8 @@ vi.mock("@/lib/supabase/client", () => {
         getUser: vi.fn().mockResolvedValue({ data: { user: { id: "test-user-id" } } }),
       },
       from: vi.fn((table: string) => (table === "friend_groups" ? groups : empty)),
+      // Friends come from a scoped RPC now that profiles is own-row only.
+      rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
     })),
   };
 });
