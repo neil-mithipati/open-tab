@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 20:33 UTC · regenerated on every task completion.
+Updated 2026-08-18 20:40 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -13,11 +13,26 @@ curl -s localhost:9464/metrics | head   # must return output
 
 ## Agents
 
-No events recorded yet.
+Idle — no agents currently running.
 
 ## Tasks
 
 Ledger is empty.
+
+## Recent activity
+
+```
+2026-08-18T20:33:41Z  default  SubagentStop  
+2026-08-18T20:33:41Z  default  SubagentStop  
+2026-08-18T20:33:41Z  default  SubagentStop  
+2026-08-18T20:33:41Z  default  SubagentStop  
+2026-08-18T20:33:41Z  default  SubagentStop  
+2026-08-18T20:40:03Z  .  SubagentStop  
+2026-08-18T20:40:03Z  .  SubagentStop  
+2026-08-18T20:40:03Z  .  SubagentStop  
+2026-08-18T20:40:03Z  .  SubagentStop  
+2026-08-18T20:40:03Z  .  SubagentStop  
+```
 
 ---
 
