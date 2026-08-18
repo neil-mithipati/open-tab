@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 21:38 UTC · regenerated on every task completion.
+Updated 2026-08-18 21:39 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -14,9 +14,9 @@ Updated 2026-08-18 21:38 UTC · regenerated on every task completion.
 |---|---|---|---|
 | builder-light | . | 2026-08-18T21:12:12Z | 2 |
 | builder-deep | . | 2026-08-18T21:30:24Z | 1 |
-| reviewer | . | 2026-08-18T21:32:51Z | 2 |
-| builder | . | 2026-08-18T21:37:31Z | 4 |
-| publisher | . | 2026-08-18T21:37:39Z | 4 |
+| builder | . | 2026-08-18T21:37:31Z | 3 |
+| publisher | . | 2026-08-18T21:37:39Z | 3 |
+| reviewer | . | 2026-08-18T21:39:08Z | 4 |
 
 ## Tasks
 
@@ -39,26 +39,26 @@ Updated 2026-08-18 21:38 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-18T21:35:26Z  .  SubagentStop  
-2026-08-18T21:35:26Z  .  SubagentStop  
-2026-08-18T21:35:26Z  .  SubagentStop  
-2026-08-18T21:35:26Z  .  SubagentStop  
-2026-08-18T21:35:26Z  .  SubagentStop  
-2026-08-18T21:35:57Z  .  SubagentStop  
-2026-08-18T21:35:57Z  .  SubagentStop  
-2026-08-18T21:35:57Z  .  SubagentStop  
-2026-08-18T21:35:57Z  .  SubagentStop  
-2026-08-18T21:35:57Z  .  SubagentStop  
-2026-08-18T21:36:17Z  .  SubagentStop  reviewer
-2026-08-18T21:37:31Z  .  SubagentStart  builder
-2026-08-18T21:37:31Z  .  SubagentStart  builder
-2026-08-18T21:37:39Z  .  SubagentStart  publisher
-2026-08-18T21:37:39Z  .  SubagentStart  publisher
-2026-08-18T21:38:03Z  .  SubagentStop  
-2026-08-18T21:38:03Z  .  SubagentStop  
-2026-08-18T21:38:03Z  .  SubagentStop  
-2026-08-18T21:38:03Z  .  SubagentStop  
-2026-08-18T21:38:03Z  .  SubagentStop  
+2026-08-18T21:38:10Z  .  SubagentStop  
+2026-08-18T21:38:34Z  .  SubagentStop  
+2026-08-18T21:38:34Z  .  SubagentStop  
+2026-08-18T21:38:34Z  .  SubagentStop  
+2026-08-18T21:38:34Z  .  SubagentStop  
+2026-08-18T21:38:34Z  .  SubagentStop  
+2026-08-18T21:38:42Z  .  SubagentStop  
+2026-08-18T21:38:42Z  .  SubagentStop  
+2026-08-18T21:38:42Z  .  SubagentStop  
+2026-08-18T21:38:42Z  .  SubagentStop  
+2026-08-18T21:38:42Z  .  SubagentStop  
+2026-08-18T21:38:45Z  .  SubagentStop  builder
+2026-08-18T21:38:51Z  .  SubagentStop  publisher
+2026-08-18T21:39:08Z  .  SubagentStart  reviewer
+2026-08-18T21:39:08Z  .  SubagentStart  reviewer
+2026-08-18T21:39:39Z  .  SubagentStop  
+2026-08-18T21:39:39Z  .  SubagentStop  
+2026-08-18T21:39:39Z  .  SubagentStop  
+2026-08-18T21:39:39Z  .  SubagentStop  
+2026-08-18T21:39:39Z  .  SubagentStop  
 ```
 
 ---
