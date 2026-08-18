@@ -244,6 +244,10 @@ export function ReceiptSplitStep({
   const router = useRouter();
   const [internalView, setInternalView] = useState<"parsed" | "original">("parsed");
   const view = viewProp ?? internalView;
+  // Kept for API symmetry with the paid-ids pair below (external override vs.
+  // internal fallback) even though nothing calls it yet; deleting it would
+  // ripple into removing internalView/onViewChange too, which is out of scope.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function setView(v: "parsed" | "original") {
     if (onViewChange) onViewChange(v); else setInternalView(v);
   }
@@ -311,7 +315,7 @@ export function ReceiptSplitStep({
       document.removeEventListener("mousedown", handleOutside);
       document.removeEventListener("touchstart", handleOutside);
     };
-  }, [activeItemId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeItemId]);
 
   useEffect(() => {
     async function load() {
@@ -870,7 +874,11 @@ export function ReceiptSplitStep({
                 } else {
                   setInternalPaidClientIds((prev) => {
                     const next = new Set(prev);
-                    next.has(charge.participant.clientId) ? next.delete(charge.participant.clientId) : next.add(charge.participant.clientId);
+                    if (next.has(charge.participant.clientId)) {
+                      next.delete(charge.participant.clientId);
+                    } else {
+                      next.add(charge.participant.clientId);
+                    }
                     return next;
                   });
                 }

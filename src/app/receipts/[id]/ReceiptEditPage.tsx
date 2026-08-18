@@ -49,7 +49,11 @@ export function ReceiptEditPage({ seed }: Props) {
   function handleTogglePaid(clientId: string) {
     setPaidClientIds((prev) => {
       const next = new Set(prev);
-      next.has(clientId) ? next.delete(clientId) : next.add(clientId);
+      if (next.has(clientId)) {
+        next.delete(clientId);
+      } else {
+        next.add(clientId);
+      }
       return next;
     });
   }
