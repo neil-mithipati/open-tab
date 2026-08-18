@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 22:11 UTC · regenerated on every task completion.
+Updated 2026-08-18 22:14 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -13,10 +13,10 @@ Updated 2026-08-18 22:11 UTC · regenerated on every task completion.
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-light | . | 2026-08-18T21:12:12Z | 2 |
-| builder | . | 2026-08-18T21:53:21Z | 4 |
 | builder-deep | . | 2026-08-18T22:00:31Z | 3 |
-| publisher | . | 2026-08-18T22:00:38Z | 6 |
-| reviewer | . | 2026-08-18T22:07:46Z | 7 |
+| reviewer | . | 2026-08-18T22:07:46Z | 6 |
+| builder | . | 2026-08-18T22:13:58Z | 6 |
+| publisher | . | 2026-08-18T22:14:02Z | 8 |
 
 ## Tasks
 
@@ -27,8 +27,8 @@ Updated 2026-08-18 22:11 UTC · regenerated on every task completion.
 | `OT-102` | done | "Parse route: derive image URL server-side, stop echoing error internals, set maxDuration" — null | builder |
 | `OT-103` | done | "RLS: stop publishing every profile; caller check on add_friendship" — null | builder-deep |
 | `OT-104` | done | Compress receipt photos client-side before upload; cap size and MIME server-side — null | builder |
-| `OT-105` | running | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint — null | builder-deep |
-| `OT-106` | todo | Allocate rounding remainders so charges sum to the total — null | builder |
+| `OT-105` | done | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint — null | builder-deep |
+| `OT-106` | running | Allocate rounding remainders so charges sum to the total — null | builder |
 | `OT-107` | todo | Rate-limit the parse route and share/claim actions — null | builder |
 | `OT-108` | todo | Add indexes on all foreign keys — null | builder-light |
 | `OT-109` | todo | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
@@ -40,26 +40,26 @@ Updated 2026-08-18 22:11 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-18T22:09:52Z  .  SubagentStop  
-2026-08-18T22:09:52Z  .  SubagentStop  
-2026-08-18T22:09:52Z  .  SubagentStop  
-2026-08-18T22:09:52Z  .  SubagentStop  
-2026-08-18T22:09:52Z  .  SubagentStop  
-2026-08-18T22:10:53Z  .  SubagentStop  
-2026-08-18T22:10:53Z  .  SubagentStop  
-2026-08-18T22:10:53Z  .  SubagentStop  
-2026-08-18T22:10:53Z  .  SubagentStop  
-2026-08-18T22:10:53Z  .  SubagentStop  
-2026-08-18T22:11:25Z  .  SubagentStop  
-2026-08-18T22:11:25Z  .  SubagentStop  
-2026-08-18T22:11:25Z  .  SubagentStop  
-2026-08-18T22:11:25Z  .  SubagentStop  
-2026-08-18T22:11:25Z  .  SubagentStop  
 2026-08-18T22:11:56Z  .  SubagentStop  
 2026-08-18T22:11:56Z  .  SubagentStop  
 2026-08-18T22:11:56Z  .  SubagentStop  
 2026-08-18T22:11:56Z  .  SubagentStop  
 2026-08-18T22:11:56Z  .  SubagentStop  
+2026-08-18T22:12:28Z  .  SubagentStop  
+2026-08-18T22:12:28Z  .  SubagentStop  
+2026-08-18T22:12:28Z  .  SubagentStop  
+2026-08-18T22:12:28Z  .  SubagentStop  
+2026-08-18T22:12:28Z  .  SubagentStop  
+2026-08-18T22:12:51Z  .  SubagentStop  reviewer
+2026-08-18T22:13:58Z  .  SubagentStart  builder
+2026-08-18T22:13:58Z  .  SubagentStart  builder
+2026-08-18T22:14:02Z  .  SubagentStart  publisher
+2026-08-18T22:14:02Z  .  SubagentStart  publisher
+2026-08-18T22:14:30Z  .  SubagentStop  
+2026-08-18T22:14:30Z  .  SubagentStop  
+2026-08-18T22:14:30Z  .  SubagentStop  
+2026-08-18T22:14:30Z  .  SubagentStop  
+2026-08-18T22:14:30Z  .  SubagentStop  
 ```
 
 ---
