@@ -5,6 +5,9 @@ import { extractStoragePath } from "@/lib/storage";
 
 export const maxDuration = 60;
 
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic"]);
+
 export async function POST(request: Request) {
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -32,6 +35,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "no_image" }, { status: 400 });
   }
 
+  // Bind the extracted storage path to the caller. Without this, a user
+  // could write another user's same-bucket path into their own receipt's
+  // image_url and the service client (which bypasses RLS) would revive
+  // expired signed URLs for the victim's object.
+  const ownPathPattern = new RegExp(`^${user.id}/${receiptId}\\.[A-Za-z0-9]+$`);
+  if (!ownPathPattern.test(storagePath)) {
+    return NextResponse.json({ error: "no_image" }, { status: 400 });
+  }
+
   const { data: signed } = await service.storage
     .from("receipt-images")
     .createSignedUrl(storagePath, 3600);
@@ -42,7 +54,18 @@ export async function POST(request: Request) {
 
   // fetch image and convert to base64
   const imageRes = await fetch(signed.signedUrl);
+  if (!imageRes.ok) {
+    return NextResponse.json({ error: "no_image" }, { status: 400 });
+  }
   const buffer = await imageRes.arrayBuffer();
+
+  if (buffer.byteLength > MAX_IMAGE_BYTES) {
+    return NextResponse.json({ error: "bad_image" }, { status: 400 });
+  }
+  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+    return NextResponse.json({ error: "bad_image" }, { status: 400 });
+  }
+
   const base64 = Buffer.from(buffer).toString("base64");
 
   let parsed;

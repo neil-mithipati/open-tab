@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { refreshUserCaches } from "@/app/actions/cache";
+import { compressImage } from "@/lib/image/compressImage";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import { Camera } from "lucide-react";
 
@@ -17,8 +18,10 @@ export function CaptureStep({ flow }: { flow: Flow }) {
   async function handleFile(file: File) {
     setError("");
     flow.update("imageFile", file);
-    flow.update("mimeType", file.type || "image/jpeg");
     flow.goTo("scanning");
+
+    const { blob, mimeType } = await compressImage(file);
+    flow.update("mimeType", mimeType);
 
     const supabase = getSupabaseBrowserClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -37,12 +40,13 @@ export function CaptureStep({ flow }: { flow: Flow }) {
     // cached dashboard list is already out of date.
     refreshUserCaches();
 
-    // upload image
-    const ext = file.name.split(".").pop() ?? "jpg";
+    // upload image (compressed on success, original file on fallback)
+    const compressed = blob !== file;
+    const ext = compressed ? "jpg" : (file.name.split(".").pop() ?? "jpg");
     const path = `${user.id}/${receipt.id}.${ext}`;
     const { error: uploadErr } = await supabase.storage
       .from("receipt-images")
-      .upload(path, file, { contentType: file.type });
+      .upload(path, blob, { contentType: mimeType });
 
     if (uploadErr) { flow.goTo("capture"); setError("Upload failed."); return; }
 
@@ -63,7 +67,7 @@ export function CaptureStep({ flow }: { flow: Flow }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         receiptId: receipt.id,
-        mimeType: file.type,
+        mimeType,
       }),
     });
 
