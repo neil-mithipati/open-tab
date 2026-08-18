@@ -42,9 +42,12 @@ export function ClaimPage({ token, initial }: Props) {
   const [introDismissed, setIntroDismissed] = useState(false);
   const [, startRefresh] = useTransition();
 
-  // Restore a prior identity for this receipt.
+  // Restore a prior identity for this receipt. localStorage is a synchronous
+  // external system read on mount, not a derived-state calculation, so there
+  // is no render-time alternative to this setState.
   useEffect(() => {
     const stored = localStorage.getItem(storageKey(token));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored) setParticipantId(stored);
   }, [token]);
 
@@ -57,10 +60,13 @@ export function ClaimPage({ token, initial }: Props) {
     ? receipt.participants.find((p) => p.id === participantId) ?? null
     : null;
 
-  // If the stored id no longer exists on the receipt (e.g. owner reset), drop it.
+  // If the stored id no longer exists on the receipt (e.g. owner reset), drop
+  // it. This also clears the localStorage entry, an external-system write
+  // that must stay paired with the setState call inside this effect.
   useEffect(() => {
     if (participantId && receipt.participants.length > 0 && !me) {
       localStorage.removeItem(storageKey(token));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setParticipantId(null);
     }
   }, [participantId, me, receipt.participants.length, token]);

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within, act } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
@@ -32,15 +32,26 @@ vi.mock("@/lib/supabase/client", () => {
     ],
   };
 
+  type QueryResult = { data: unknown; error: null };
+  type MockBuilder = {
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    insert: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    single: ReturnType<typeof vi.fn>;
+    then: (resolve: (value: QueryResult) => void) => void;
+  };
+
   function makeBuilder(data: unknown) {
-    const builder: any = {};
+    const builder = {} as MockBuilder;
     builder.select = vi.fn().mockReturnValue(builder);
     builder.eq = vi.fn().mockReturnValue(builder);
     builder.insert = vi.fn().mockResolvedValue({ data: null, error: null });
     builder.delete = vi.fn().mockReturnValue(builder);
     builder.update = vi.fn().mockReturnValue(builder);
     builder.single = vi.fn().mockResolvedValue({ data: null, error: null });
-    builder.then = (resolve: any) => resolve({ data, error: null });
+    builder.then = (resolve: (value: QueryResult) => void) => resolve({ data, error: null });
     return builder;
   }
 
@@ -62,7 +73,7 @@ vi.mock("@/lib/supabase/client", () => {
 
 type Flow = Parameters<typeof ReceiptSplitStep>[0]["flow"];
 
-function makeStatefulFlow(initial: ReceiptFlowState): { flow: Flow; getState: () => ReceiptFlowState } {
+function makeStatefulFlow(initial: ReceiptFlowState) {
   // Shared mutable ref so the wrapper can expose the latest state
   let latestState = initial;
 
@@ -72,7 +83,7 @@ function makeStatefulFlow(initial: ReceiptFlowState): { flow: Flow; getState: ()
 
     const flow: Flow = {
       state,
-      update: (key, value) => setState((prev) => ({ ...prev, [key]: value as any })),
+      update: (key, value) => setState((prev) => ({ ...prev, [key]: value }) as ReceiptFlowState),
       goTo: (step) => setState((prev) => ({ ...prev, step })),
       reset: vi.fn(),
       clearSplitState: () =>
@@ -111,7 +122,7 @@ function makeStatefulFlow(initial: ReceiptFlowState): { flow: Flow; getState: ()
   }
 
   // Return the wrapper component and a state accessor; the caller renders Wrapper
-  return { flow: null as any, getState: () => latestState, Wrapper };
+  return { flow: null, getState: () => latestState, Wrapper };
 }
 
 // ─── Shared test state ────────────────────────────────────────────────────────
@@ -156,10 +167,10 @@ function makeDefaultState(overrides: Partial<ReceiptFlowState> = {}): ReceiptFlo
 
 async function renderSplitStep(initial: ReceiptFlowState = makeDefaultState()) {
   const user = userEvent.setup();
-  let capturedFlow: Flow = null as any;
+  let capturedFlow: Flow | null = null;
   let capturedGetState: () => ReceiptFlowState = () => initial;
 
-  const { Wrapper } = makeStatefulFlow(initial) as any;
+  const { Wrapper } = makeStatefulFlow(initial);
 
   const utils = render(
     <Wrapper

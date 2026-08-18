@@ -47,11 +47,15 @@ const INITIAL: ReceiptFlowState = {
 export function useReceiptFlow() {
   const [state, setState] = useState<ReceiptFlowState>(INITIAL);
 
+  // Restore a saved draft from sessionStorage on mount. This is a synchronous
+  // read from an external system, not a value derivable at render time, so
+  // there is no way to move this setState out of the effect.
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setState((prev) => ({ ...prev, ...parsed, imageFile: prev.imageFile }));
       }
     } catch {}
@@ -59,6 +63,9 @@ export function useReceiptFlow() {
 
   useEffect(() => {
     try {
+      // imageFile can't be persisted to sessionStorage (a File isn't
+      // serializable) so it's excluded from the stored snapshot here.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { imageFile, ...rest } = state;
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(rest));
     } catch {}

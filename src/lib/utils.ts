@@ -93,6 +93,9 @@ export function computeItemCharges(
   tax: number,
   tip: number,
   merchantName: string | null,
+  // Unused here, but kept so call sites can pass the same argument list as
+  // computeSharedClaimCharges below.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _date: string | null
 ): ComputedCharge[] {
   const nonOwners = participants.filter((p) => !p.isOwner);
@@ -136,6 +139,9 @@ export function computeSharedClaimCharges(
   tip: number,
   ownerVenmoUsername: string,
   merchantName: string | null,
+  // Unused here, but kept so call sites can pass the same argument list as
+  // computeItemCharges above.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _date: string | null
 ): ComputedCharge[] {
   if (participants.length === 0) return [];
