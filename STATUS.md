@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 21:16 UTC · regenerated on every task completion.
+Updated 2026-08-18 21:17 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -39,16 +39,6 @@ curl -s localhost:9464/metrics | head   # must return output
 ## Recent activity
 
 ```
-2026-08-18T21:14:32Z  .  SubagentStop  
-2026-08-18T21:15:05Z  .  SubagentStop  
-2026-08-18T21:15:05Z  .  SubagentStop  
-2026-08-18T21:15:05Z  .  SubagentStop  
-2026-08-18T21:15:05Z  .  SubagentStop  
-2026-08-18T21:15:05Z  .  SubagentStop  
-2026-08-18T21:15:15Z  .  SubagentStop  builder
-2026-08-18T21:15:32Z  .  SubagentStop  builder
-2026-08-18T21:15:45Z  .  SubagentStart  reviewer
-2026-08-18T21:15:45Z  .  SubagentStart  reviewer
 2026-08-18T21:16:17Z  .  SubagentStop  
 2026-08-18T21:16:17Z  .  SubagentStop  
 2026-08-18T21:16:17Z  .  SubagentStop  
@@ -59,6 +49,16 @@ curl -s localhost:9464/metrics | head   # must return output
 2026-08-18T21:16:48Z  .  SubagentStop  
 2026-08-18T21:16:48Z  .  SubagentStop  
 2026-08-18T21:16:48Z  .  SubagentStop  
+2026-08-18T21:17:19Z  .  SubagentStop  
+2026-08-18T21:17:19Z  .  SubagentStop  
+2026-08-18T21:17:19Z  .  SubagentStop  
+2026-08-18T21:17:19Z  .  SubagentStop  
+2026-08-18T21:17:19Z  .  SubagentStop  
+2026-08-18T21:17:50Z  .  SubagentStop  
+2026-08-18T21:17:50Z  .  SubagentStop  
+2026-08-18T21:17:50Z  .  SubagentStop  
+2026-08-18T21:17:50Z  .  SubagentStop  
+2026-08-18T21:17:50Z  .  SubagentStop  
 ```
 
 ---
