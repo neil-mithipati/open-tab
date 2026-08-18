@@ -20,12 +20,12 @@ export async function addFriendByUsername(
 
   const supabase = getSupabaseBrowserClient();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, display_name, venmo_username")
-    .ilike("venmo_username", username)
-    .neq("id", userId)
-    .single();
+  // profiles is own-row only under RLS. The scoped function does the exact,
+  // case-insensitive username match and excludes the caller server-side.
+  const { data: matches } = await supabase.rpc("find_profile_by_venmo_username", {
+    username,
+  });
+  const profile = (matches as Friend[] | null)?.[0] ?? null;
 
   if (!profile) {
     // Not on Open Tab — save as an external contact by Venmo username.
@@ -53,5 +53,5 @@ export async function addFriendByUsername(
     b: profile.id,
   });
   if (rpcError) return { error: "Something went wrong. Try again." };
-  return { friend: profile as Friend };
+  return { friend: profile };
 }

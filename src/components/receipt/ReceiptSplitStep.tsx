@@ -325,16 +325,17 @@ export function ReceiptSplitStep({
       } = await supabase.auth.getUser();
       if (!user) return;
       setSelfId(user.id);
-      const [{ data: selfData }, { data: friendshipData }, { data: externalData }, { data: groupData }] = await Promise.all([
+      const [{ data: selfData }, { data: friendData }, { data: externalData }, { data: groupData }] = await Promise.all([
         supabase
           .from("profiles")
           .select("id, display_name, venmo_username, email, invite_token, created_at, updated_at")
           .eq("id", user.id)
           .single(),
-        supabase
-          .from("friendships")
-          .select("friend_id, profiles!friendships_friend_id_fkey(id, display_name, venmo_username, email)")
-          .eq("user_id", user.id) as unknown as Promise<{ data: Array<{ friend_id: string; profiles: Profile | null }> | null }>,
+        // profiles is own-row only under RLS, so friends come back through a
+        // scoped function: id / display_name / venmo_username, nothing else.
+        supabase.rpc("list_friend_profiles") as unknown as Promise<{
+          data: Array<{ id: string; display_name: string; venmo_username: string | null }> | null;
+        }>,
         supabase
           .from("external_contacts")
           .select("id, venmo_username, display_name")
@@ -346,7 +347,13 @@ export function ReceiptSplitStep({
       ]);
 
       const self: Profile[] = selfData ? [selfData as Profile] : [];
-      const realFriends = (friendshipData ?? []).map((f) => f.profiles).filter((p): p is Profile => p !== null);
+      const realFriends: Profile[] = (friendData ?? []).map((f) => ({
+        ...f,
+        email: "",
+        invite_token: "",
+        created_at: "",
+        updated_at: "",
+      }));
       const externalFriends: Profile[] = (externalData ?? []).map((c: { id: string; venmo_username: string; display_name: string | null }) => ({
         id: "",  // not a profiles.id — treat as manual when adding to participants
         display_name: (c.display_name ?? c.venmo_username) as string,

@@ -25,11 +25,11 @@ async function InviteContent({ params }: Props) {
   const { token } = await params;
   const supabase = await getSupabaseServerClient();
 
-  const { data: inviter } = await supabase
-    .from("profiles")
-    .select("id, display_name, venmo_username")
-    .eq("invite_token", token)
-    .single();
+  // profiles is own-row only under RLS; this scoped function resolves the token
+  // the visitor already holds and returns nothing but the inviter's public fields.
+  const { data: inviter } = (await supabase
+    .rpc("get_profile_by_invite_token", { token })
+    .maybeSingle()) as { data: { id: string; display_name: string; venmo_username: string | null } | null };
 
   if (!inviter) notFound();
 

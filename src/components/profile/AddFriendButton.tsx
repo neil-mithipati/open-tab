@@ -12,12 +12,19 @@ interface Props {
 }
 
 export function AddFriendButton({ inviterId, currentUserId }: Props) {
-  const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   async function addFriend() {
     setStatus("loading");
     const supabase = getSupabaseBrowserClient();
-    await supabase.rpc("add_friendship", { a: currentUserId, b: inviterId });
+    // add_friendship refuses unless the caller is one of the two users, so a
+    // stale or signed-out session comes back as an error instead of silently
+    // doing nothing.
+    const { error } = await supabase.rpc("add_friendship", { a: currentUserId, b: inviterId });
+    if (error) {
+      setStatus("error");
+      return;
+    }
     await refreshUserCaches();
     setStatus("done");
   }
@@ -31,8 +38,13 @@ export function AddFriendButton({ inviterId, currentUserId }: Props) {
   }
 
   return (
-    <GlassButton size="lg" loading={status === "loading"} onClick={addFriend}>
-      <UserPlus className="w-5 h-5 mr-2" /> Add as friend
-    </GlassButton>
+    <div className="w-full flex flex-col items-center gap-2">
+      <GlassButton size="lg" loading={status === "loading"} onClick={addFriend}>
+        <UserPlus className="w-5 h-5 mr-2" /> Add as friend
+      </GlassButton>
+      {status === "error" && (
+        <p className="text-sm text-red-400">Couldn&apos;t connect. Try again.</p>
+      )}
+    </div>
   );
 }
