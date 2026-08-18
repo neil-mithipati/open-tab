@@ -165,6 +165,20 @@ export async function joinReceipt(
     .select("id")
     .single();
 
+  // Two people can open the link and enter the same username at the same
+  // moment; the read above sees nothing and both insert. The unique index on
+  // (receipt_id, lower(venmo_username)) rejects the loser, who then resumes the
+  // row the winner created rather than seeing an error.
+  if (error?.code === "23505") {
+    const { data: raced } = await supabase
+      .from("receipt_participants")
+      .select("id")
+      .eq("receipt_id", receipt.id)
+      .ilike("venmo_username", username)
+      .maybeSingle();
+    if (raced) return { participantId: raced.id };
+  }
+
   if (error || !inserted) return { error: "Couldn't join. Try again." };
   return { participantId: inserted.id };
 }
