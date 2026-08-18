@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 22:06 UTC · regenerated on every task completion.
+Updated 2026-08-18 22:07 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -14,9 +14,9 @@ Updated 2026-08-18 22:06 UTC · regenerated on every task completion.
 |---|---|---|---|
 | builder-light | . | 2026-08-18T21:12:12Z | 2 |
 | builder | . | 2026-08-18T21:53:21Z | 4 |
-| reviewer | . | 2026-08-18T21:55:46Z | 5 |
 | builder-deep | . | 2026-08-18T22:00:31Z | 4 |
 | publisher | . | 2026-08-18T22:00:38Z | 6 |
+| reviewer | . | 2026-08-18T22:07:46Z | 7 |
 
 ## Tasks
 
@@ -39,18 +39,6 @@ Updated 2026-08-18 22:06 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-18T22:05:11Z  .  SubagentStop  
-2026-08-18T22:05:11Z  .  SubagentStop  
-2026-08-18T22:05:11Z  .  SubagentStop  
-2026-08-18T22:05:11Z  .  SubagentStop  
-2026-08-18T22:05:11Z  .  SubagentStop  
-2026-08-18T22:05:43Z  .  SubagentStop  
-2026-08-18T22:05:43Z  .  SubagentStop  
-2026-08-18T22:05:43Z  .  SubagentStop  
-2026-08-18T22:05:43Z  .  SubagentStop  
-2026-08-18T22:05:43Z  .  SubagentStop  
-2026-08-18T22:06:14Z  .  SubagentStop  
-2026-08-18T22:06:14Z  .  SubagentStop  
 2026-08-18T22:06:14Z  .  SubagentStop  
 2026-08-18T22:06:14Z  .  SubagentStop  
 2026-08-18T22:06:14Z  .  SubagentStop  
@@ -59,6 +47,18 @@ Updated 2026-08-18 22:06 UTC · regenerated on every task completion.
 2026-08-18T22:06:45Z  .  SubagentStop  
 2026-08-18T22:06:45Z  .  SubagentStop  
 2026-08-18T22:06:45Z  .  SubagentStop  
+2026-08-18T22:07:17Z  .  SubagentStop  
+2026-08-18T22:07:17Z  .  SubagentStop  
+2026-08-18T22:07:17Z  .  SubagentStop  
+2026-08-18T22:07:17Z  .  SubagentStop  
+2026-08-18T22:07:17Z  .  SubagentStop  
+2026-08-18T22:07:46Z  .  SubagentStart  reviewer
+2026-08-18T22:07:46Z  .  SubagentStart  reviewer
+2026-08-18T22:07:48Z  .  SubagentStop  
+2026-08-18T22:07:48Z  .  SubagentStop  
+2026-08-18T22:07:48Z  .  SubagentStop  
+2026-08-18T22:07:48Z  .  SubagentStop  
+2026-08-18T22:07:48Z  .  SubagentStop  
 ```
 
 ---
