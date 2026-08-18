@@ -1,5 +1,31 @@
 # Deployment notes
 
+## Pending migrations — apply before the next deploy
+
+**`supabase/migrations/0015_profiles_rls_and_friendship_check.sql` — apply
+BEFORE or WITH the next code deploy, not after.**
+
+OT-103 (merged) locks down `profiles`: the old `profiles_select_all` policy
+(`using (true)`, readable by anyone with the anon key) is dropped and replaced
+with an own-row policy. Cross-user reads that used to hit `profiles` directly
+now go through scoped `security definer` functions
+(`get_profile_by_invite_token`, `list_friend_profiles`,
+`find_profile_by_venmo_username`), and `add_friendship` now rejects any call
+where the caller is not one of the two users being friended.
+
+The merged client code already calls the new functions. **If migration 0015
+is not applied first:**
+
+- Every invite page 404s (`get_profile_by_invite_token` doesn't exist yet).
+- Friend search returns empty (`list_friend_profiles` doesn't exist yet).
+- Adding an on-platform friend silently misroutes into `external_contacts`
+  instead of creating a real friendship, because the client-side fallback
+  can't tell "function missing" from "not a real user."
+
+Apply 0015 to the Supabase project first (or in the same deploy step, before
+the new build serves traffic), then deploy the code. Do not deploy code and
+migration out of order.
+
 ## `NEXT_PUBLIC_APP_URL` is required in production
 
 Share links and QR codes are built from `NEXT_PUBLIC_APP_URL`
