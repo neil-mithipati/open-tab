@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
 import { parseReceiptImage } from "@/lib/gemini/parseReceipt";
+import { extractStoragePath } from "@/lib/storage";
+
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const supabase = await getSupabaseServerClient();
@@ -9,13 +12,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { signedUrl, receiptId, mimeType } = await request.json();
+  const { receiptId, mimeType } = await request.json();
 
   // verify the receipt belongs to this user before writing
   const service = await getSupabaseServiceClient();
   const { data: receipt } = await service
     .from("receipts")
-    .select("id")
+    .select("id, image_url")
     .eq("id", receiptId)
     .eq("created_by", user.id)
     .single();
@@ -24,8 +27,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
+  const storagePath = extractStoragePath(receipt.image_url);
+  if (!storagePath) {
+    return NextResponse.json({ error: "no_image" }, { status: 400 });
+  }
+
+  const { data: signed } = await service.storage
+    .from("receipt-images")
+    .createSignedUrl(storagePath, 3600);
+
+  if (!signed) {
+    return NextResponse.json({ error: "no_image" }, { status: 400 });
+  }
+
   // fetch image and convert to base64
-  const imageRes = await fetch(signedUrl);
+  const imageRes = await fetch(signed.signedUrl);
   const buffer = await imageRes.arrayBuffer();
   const base64 = Buffer.from(buffer).toString("base64");
 
@@ -34,7 +50,7 @@ export async function POST(request: Request) {
     parsed = await parseReceiptImage(base64, mimeType ?? "image/jpeg");
   } catch (err) {
     console.error("[parse] Gemini error:", err);
-    return NextResponse.json({ error: "parse_failed", detail: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "parse_failed" }, { status: 500 });
   }
 
   // write parsed data back to db
