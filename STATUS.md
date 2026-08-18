@@ -37,11 +37,6 @@ curl -s localhost:9464/metrics | head   # must return output
 ## Recent activity
 
 ```
-2026-08-18T20:41:37Z  .  SubagentStop  
-2026-08-18T20:41:47Z  .  SubagentStop  
-2026-08-18T20:41:47Z  .  SubagentStop  
-2026-08-18T20:41:47Z  .  SubagentStop  
-2026-08-18T20:41:47Z  .  SubagentStop  
 2026-08-18T20:41:47Z  .  SubagentStop  
 2026-08-18T20:44:39Z  .  SubagentStop  
 2026-08-18T20:44:39Z  .  SubagentStop  
@@ -57,6 +52,11 @@ curl -s localhost:9464/metrics | head   # must return output
 2026-08-18T21:12:46Z  .  SubagentStop  
 2026-08-18T21:12:46Z  .  SubagentStop  
 2026-08-18T21:12:46Z  .  SubagentStop  
+2026-08-18T21:12:48Z  .  SubagentStop  
+2026-08-18T21:12:48Z  .  SubagentStop  
+2026-08-18T21:12:48Z  .  SubagentStop  
+2026-08-18T21:12:48Z  .  SubagentStop  
+2026-08-18T21:12:48Z  .  SubagentStop  
 ```
 
 ---
