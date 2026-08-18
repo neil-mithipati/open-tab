@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-18 22:07 UTC · regenerated on every task completion.
+Updated 2026-08-18 22:08 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -14,7 +14,7 @@ Updated 2026-08-18 22:07 UTC · regenerated on every task completion.
 |---|---|---|---|
 | builder-light | . | 2026-08-18T21:12:12Z | 2 |
 | builder | . | 2026-08-18T21:53:21Z | 4 |
-| builder-deep | . | 2026-08-18T22:00:31Z | 4 |
+| builder-deep | . | 2026-08-18T22:00:31Z | 3 |
 | publisher | . | 2026-08-18T22:00:38Z | 6 |
 | reviewer | . | 2026-08-18T22:07:46Z | 7 |
 
@@ -35,21 +35,11 @@ Updated 2026-08-18 22:07 UTC · regenerated on every task completion.
 | `OT-110` | todo | Privacy policy page — null | builder-light |
 | `OT-111` | todo | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
 | `OT-112` | todo | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder-light |
+| `OT-113` | todo | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-18T22:06:14Z  .  SubagentStop  
-2026-08-18T22:06:14Z  .  SubagentStop  
-2026-08-18T22:06:14Z  .  SubagentStop  
-2026-08-18T22:06:45Z  .  SubagentStop  
-2026-08-18T22:06:45Z  .  SubagentStop  
-2026-08-18T22:06:45Z  .  SubagentStop  
-2026-08-18T22:06:45Z  .  SubagentStop  
-2026-08-18T22:06:45Z  .  SubagentStop  
-2026-08-18T22:07:17Z  .  SubagentStop  
-2026-08-18T22:07:17Z  .  SubagentStop  
-2026-08-18T22:07:17Z  .  SubagentStop  
 2026-08-18T22:07:17Z  .  SubagentStop  
 2026-08-18T22:07:17Z  .  SubagentStop  
 2026-08-18T22:07:46Z  .  SubagentStart  reviewer
@@ -59,6 +49,17 @@ Updated 2026-08-18 22:07 UTC · regenerated on every task completion.
 2026-08-18T22:07:48Z  .  SubagentStop  
 2026-08-18T22:07:48Z  .  SubagentStop  
 2026-08-18T22:07:48Z  .  SubagentStop  
+2026-08-18T22:07:51Z  .  SubagentStop  builder-deep
+2026-08-18T22:08:17Z  .  SubagentStop  
+2026-08-18T22:08:17Z  .  SubagentStop  
+2026-08-18T22:08:17Z  .  SubagentStop  
+2026-08-18T22:08:17Z  .  SubagentStop  
+2026-08-18T22:08:17Z  .  SubagentStop  
+2026-08-18T22:08:48Z  .  SubagentStop  
+2026-08-18T22:08:48Z  .  SubagentStop  
+2026-08-18T22:08:48Z  .  SubagentStop  
+2026-08-18T22:08:48Z  .  SubagentStop  
+2026-08-18T22:08:48Z  .  SubagentStop  
 ```
 
 ---
