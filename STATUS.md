@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 19:06 UTC · regenerated on every task completion.
+Updated 2026-08-19 19:07 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $6.96 | $20.00 | ███░░░░░░░ 34% |
+| open-tab | $8.24 | $20.00 | ████░░░░░░ 41% |
 
 ## Agents
 
@@ -14,8 +14,8 @@ Updated 2026-08-19 19:06 UTC · regenerated on every task completion.
 |---|---|---|---|
 | builder-light | open-tab | 2026-08-19T19:01:30Z | 2 |
 | publisher | open-tab | 2026-08-19T19:03:40Z | 1 |
-| builder | open-tab | 2026-08-19T19:05:06Z | 3 |
-| reviewer | open-tab | 2026-08-19T19:06:03Z | 6 |
+| builder | open-tab | 2026-08-19T19:05:06Z | 2 |
+| reviewer | open-tab | 2026-08-19T19:07:45Z | 11 |
 
 ## Tasks
 
@@ -42,26 +42,26 @@ Updated 2026-08-19 19:06 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T19:06:22Z  open-tab  SubagentStop  builder
-2026-08-19T19:06:25Z  open-tab  SubagentStop  
-2026-08-19T19:06:25Z  open-tab  SubagentStop  
-2026-08-19T19:06:25Z  open-tab  SubagentStop  
-2026-08-19T19:06:25Z  open-tab  SubagentStop  
-2026-08-19T19:06:25Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:34Z  open-tab  SubagentStop  
-2026-08-19T19:06:38Z  open-tab  SubagentStop  builder
-2026-08-19T19:06:56Z  open-tab  SubagentStop  reviewer
-2026-08-19T19:06:56Z  open-tab  SubagentStart  reviewer
-2026-08-19T19:06:56Z  open-tab  SubagentStart  reviewer
+2026-08-19T19:07:28Z  open-tab  SubagentStop  
+2026-08-19T19:07:28Z  open-tab  SubagentStop  
+2026-08-19T19:07:28Z  open-tab  SubagentStop  
+2026-08-19T19:07:28Z  open-tab  SubagentStop  
+2026-08-19T19:07:37Z  open-tab  SubagentStop  
+2026-08-19T19:07:37Z  open-tab  SubagentStop  
+2026-08-19T19:07:37Z  open-tab  SubagentStop  
+2026-08-19T19:07:37Z  open-tab  SubagentStop  
+2026-08-19T19:07:37Z  open-tab  SubagentStop  
+2026-08-19T19:07:45Z  open-tab  SubagentStart  reviewer
+2026-08-19T19:07:47Z  open-tab  SubagentStop  
+2026-08-19T19:07:47Z  open-tab  SubagentStop  
+2026-08-19T19:07:47Z  open-tab  SubagentStop  
+2026-08-19T19:07:47Z  open-tab  SubagentStop  
+2026-08-19T19:07:47Z  open-tab  SubagentStop  
+2026-08-19T19:07:59Z  open-tab  SubagentStop  
+2026-08-19T19:07:59Z  open-tab  SubagentStop  
+2026-08-19T19:07:59Z  open-tab  SubagentStop  
+2026-08-19T19:07:59Z  open-tab  SubagentStop  
+2026-08-19T19:07:59Z  open-tab  SubagentStop  
 ```
 
 ---
