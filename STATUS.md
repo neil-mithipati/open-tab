@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 13:34 UTC · regenerated on every task completion.
+Updated 2026-08-19 13:35 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $5.6 | $10.00 | █████░░░░░ 55% |
+| open-tab | $6.23 | $10.00 | ██████░░░░ 62% |
 
 ## Agents
 
@@ -26,38 +26,38 @@ Updated 2026-08-19 13:34 UTC · regenerated on every task completion.
 | `OT-104` | done | Compress receipt photos client-side before upload; cap size and MIME server-side — null | builder |
 | `OT-105` | done | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint — null | builder-deep |
 | `OT-106` | done | Allocate rounding remainders so charges sum to the total — null | builder |
-| `OT-107` | **blocked** | Rate-limit the parse route and share/claim actions — >- | builder-deep |
-| `OT-108` | **blocked** | Add indexes on all foreign keys — >- | builder-light |
-| `OT-109` | **blocked** | "Toast system: share/save errors surface, link-copied confirms" — >- | builder |
-| `OT-110` | **blocked** | Privacy policy page — >- | builder-light |
-| `OT-111` | **blocked** | Account deletion — user-initiated, complete, confirmed — >- | builder-deep |
-| `OT-112` | **blocked** | Document NEXT_PUBLIC_APP_URL in .env.example — >- | builder-light |
-| `OT-113` | **blocked** | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — >- | builder |
+| `OT-107` | running | Rate-limit the parse route and share/claim actions — null | builder-deep |
+| `OT-108` | todo | Add indexes on all foreign keys — null | builder-light |
+| `OT-109` | todo | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
+| `OT-110` | todo | Privacy policy page — null | builder-light |
+| `OT-111` | todo | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
+| `OT-112` | todo | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder-light |
+| `OT-113` | todo | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
 | `OT-114` | **blocked** | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — >- | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T13:30:54Z  open-tab  SubagentStop  
-2026-08-19T13:30:54Z  open-tab  SubagentStop  
-2026-08-19T13:30:54Z  open-tab  SubagentStop  
-2026-08-19T13:31:48Z  open-tab  SubagentStart  builder-deep
-2026-08-19T13:31:48Z  open-tab  SubagentStart  builder-deep
-2026-08-19T13:32:21Z  open-tab  SubagentStop  
-2026-08-19T13:32:21Z  open-tab  SubagentStop  
-2026-08-19T13:32:21Z  open-tab  SubagentStop  
-2026-08-19T13:32:21Z  open-tab  SubagentStop  
-2026-08-19T13:32:21Z  open-tab  SubagentStop  
-2026-08-19T13:32:53Z  open-tab  SubagentStop  
-2026-08-19T13:32:53Z  open-tab  SubagentStop  
-2026-08-19T13:32:53Z  open-tab  SubagentStop  
-2026-08-19T13:32:53Z  open-tab  SubagentStop  
-2026-08-19T13:32:53Z  open-tab  SubagentStop  
 2026-08-19T13:34:26Z  open-tab  SubagentStop  
 2026-08-19T13:34:26Z  open-tab  SubagentStop  
 2026-08-19T13:34:26Z  open-tab  SubagentStop  
 2026-08-19T13:34:26Z  open-tab  SubagentStop  
 2026-08-19T13:34:26Z  open-tab  SubagentStop  
+2026-08-19T13:35:01Z  open-tab  SubagentStop  
+2026-08-19T13:35:01Z  open-tab  SubagentStop  
+2026-08-19T13:35:01Z  open-tab  SubagentStop  
+2026-08-19T13:35:01Z  open-tab  SubagentStop  
+2026-08-19T13:35:01Z  open-tab  SubagentStop  
+2026-08-19T13:35:11Z  open-tab  SubagentStop  
+2026-08-19T13:35:11Z  open-tab  SubagentStop  
+2026-08-19T13:35:11Z  open-tab  SubagentStop  
+2026-08-19T13:35:11Z  open-tab  SubagentStop  
+2026-08-19T13:35:11Z  open-tab  SubagentStop  
+2026-08-19T13:35:33Z  open-tab  SubagentStop  
+2026-08-19T13:35:33Z  open-tab  SubagentStop  
+2026-08-19T13:35:33Z  open-tab  SubagentStop  
+2026-08-19T13:35:33Z  open-tab  SubagentStop  
+2026-08-19T13:35:33Z  open-tab  SubagentStop  
 ```
 
 ---
