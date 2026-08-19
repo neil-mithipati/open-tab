@@ -1,19 +1,57 @@
 #!/bin/bash
-# Launch the orchestrator for one lane.
+# Launch the orchestrator.
 #
-#   ./bin/lane toast-builder
+#   ./bin/lane              uses this app's lane automatically
+#   ./bin/lane open-tab     explicit, only if you're tracking sub-workstreams
 #
-# Exists because OTEL_* variables are not inherited by subprocesses Claude Code
-# spawns, so telemetry config has to be set at launch rather than discovered. The
-# lane name flows two ways: as an OTel resource attribute for spend attribution,
-# and as $LANE for the hooks, which do inherit the ordinary environment.
+# One fleet per app means one lane per app in the common case, so you shouldn't
+# have to remember or type a name. This reads .claude/budget.json: if exactly
+# one lane is configured, it's used automatically. An explicit argument is
+# validated against that file rather than accepted as-is — a typo used to
+# silently create a new lane with garbage spend data instead of failing.
+#
+# The lane still exists under the hood regardless: OTEL_* variables are not
+# inherited by subprocesses Claude Code spawns, so telemetry config has to be
+# set at launch rather than discovered, and it flows two ways — as an OTel
+# resource attribute for spend attribution, and as $LANE for the hooks, which
+# do inherit the ordinary environment.
 
 set -euo pipefail
 
-LANE_NAME="${1:-}"
-if [ -z "$LANE_NAME" ]; then
-  echo "usage: ./bin/lane <lane-name>   (e.g. toast-builder)" >&2
+if [ ! -f .claude/budget.json ]; then
+  echo "No .claude/budget.json — the spend cap will refuse to run uncapped." >&2
   exit 1
+fi
+
+command -v jq >/dev/null 2>&1 || { echo "jq is required" >&2; exit 1; }
+
+configured=$(jq -r '.lanes | keys | join(" ")' .claude/budget.json 2>/dev/null)
+if [ -z "$configured" ]; then
+  echo "No lanes in .claude/budget.json. Add one, e.g.:" >&2
+  echo '  jq ".lanes[\"my-app\"] = 8.00" .claude/budget.json > t && mv t .claude/budget.json' >&2
+  exit 1
+fi
+
+LANE_NAME="${1:-}"
+
+if [ -z "$LANE_NAME" ]; then
+  count=$(echo "$configured" | wc -w | tr -d ' ')
+  if [ "$count" -eq 1 ]; then
+    LANE_NAME="$configured"
+    echo "lane: $LANE_NAME"
+  else
+    echo "Multiple lanes configured — say which one:" >&2
+    for l in $configured; do echo "  ./bin/lane $l" >&2; done
+    exit 1
+  fi
+else
+  match=no
+  for l in $configured; do [ "$l" = "$LANE_NAME" ] && match=yes; done
+  if [ "$match" = "no" ]; then
+    echo "'$LANE_NAME' is not in .claude/budget.json. Configured lanes:" >&2
+    for l in $configured; do echo "  $l" >&2; done
+    exit 1
+  fi
 fi
 
 export LANE="$LANE_NAME"
@@ -21,11 +59,6 @@ export CLAUDE_CODE_ENABLE_TELEMETRY=1
 export OTEL_METRICS_EXPORTER=prometheus
 export OTEL_METRIC_EXPORT_INTERVAL=10000
 export OTEL_RESOURCE_ATTRIBUTES="lane=${LANE_NAME}"
-
-if [ ! -f .claude/budget.json ]; then
-  echo "No .claude/budget.json — the spend cap will refuse to run uncapped." >&2
-  exit 1
-fi
 
 if ! pgrep -f "spend-poll.sh" >/dev/null 2>&1; then
   echo "starting spend-poll.sh..."
