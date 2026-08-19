@@ -12,6 +12,7 @@ import { InviteQRCode } from "@/components/profile/InviteQRCode";
 import { FriendsManager } from "@/components/profile/FriendsManager";
 import { FriendGroupsManager } from "@/components/profile/FriendGroupsManager";
 import { LogoutButton } from "@/components/profile/LogoutButton";
+import { DeleteAccountSection } from "@/components/profile/DeleteAccountSection";
 
 export default function ProfilePage() {
   return (
@@ -29,19 +30,23 @@ async function ProfileContent() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth");
 
-  // Guests have no profile to manage — prompt them to create an account.
+  // Guests have no profile to manage — prompt them to create an account. They
+  // do hold tabs and photos though, so deletion is offered here too.
   if (user.is_anonymous) {
     return (
-      <GlassCard className="p-8 flex flex-col items-center text-center gap-4">
-        <p className="text-secondary">
-          Create an account to keep a history of your tabs and friends
-        </p>
-        <Link href="/auth" className="w-full">
-          <GlassButton variant="primary" size="md" className="w-full">
-            Create account
-          </GlassButton>
-        </Link>
-      </GlassCard>
+      <div className="flex flex-col gap-6 pb-10">
+        <GlassCard className="p-8 flex flex-col items-center text-center gap-4">
+          <p className="text-secondary">
+            Create an account to keep a history of your tabs and friends
+          </p>
+          <Link href="/auth" className="w-full">
+            <GlassButton variant="primary" size="md" className="w-full">
+              Create account
+            </GlassButton>
+          </Link>
+        </GlassCard>
+        <DeleteAccountSection />
+      </div>
     );
   }
 
@@ -98,6 +103,7 @@ async function ProfileContent() {
       <div className="flex justify-center pt-2">
         <LogoutButton />
       </div>
+      <DeleteAccountSection />
     </div>
   );
 }
