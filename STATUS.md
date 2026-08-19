@@ -1,16 +1,18 @@
 # Agent status
 
-Updated 2026-08-19 21:24 UTC · regenerated on every task completion.
+Updated 2026-08-19 21:25 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $13.21 | $100.00 | █░░░░░░░░░ 13% |
+| open-tab | $15.2 | $100.00 | █░░░░░░░░░ 15% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| builder-deep | open-tab | 2026-08-19T21:25:36Z | 2 |
 
 ## Tasks
 
@@ -36,17 +38,31 @@ Idle — no agents currently running.
 | `OT-117` | running | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
 | `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
 | `OT-119` | running | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
-| `OT-120` | todo | charges RLS has no with-check — anyone can plant a charge row on a tab they don't own — null | builder-deep |
+| `OT-120` | running | charges RLS has no with-check — anyone can plant a charge row on a tab they don't own — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-19T21:24:22Z  open-tab  SubagentStop  
-2026-08-19T21:24:22Z  open-tab  SubagentStop  
-2026-08-19T21:24:22Z  open-tab  SubagentStop  
-2026-08-19T21:24:22Z  open-tab  SubagentStop  
-2026-08-19T21:24:22Z  open-tab  SubagentStop  
-2026-08-19T21:24:22Z  open-tab  SubagentStop  
+2026-08-19T21:25:21Z  open-tab  SubagentStop  
+2026-08-19T21:25:21Z  open-tab  SubagentStop  
+2026-08-19T21:25:21Z  open-tab  SubagentStop  
+2026-08-19T21:25:21Z  open-tab  SubagentStop  
+2026-08-19T21:25:21Z  open-tab  SubagentStop  
+2026-08-19T21:25:21Z  open-tab  SubagentStop  
+2026-08-19T21:25:36Z  open-tab  SubagentStart  builder-deep
+2026-08-19T21:25:36Z  open-tab  SubagentStart  builder-deep
+2026-08-19T21:25:41Z  open-tab  SubagentStop  
+2026-08-19T21:25:41Z  open-tab  SubagentStop  
+2026-08-19T21:25:41Z  open-tab  SubagentStop  
+2026-08-19T21:25:41Z  open-tab  SubagentStop  
+2026-08-19T21:25:41Z  open-tab  SubagentStop  
+2026-08-19T21:25:41Z  open-tab  SubagentStop  
+2026-08-19T21:25:52Z  open-tab  SubagentStop  
+2026-08-19T21:25:52Z  open-tab  SubagentStop  
+2026-08-19T21:25:52Z  open-tab  SubagentStop  
+2026-08-19T21:25:52Z  open-tab  SubagentStop  
+2026-08-19T21:25:52Z  open-tab  SubagentStop  
+2026-08-19T21:25:52Z  open-tab  SubagentStop  
 ```
 
 ---
