@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+# bin/doctor — checks an installed fleet for the failure modes that are silent
+# by nature: files that drifted from the kit, hook registrations that piled up
+# across re-installs, orphaned event entries, and stale worktrees.
+#
+#   ./bin/doctor
+#
+# Read-only. Prints findings and exits non-zero if any are serious, so it can
+# be used as a pre-flight check before starting real work.
+#
+# This exists because every problem it looks for produces no error at the time
+# it happens. A stale agent card installs "successfully". A duplicate hook
+# registration just fires twice. An abandoned SubagentStart just makes the
+# dashboard wrong. None of it surfaces until behaviour is inexplicable.
+
+set -u
+
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+cd "$ROOT" 2>/dev/null || { echo "cannot cd to $ROOT" >&2; exit 1; }
+command -v jq >/dev/null 2>&1 || { echo "jq is required" >&2; exit 1; }
+
+problems=0
+warnings=0
+
+say_ok()   { printf '  \033[32m✓\033[0m %s\n' "$1"; }
+say_warn() { printf '  \033[33m!\033[0m %s\n' "$1"; warnings=$((warnings+1)); }
+say_bad()  { printf '  \033[31m✗\033[0m %s\n' "$1"; problems=$((problems+1)); }
+head_()    { printf '\n\033[1m%s\033[0m\n' "$1"; }
+
+# ── duplicate hook registrations ─────────────────────────────────────────────
+head_ "Hook registrations"
+
+SETTINGS=".claude/settings.json"
+if [ ! -f "$SETTINGS" ]; then
+  say_bad "no .claude/settings.json — the fleet is not installed here"
+else
+  dupes=$(jq -r '
+    [.hooks | to_entries[] | .key as $ev | .value[] | (.matcher // "-") as $m
+     | .hooks[] | "\($ev) [\($m)] \(.command) \((.args // [])|join(","))"]
+    | group_by(.) | map(select(length > 1)) | map({c: .[0], n: length}) | .[]
+    | "\(.n)x \(.c)"' "$SETTINGS" 2>/dev/null)
+  if [ -n "$dupes" ]; then
+    say_bad "duplicate hook registrations — each fires once per copy:"
+    printf '      %s\n' "$dupes"
+    printf '      fix: re-run add-fleet, which now strips kit hooks before re-adding\n'
+  else
+    say_ok "no duplicate registrations"
+  fi
+
+  for h in log-event.sh spend-cap.sh gate-tests.sh loop-until-done.sh parallel-cap.sh verify-trivial.sh; do
+    if jq -e --arg h "$h" '[.hooks | to_entries[] | .value[].hooks[].command]
+        | map(select(test($h))) | length > 0' "$SETTINGS" >/dev/null 2>&1; then
+      :
+    else
+      say_bad "$h is not registered in settings.json — it will never fire"
+    fi
+  done
+fi
+
+# ── agent cards ──────────────────────────────────────────────────────────────
+head_ "Agent cards"
+
+for a in orchestrator builder-light builder builder-deep reviewer-light reviewer publisher; do
+  f=".claude/agents/$a.md"
+  if [ ! -f "$f" ]; then
+    say_bad "$a.md missing"
+  else
+    m=$(sed -n 's/^model:[[:space:]]*//p' "$f" | head -1)
+    e=$(sed -n 's/^effort:[[:space:]]*//p' "$f" | head -1)
+    printf '  %-14s %-8s %s\n' "$a" "${m:-?}" "${e:-?}"
+  fi
+done
+
+# ── event log health ─────────────────────────────────────────────────────────
+head_ "Event log"
+
+EVENTS=".claude/state/events.jsonl"
+if [ ! -s "$EVENTS" ]; then
+  say_ok "event log is empty (nothing has run yet, or it was reset)"
+else
+  nulls=$(jq -rs 'map(select((.event=="SubagentStart" or .event=="SubagentStop")
+            and .agent_type == null)) | length' "$EVENTS" 2>/dev/null)
+  if [ "${nulls:-0}" -gt 0 ]; then
+    say_warn "$nulls subagent event(s) have no agent_type — from an older or duplicated hook"
+    printf '      these are unmatchable and inflate the dashboard'"'"'s running counts\n'
+  else
+    say_ok "all subagent events are tagged"
+  fi
+
+  live=$(jq -rs '
+    map(select(.event=="SubagentStart" or .event=="SubagentStop") | select(.agent_type != null))
+    | group_by(.agent_type)
+    | map({t: .[0].agent_type,
+           n: ((map(select(.event=="SubagentStart"))|length)
+             - (map(select(.event=="SubagentStop"))|length))})
+    | map(select(.n > 0)) | .[] | "\(.t) x\(.n)"' "$EVENTS" 2>/dev/null)
+
+  running=$(pgrep -f "claude --agent" 2>/dev/null | wc -l | tr -d ' ')
+  if [ -n "$live" ]; then
+    if [ "${running:-0}" -eq 0 ]; then
+      say_bad "the log says these are running, but no claude session exists:"
+      printf '      %s\n' "$live"
+      printf '      cause: a session was killed before its SubagentStop fired\n'
+      printf '      fix: cp %s{,.old} && : > %s\n' "$EVENTS" "$EVENTS"
+    else
+      say_ok "live agents (a session is running, so this is plausible):"
+      printf '      %s\n' "$live"
+    fi
+  else
+    say_ok "no agents currently marked running"
+  fi
+fi
+
+# ── worktrees ────────────────────────────────────────────────────────────────
+head_ "Worktrees"
+
+if git rev-parse --git-dir >/dev/null 2>&1; then
+  claimed=""
+  if [ -d ledger ]; then
+    for f in ledger/*.md; do
+      [ -e "$f" ] || continue
+      wt=$(sed -n 's/^worktree:[[:space:]]*//p' "$f" | head -1)
+      [ -n "$wt" ] && claimed="$claimed|$(basename "$wt")|"
+    done
+  fi
+  stale=0
+  for d in ../wt-*; do
+    [ -d "$d" ] || continue
+    n=$(basename "$d")
+    case "$claimed" in *"|$n|"*) ;; *) say_warn "worktree $n on disk, no ledger task claims it"; stale=$((stale+1)) ;; esac
+  done
+  [ "$stale" -eq 0 ] && say_ok "no orphaned worktrees"
+  say_ok "trunk branch: $(git symbolic-ref --short -q HEAD || echo detached)"
+else
+  say_warn "not a git repo — worktree and branch checks skipped"
+fi
+
+# ── budget & lanes ───────────────────────────────────────────────────────────
+head_ "Budget"
+
+if [ -f .claude/budget.json ]; then
+  lanes=$(jq -r '.lanes | keys | join(" ")' .claude/budget.json 2>/dev/null)
+  for l in $lanes; do
+    case "$l" in
+      .|..|*/*) say_bad "lane '$l' looks like a path, not a name — from passing '.' to bin/lane" ;;
+      *) say_ok "lane '$l' capped at \$$(jq -r --arg l "$l" '.lanes[$l]' .claude/budget.json)" ;;
+    esac
+  done
+else
+  say_bad "no .claude/budget.json — bin/lane will refuse to start"
+fi
+
+# ── gates ────────────────────────────────────────────────────────────────────
+head_ "Gates"
+
+if [ -f .claude/gates.json ]; then
+  req=$(jq -r '.required | join(", ")' .claude/gates.json 2>/dev/null)
+  pend=$(jq -r '.pending | join(", ")' .claude/gates.json 2>/dev/null)
+  [ -n "$req" ] && say_ok "required: $req" || say_bad "no required gates — nothing is enforced"
+  [ -n "$pend" ] && say_warn "pending (not enforced): $pend — add the npm script, then re-run add-fleet"
+else
+  say_bad "no .claude/gates.json"
+fi
+
+# ── verdict ──────────────────────────────────────────────────────────────────
+echo
+if [ "$problems" -gt 0 ]; then
+  printf '\033[31m%s problem(s)\033[0m and %s warning(s). Fix the problems before running agents.\n' "$problems" "$warnings"
+  exit 1
+fi
+if [ "$warnings" -gt 0 ]; then
+  printf '\033[33m%s warning(s)\033[0m, no blocking problems.\n' "$warnings"
+  exit 0
+fi
+printf '\033[32mhealthy\033[0m — no drift detected.\n'
