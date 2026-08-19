@@ -6,7 +6,7 @@ Updated 2026-08-19 21:26 UTC · regenerated on every task completion.
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $16.66 | $100.00 | █░░░░░░░░░ 16% |
+| open-tab | $16.96 | $100.00 | █░░░░░░░░░ 16% |
 
 ## Agents
 
@@ -44,13 +44,6 @@ Updated 2026-08-19 21:26 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T21:26:26Z  open-tab  SubagentStop  
-2026-08-19T21:26:26Z  open-tab  SubagentStop  
-2026-08-19T21:26:38Z  open-tab  SubagentStop  
-2026-08-19T21:26:38Z  open-tab  SubagentStop  
-2026-08-19T21:26:38Z  open-tab  SubagentStop  
-2026-08-19T21:26:38Z  open-tab  SubagentStop  
-2026-08-19T21:26:38Z  open-tab  SubagentStop  
 2026-08-19T21:26:38Z  open-tab  SubagentStop  
 2026-08-19T21:26:43Z  open-tab  SubagentStop  
 2026-08-19T21:26:43Z  open-tab  SubagentStop  
@@ -64,6 +57,13 @@ Updated 2026-08-19 21:26 UTC · regenerated on every task completion.
 2026-08-19T21:26:55Z  open-tab  SubagentStop  
 2026-08-19T21:26:55Z  open-tab  SubagentStop  
 2026-08-19T21:26:55Z  open-tab  SubagentStop  
+2026-08-19T21:26:57Z  open-tab  SubagentStop  
+2026-08-19T21:26:57Z  open-tab  SubagentStop  
+2026-08-19T21:26:57Z  open-tab  SubagentStop  
+2026-08-19T21:26:57Z  open-tab  SubagentStop  
+2026-08-19T21:26:57Z  open-tab  SubagentStop  
+2026-08-19T21:26:57Z  open-tab  SubagentStop  
+2026-08-19T21:26:57Z  open-tab  SubagentStop  publisher
 ```
 
 ---
