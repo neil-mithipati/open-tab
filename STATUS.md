@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 13:32 UTC · regenerated on every task completion.
+Updated 2026-08-19 13:34 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $4.7 | $10.00 | ████░░░░░░ 46% |
+| open-tab | $5.6 | $10.00 | █████░░░░░ 55% |
 
 ## Agents
 
@@ -33,20 +33,11 @@ Updated 2026-08-19 13:32 UTC · regenerated on every task completion.
 | `OT-111` | **blocked** | Account deletion — user-initiated, complete, confirmed — >- | builder-deep |
 | `OT-112` | **blocked** | Document NEXT_PUBLIC_APP_URL in .env.example — >- | builder-light |
 | `OT-113` | **blocked** | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — >- | builder |
+| `OT-114` | **blocked** | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — >- | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T13:18:41Z  open-tab  SubagentStop  
-2026-08-19T13:18:41Z  open-tab  SubagentStop  
-2026-08-19T13:18:41Z  open-tab  SubagentStop  
-2026-08-19T13:30:43Z  open-tab  SubagentStop  
-2026-08-19T13:30:43Z  open-tab  SubagentStop  
-2026-08-19T13:30:43Z  open-tab  SubagentStop  
-2026-08-19T13:30:43Z  open-tab  SubagentStop  
-2026-08-19T13:30:43Z  open-tab  SubagentStop  
-2026-08-19T13:30:54Z  open-tab  SubagentStop  
-2026-08-19T13:30:54Z  open-tab  SubagentStop  
 2026-08-19T13:30:54Z  open-tab  SubagentStop  
 2026-08-19T13:30:54Z  open-tab  SubagentStop  
 2026-08-19T13:30:54Z  open-tab  SubagentStop  
@@ -57,6 +48,16 @@ Updated 2026-08-19 13:32 UTC · regenerated on every task completion.
 2026-08-19T13:32:21Z  open-tab  SubagentStop  
 2026-08-19T13:32:21Z  open-tab  SubagentStop  
 2026-08-19T13:32:21Z  open-tab  SubagentStop  
+2026-08-19T13:32:53Z  open-tab  SubagentStop  
+2026-08-19T13:32:53Z  open-tab  SubagentStop  
+2026-08-19T13:32:53Z  open-tab  SubagentStop  
+2026-08-19T13:32:53Z  open-tab  SubagentStop  
+2026-08-19T13:32:53Z  open-tab  SubagentStop  
+2026-08-19T13:34:26Z  open-tab  SubagentStop  
+2026-08-19T13:34:26Z  open-tab  SubagentStop  
+2026-08-19T13:34:26Z  open-tab  SubagentStop  
+2026-08-19T13:34:26Z  open-tab  SubagentStop  
+2026-08-19T13:34:26Z  open-tab  SubagentStop  
 ```
 
 ---
