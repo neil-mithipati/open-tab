@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 21:00 UTC · regenerated on every task completion.
+Updated 2026-08-19 21:02 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $19.61 | $100.00 | █░░░░░░░░░ 19% |
+| open-tab | $20.44 | $100.00 | ██░░░░░░░░ 20% |
 
 ## Agents
 
@@ -30,26 +30,19 @@ Updated 2026-08-19 21:00 UTC · regenerated on every task completion.
 | `OT-108` | done | Add indexes on all foreign keys — null | builder |
 | `OT-109` | done | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
 | `OT-110` | **blocked** | Privacy policy page — >- | builder |
-| `OT-111` | **blocked** | Account deletion — user-initiated, complete, confirmed — >- | builder-deep |
+| `OT-111` | running | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
 | `OT-112` | done | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder |
 | `OT-113` | done | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
 | `OT-114` | done | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
-| `OT-115` | **blocked** | "Rate-limit hardening: parse limiter is bypassable by replay (HIGH), plus fail-open silence, off-by-one ceiling, no 429 UI" — >- | builder-deep |
+| `OT-115` | running | "Rate-limit hardening: parse limiter is bypassable by replay (HIGH), plus fail-open silence, off-by-one ceiling, no 429 UI" — null | builder-deep |
 | `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
-| `OT-117` | **blocked** | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — >- | builder-deep |
+| `OT-117` | running | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
 | `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
-| `OT-119` | **blocked** | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — >- | builder |
+| `OT-119` | running | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T20:54:16Z  open-tab  SubagentStop  
-2026-08-19T20:54:16Z  open-tab  SubagentStop  
-2026-08-19T20:54:16Z  open-tab  SubagentStop  
-2026-08-19T20:54:19Z  open-tab  SubagentStop  builder-deep
-2026-08-19T20:54:45Z  open-tab  SubagentStop  
-2026-08-19T20:54:45Z  open-tab  SubagentStop  
-2026-08-19T20:54:45Z  open-tab  SubagentStop  
 2026-08-19T20:54:45Z  open-tab  SubagentStop  
 2026-08-19T20:54:45Z  open-tab  SubagentStop  
 2026-08-19T20:55:17Z  open-tab  SubagentStop  
@@ -63,6 +56,13 @@ Updated 2026-08-19 21:00 UTC · regenerated on every task completion.
 2026-08-19T21:00:18Z  open-tab  SubagentStop  
 2026-08-19T21:00:18Z  open-tab  SubagentStop  
 2026-08-19T21:00:18Z  open-tab  SubagentStop  
+2026-08-19T21:01:54Z  open-tab  SubagentStart  builder-deep
+2026-08-19T21:02:18Z  open-tab  SubagentStart  builder-deep
+2026-08-19T21:02:25Z  open-tab  SubagentStop  
+2026-08-19T21:02:25Z  open-tab  SubagentStop  
+2026-08-19T21:02:25Z  open-tab  SubagentStop  
+2026-08-19T21:02:25Z  open-tab  SubagentStop  
+2026-08-19T21:02:25Z  open-tab  SubagentStop  
 ```
 
 ---
