@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type ToastVariant = "success" | "error";
 
@@ -19,6 +19,7 @@ const AUTO_DISMISS_MS = 3000;
 export function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const nextId = useRef(0);
+  const timers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
 
   const dismiss = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -28,10 +29,25 @@ export function useToast() {
     (message: string, variant: ToastVariant = "success") => {
       const id = nextId.current++;
       setToasts((prev) => [...prev, { id, message, variant }]);
-      setTimeout(() => dismiss(id), AUTO_DISMISS_MS);
+      const timer = setTimeout(() => {
+        timers.current.delete(timer);
+        dismiss(id);
+      }, AUTO_DISMISS_MS);
+      timers.current.add(timer);
     },
     [dismiss]
   );
+
+  // Clear any pending auto-dismiss timers on unmount — the page that owns
+  // this hook (e.g. after a share navigates away) can unmount before a
+  // timer fires.
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      pending.forEach((timer) => clearTimeout(timer));
+      pending.clear();
+    };
+  }, []);
 
   return { toasts, showToast, dismiss };
 }
@@ -50,7 +66,7 @@ export function ToastViewport({ toasts, dismiss }: { toasts: ToastItem[]; dismis
           key={toast.id}
           onClick={() => dismiss(toast.id)}
           className={`pointer-events-auto glass-panel-sm animate-slide-up max-w-md w-full text-left px-4 py-3 text-sm font-medium ${
-            toast.variant === "error" ? "text-red-300" : "text-emerald-300"
+            toast.variant === "error" ? "text-red-400" : "text-emerald-400"
           }`}
         >
           {toast.message}
