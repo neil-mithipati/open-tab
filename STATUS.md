@@ -1,21 +1,21 @@
 # Agent status
 
-Updated 2026-08-19 23:53 UTC · regenerated on every task completion.
+Updated 2026-08-19 23:59 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $111.83 | $125.00 | ████████░░ 89% |
+| open-tab | $1.13 | $125.00 | ░░░░░░░░░░ 0% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| builder-deep | open-tab | 2026-08-19T23:37:58Z | 4 |
 | builder | open-tab | 2026-08-19T23:38:19Z | 2 |
 | publisher | open-tab | 2026-08-19T23:38:52Z | 1 |
 | reviewer | open-tab | 2026-08-19T23:52:43Z | 6 |
+| builder-deep | open-tab | 2026-08-19T23:59:16Z | 6 |
 
 ## Tasks
 
@@ -51,31 +51,31 @@ Updated 2026-08-19 23:53 UTC · regenerated on every task completion.
 | `OT-127` | running | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it — null | builder-deep |
 | `OT-128` | done | review the unreviewed kit install change by change and commit what survives — null | builder |
 | `OT-129` | **blocked** | backlog from the OT-123, OT-124 and OT-126 reviews — >- | builder |
-| `OT-130` | **blocked** | an owner save deletes any claimer who joined since the client loaded the page — >- | builder-deep |
+| `OT-130` | running | an owner save deletes any claimer who joined since the client loaded the page — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-19T23:51:00Z  open-tab  SubagentStop  
-2026-08-19T23:51:00Z  open-tab  SubagentStop  
-2026-08-19T23:51:00Z  open-tab  SubagentStop  
-2026-08-19T23:51:00Z  open-tab  SubagentStop  
-2026-08-19T23:51:00Z  open-tab  SubagentStop  
-2026-08-19T23:51:00Z  open-tab  SubagentStop  
-2026-08-19T23:51:32Z  open-tab  SubagentStop  
-2026-08-19T23:51:32Z  open-tab  SubagentStop  
-2026-08-19T23:51:32Z  open-tab  SubagentStop  
-2026-08-19T23:51:32Z  open-tab  SubagentStop  
-2026-08-19T23:51:32Z  open-tab  SubagentStop  
-2026-08-19T23:51:32Z  open-tab  SubagentStop  
-2026-08-19T23:52:00Z  open-tab  SubagentStop  builder-deep
-2026-08-19T23:52:43Z  open-tab  SubagentStart  reviewer
 2026-08-19T23:53:14Z  open-tab  SubagentStop  
 2026-08-19T23:53:14Z  open-tab  SubagentStop  
 2026-08-19T23:53:14Z  open-tab  SubagentStop  
 2026-08-19T23:53:14Z  open-tab  SubagentStop  
 2026-08-19T23:53:14Z  open-tab  SubagentStop  
 2026-08-19T23:53:14Z  open-tab  SubagentStop  
+2026-08-19T23:53:46Z  open-tab  SubagentStop  
+2026-08-19T23:53:46Z  open-tab  SubagentStop  
+2026-08-19T23:53:46Z  open-tab  SubagentStop  
+2026-08-19T23:53:46Z  open-tab  SubagentStop  
+2026-08-19T23:53:46Z  open-tab  SubagentStop  
+2026-08-19T23:53:46Z  open-tab  SubagentStop  
+2026-08-19T23:59:16Z  open-tab  SubagentStart  builder-deep
+2026-08-19T23:59:16Z  open-tab  SubagentStart  builder-deep
+2026-08-19T23:59:47Z  open-tab  SubagentStop  
+2026-08-19T23:59:47Z  open-tab  SubagentStop  
+2026-08-19T23:59:47Z  open-tab  SubagentStop  
+2026-08-19T23:59:47Z  open-tab  SubagentStop  
+2026-08-19T23:59:47Z  open-tab  SubagentStop  
+2026-08-19T23:59:47Z  open-tab  SubagentStop  
 ```
 
 ---
