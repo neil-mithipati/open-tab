@@ -7,7 +7,7 @@
 | OT-104 | Compress receipt photos client-side before upload; cap size and MIME server-side | Done | — |
 | OT-105 | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint | Done | — |
 | OT-106 | Allocate rounding remainders so charges sum to the total | Done | — |
-| OT-107 | Rate-limit the parse route and share/claim actions | Todo | — |
+| OT-107 | Rate-limit the parse route and share/claim actions | In Progress | — |
 | OT-108 | Add indexes on all foreign keys | Todo | — |
 | OT-109 | Toast system: share/save errors surface, link-copied confirms | Todo | — |
 | OT-110 | Privacy policy page | Todo | — |

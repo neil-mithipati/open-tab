@@ -51,6 +51,7 @@ For groups, the person who paid can skip the assigning entirely: share a link or
 | Tab history dashboard | Every past split stays organized and re-openable, with clear paid/unpaid status |
 | On-device photo compression | Receipt photos are compressed before upload, so scans are faster and the same storage budget holds far more receipts |
 | Atomic tab saves | Saving a split is a single transaction, so a dropped connection mid-save can't wipe a tab's items |
+| Exact-cent charge totals | Each person's charge is rounded so the sum always matches the receipt total to the cent — no stray penny silently added to or dropped from the owner's share |
 
 ---
 
