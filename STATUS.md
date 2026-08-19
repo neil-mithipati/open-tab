@@ -1,18 +1,16 @@
 # Agent status
 
-Updated 2026-08-19 21:22 UTC · regenerated on every task completion.
+Updated 2026-08-19 21:23 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $10.39 | $100.00 | █░░░░░░░░░ 10% |
+| open-tab | $11.95 | $100.00 | █░░░░░░░░░ 11% |
 
 ## Agents
 
-| Role | Lane | Started | Running |
-|---|---|---|---|
-| publisher | open-tab | 2026-08-19T21:20:36Z | 1 |
+Idle — no agents currently running.
 
 ## Tasks
 
@@ -28,8 +26,8 @@ Updated 2026-08-19 21:22 UTC · regenerated on every task completion.
 | `OT-107` | done | Rate-limit the parse route and share/claim actions — null | builder-deep |
 | `OT-108` | done | Add indexes on all foreign keys — null | builder |
 | `OT-109` | done | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
-| `OT-110` | **blocked** | Privacy policy page — >- | builder |
-| `OT-111` | running | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
+| `OT-110` | running | Privacy policy page — null | builder |
+| `OT-111` | done | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
 | `OT-112` | done | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder |
 | `OT-113` | done | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
 | `OT-114` | done | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
@@ -38,30 +36,23 @@ Updated 2026-08-19 21:22 UTC · regenerated on every task completion.
 | `OT-117` | running | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
 | `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
 | `OT-119` | running | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
+| `OT-120` | todo | charges RLS has no with-check — anyone can plant a charge row on a tab they don't own — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-19T21:22:00Z  open-tab  SubagentStop  
-2026-08-19T21:22:04Z  open-tab  SubagentStop  
-2026-08-19T21:22:04Z  open-tab  SubagentStop  
-2026-08-19T21:22:04Z  open-tab  SubagentStop  
-2026-08-19T21:22:04Z  open-tab  SubagentStop  
-2026-08-19T21:22:04Z  open-tab  SubagentStop  
-2026-08-19T21:22:04Z  open-tab  SubagentStop  
-2026-08-19T21:22:11Z  open-tab  SubagentStop  reviewer
-2026-08-19T21:22:12Z  open-tab  SubagentStop  
-2026-08-19T21:22:12Z  open-tab  SubagentStop  
-2026-08-19T21:22:12Z  open-tab  SubagentStop  
-2026-08-19T21:22:12Z  open-tab  SubagentStop  
-2026-08-19T21:22:12Z  open-tab  SubagentStop  
-2026-08-19T21:22:12Z  open-tab  SubagentStop  
-2026-08-19T21:22:17Z  open-tab  SubagentStop  
-2026-08-19T21:22:17Z  open-tab  SubagentStop  
-2026-08-19T21:22:17Z  open-tab  SubagentStop  
-2026-08-19T21:22:17Z  open-tab  SubagentStop  
-2026-08-19T21:22:17Z  open-tab  SubagentStop  
-2026-08-19T21:22:17Z  open-tab  SubagentStop  
+2026-08-19T21:23:15Z  open-tab  SubagentStop  
+2026-08-19T21:23:15Z  open-tab  SubagentStop  
+2026-08-19T21:23:15Z  open-tab  SubagentStop  
+2026-08-19T21:23:15Z  open-tab  SubagentStop  
+2026-08-19T21:23:15Z  open-tab  SubagentStop  
+2026-08-19T21:23:15Z  open-tab  SubagentStop  
+2026-08-19T21:23:19Z  open-tab  SubagentStop  
+2026-08-19T21:23:19Z  open-tab  SubagentStop  
+2026-08-19T21:23:19Z  open-tab  SubagentStop  
+2026-08-19T21:23:19Z  open-tab  SubagentStop  
+2026-08-19T21:23:19Z  open-tab  SubagentStop  
+2026-08-19T21:23:19Z  open-tab  SubagentStop  
 ```
 
 ---
