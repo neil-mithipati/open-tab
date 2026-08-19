@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 20:40 UTC · regenerated on every task completion.
+Updated 2026-08-19 20:41 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $2.17 | $20.00 | █░░░░░░░░░ 10% |
+| open-tab | $3.21 | $20.00 | █░░░░░░░░░ 16% |
 
 ## Agents
 
@@ -33,21 +33,31 @@ Idle — no agents currently running.
 | `OT-114` | done | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
 | `OT-115` | todo | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI — null | builder |
 | `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
-| `OT-117` | todo | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
+| `OT-117` | running | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-19T20:40:01Z  open-tab  SubagentStop  
-2026-08-19T20:40:01Z  open-tab  SubagentStop  
-2026-08-19T20:40:01Z  open-tab  SubagentStop  
-2026-08-19T20:40:01Z  open-tab  SubagentStop  
-2026-08-19T20:40:01Z  open-tab  SubagentStop  
-2026-08-19T20:40:07Z  open-tab  SubagentStop  
-2026-08-19T20:40:07Z  open-tab  SubagentStop  
-2026-08-19T20:40:07Z  open-tab  SubagentStop  
-2026-08-19T20:40:07Z  open-tab  SubagentStop  
-2026-08-19T20:40:07Z  open-tab  SubagentStop  
+2026-08-19T20:40:39Z  open-tab  SubagentStop  
+2026-08-19T20:40:39Z  open-tab  SubagentStop  
+2026-08-19T20:40:39Z  open-tab  SubagentStop  
+2026-08-19T20:40:39Z  open-tab  SubagentStop  
+2026-08-19T20:40:39Z  open-tab  SubagentStop  
+2026-08-19T20:40:51Z  open-tab  SubagentStop  
+2026-08-19T20:40:51Z  open-tab  SubagentStop  
+2026-08-19T20:40:51Z  open-tab  SubagentStop  
+2026-08-19T20:40:51Z  open-tab  SubagentStop  
+2026-08-19T20:40:51Z  open-tab  SubagentStop  
+2026-08-19T20:41:04Z  open-tab  SubagentStop  
+2026-08-19T20:41:04Z  open-tab  SubagentStop  
+2026-08-19T20:41:04Z  open-tab  SubagentStop  
+2026-08-19T20:41:04Z  open-tab  SubagentStop  
+2026-08-19T20:41:04Z  open-tab  SubagentStop  
+2026-08-19T20:41:10Z  open-tab  SubagentStop  
+2026-08-19T20:41:10Z  open-tab  SubagentStop  
+2026-08-19T20:41:10Z  open-tab  SubagentStop  
+2026-08-19T20:41:10Z  open-tab  SubagentStop  
+2026-08-19T20:41:10Z  open-tab  SubagentStop  
 ```
 
 ---
