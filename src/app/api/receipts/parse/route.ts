@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
 import { parseReceiptImage } from "@/lib/gemini/parseReceipt";
 import { extractStoragePath } from "@/lib/storage";
+import { isParseRateLimited } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
 
@@ -15,10 +16,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const service = await getSupabaseServiceClient();
+
+  // Checked before the upload is read and before Gemini is called, so a caller
+  // over the hourly limit costs no model spend and no storage traffic.
+  if (await isParseRateLimited(service, user.id)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
+
   const { receiptId, mimeType } = await request.json();
 
   // verify the receipt belongs to this user before writing
-  const service = await getSupabaseServiceClient();
   const { data: receipt } = await service
     .from("receipts")
     .select("id, image_url")
@@ -39,7 +47,10 @@ export async function POST(request: Request) {
   // could write another user's same-bucket path into their own receipt's
   // image_url and the service client (which bypasses RLS) would revive
   // expired signed URLs for the victim's object.
-  const ownPathPattern = new RegExp(`^${user.id}/${receiptId}\\.[A-Za-z0-9]+$`);
+  // Built from the stored row's id, not the request's receiptId: an alternate
+  // uuid text form (uppercase, braces) would still resolve the same row but
+  // would not match a pattern built from the raw request value.
+  const ownPathPattern = new RegExp(`^${user.id}/${receipt.id}\\.[A-Za-z0-9]+$`);
   if (!ownPathPattern.test(storagePath)) {
     return NextResponse.json({ error: "no_image" }, { status: 400 });
   }
