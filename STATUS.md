@@ -1,21 +1,21 @@
 # Agent status
 
-Updated 2026-08-19 22:01 UTC · regenerated on every task completion.
+Updated 2026-08-19 22:03 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $70.58 | $100.00 | ███████░░░ 70% |
+| open-tab | $72.63 | $100.00 | ███████░░░ 72% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | publisher | open-tab | 2026-08-19T21:43:30Z | 1 |
-| builder | open-tab | 2026-08-19T21:56:37Z | 2 |
-| reviewer | open-tab | 2026-08-19T21:59:02Z | 6 |
+| reviewer | open-tab | 2026-08-19T21:59:02Z | 5 |
 | builder-deep | open-tab | 2026-08-19T22:00:51Z | 5 |
+| builder | open-tab | 2026-08-19T22:03:09Z | 3 |
 
 ## Tasks
 
@@ -42,38 +42,38 @@ Updated 2026-08-19 22:01 UTC · regenerated on every task completion.
 | `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
 | `OT-119` | done | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
 | `OT-120` | done | charges RLS has no with-check — anyone can plant a charge row on a tab they don't own — null | builder-deep |
-| `OT-121` | running | parallel-cap third fail-open on an unopenable log; remove the wildcard SubagentStart — null | builder-deep |
+| `OT-121` | done | parallel-cap third fail-open on an unopenable log; remove the wildcard SubagentStart — null | builder-deep |
 | `OT-122` | done | read-only agents can still mutate a worktree through Bash git commands — null | builder-deep |
 | `OT-123` | done | "Parse replay is still open on an empty parse — needs a parsed_at marker written before the model call" — null | builder-deep |
 | `OT-124` | todo | owner save erases joined_via_share, hiding real claimers from the owner's view — null | builder-deep |
-| `OT-125` | running | the fleet's own agent cards and tooling are untracked or uncommitted in git — null | builder |
-| `OT-126` | **blocked** | detect-and-repair can discard a genuine revert; staged blob not captured in the patch — >- | builder |
-| `OT-127` | **blocked** | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it — >- | builder-deep |
+| `OT-125` | done | the fleet's own agent cards and tooling are untracked or uncommitted in git — null | builder |
+| `OT-126` | running | detect-and-repair can discard a genuine revert; staged blob not captured in the patch — null | builder |
+| `OT-127` | todo | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it — null | builder-deep |
 | `OT-128` | todo | review the unreviewed kit install change by change and commit what survives — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T22:00:36Z  open-tab  SubagentStop  
-2026-08-19T22:00:36Z  open-tab  SubagentStop  
-2026-08-19T22:00:36Z  open-tab  SubagentStop  
-2026-08-19T22:00:36Z  open-tab  SubagentStop  
-2026-08-19T22:00:36Z  open-tab  SubagentStop  
-2026-08-19T22:00:44Z  open-tab  SubagentStop  reviewer
-2026-08-19T22:00:50Z  open-tab  SubagentStop  
-2026-08-19T22:00:50Z  open-tab  SubagentStop  
-2026-08-19T22:00:50Z  open-tab  SubagentStop  
-2026-08-19T22:00:50Z  open-tab  SubagentStop  
-2026-08-19T22:00:50Z  open-tab  SubagentStop  
-2026-08-19T22:00:50Z  open-tab  SubagentStop  
-2026-08-19T22:00:51Z  open-tab  SubagentStart  builder-deep
-2026-08-19T22:00:51Z  open-tab  SubagentStart  builder-deep
 2026-08-19T22:01:22Z  open-tab  SubagentStop  
 2026-08-19T22:01:22Z  open-tab  SubagentStop  
 2026-08-19T22:01:22Z  open-tab  SubagentStop  
 2026-08-19T22:01:22Z  open-tab  SubagentStop  
 2026-08-19T22:01:22Z  open-tab  SubagentStop  
 2026-08-19T22:01:22Z  open-tab  SubagentStop  
+2026-08-19T22:01:26Z  open-tab  SubagentStop  reviewer
+2026-08-19T22:01:53Z  open-tab  SubagentStop  
+2026-08-19T22:01:53Z  open-tab  SubagentStop  
+2026-08-19T22:01:53Z  open-tab  SubagentStop  
+2026-08-19T22:01:53Z  open-tab  SubagentStop  
+2026-08-19T22:01:53Z  open-tab  SubagentStop  
+2026-08-19T22:01:53Z  open-tab  SubagentStop  
+2026-08-19T22:03:09Z  open-tab  SubagentStart  builder
+2026-08-19T22:03:25Z  open-tab  SubagentStop  
+2026-08-19T22:03:25Z  open-tab  SubagentStop  
+2026-08-19T22:03:25Z  open-tab  SubagentStop  
+2026-08-19T22:03:25Z  open-tab  SubagentStop  
+2026-08-19T22:03:25Z  open-tab  SubagentStop  
+2026-08-19T22:03:25Z  open-tab  SubagentStop  
 ```
 
 ---
