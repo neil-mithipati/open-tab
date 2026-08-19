@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 21:38 UTC · regenerated on every task completion.
+Updated 2026-08-19 21:39 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $36.09 | $100.00 | ███░░░░░░░ 36% |
+| open-tab | $37.13 | $100.00 | ███░░░░░░░ 37% |
 
 ## Agents
 
@@ -35,7 +35,7 @@ Updated 2026-08-19 21:38 UTC · regenerated on every task completion.
 | `OT-112` | done | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder |
 | `OT-113` | done | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
 | `OT-114` | done | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
-| `OT-115` | running | "Rate-limit hardening: parse limiter is bypassable by replay (HIGH), plus fail-open silence, off-by-one ceiling, no 429 UI" — null | builder-deep |
+| `OT-115` | done | "Rate-limit hardening: parse limiter is bypassable by replay (HIGH), plus fail-open silence, off-by-one ceiling, no 429 UI" — null | builder-deep |
 | `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
 | `OT-117` | done | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
 | `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
@@ -47,26 +47,26 @@ Updated 2026-08-19 21:38 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T21:38:17Z  open-tab  SubagentStop  
-2026-08-19T21:38:18Z  open-tab  SubagentStop  
-2026-08-19T21:38:18Z  open-tab  SubagentStop  
-2026-08-19T21:38:18Z  open-tab  SubagentStop  
-2026-08-19T21:38:18Z  open-tab  SubagentStop  
-2026-08-19T21:38:18Z  open-tab  SubagentStop  
-2026-08-19T21:38:18Z  open-tab  SubagentStop  
-2026-08-19T21:38:32Z  open-tab  SubagentStop  reviewer
-2026-08-19T21:38:32Z  open-tab  SubagentStop  
-2026-08-19T21:38:32Z  open-tab  SubagentStop  
-2026-08-19T21:38:32Z  open-tab  SubagentStop  
-2026-08-19T21:38:32Z  open-tab  SubagentStop  
-2026-08-19T21:38:32Z  open-tab  SubagentStop  
-2026-08-19T21:38:32Z  open-tab  SubagentStop  
 2026-08-19T21:38:49Z  open-tab  SubagentStop  
 2026-08-19T21:38:49Z  open-tab  SubagentStop  
-2026-08-19T21:38:49Z  open-tab  SubagentStop  
-2026-08-19T21:38:49Z  open-tab  SubagentStop  
-2026-08-19T21:38:49Z  open-tab  SubagentStop  
-2026-08-19T21:38:49Z  open-tab  SubagentStop  
+2026-08-19T21:39:21Z  open-tab  SubagentStop  
+2026-08-19T21:39:21Z  open-tab  SubagentStop  
+2026-08-19T21:39:21Z  open-tab  SubagentStop  
+2026-08-19T21:39:21Z  open-tab  SubagentStop  
+2026-08-19T21:39:21Z  open-tab  SubagentStop  
+2026-08-19T21:39:21Z  open-tab  SubagentStop  
+2026-08-19T21:39:34Z  open-tab  SubagentStop  
+2026-08-19T21:39:34Z  open-tab  SubagentStop  
+2026-08-19T21:39:34Z  open-tab  SubagentStop  
+2026-08-19T21:39:34Z  open-tab  SubagentStop  
+2026-08-19T21:39:34Z  open-tab  SubagentStop  
+2026-08-19T21:39:34Z  open-tab  SubagentStop  
+2026-08-19T21:39:52Z  open-tab  SubagentStop  
+2026-08-19T21:39:52Z  open-tab  SubagentStop  
+2026-08-19T21:39:52Z  open-tab  SubagentStop  
+2026-08-19T21:39:52Z  open-tab  SubagentStop  
+2026-08-19T21:39:52Z  open-tab  SubagentStop  
+2026-08-19T21:39:52Z  open-tab  SubagentStop  
 ```
 
 ---
