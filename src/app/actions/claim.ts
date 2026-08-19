@@ -148,7 +148,7 @@ export async function joinReceipt(
     .from("receipt_participants")
     .select("id")
     .eq("receipt_id", receipt.id)
-    .ilike("venmo_username", username)
+    .ilike("venmo_username", escapeLikePattern(username))
     .maybeSingle();
   if (existing) return { participantId: existing.id };
 
@@ -157,7 +157,7 @@ export async function joinReceipt(
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, display_name")
-    .ilike("venmo_username", username)
+    .ilike("venmo_username", escapeLikePattern(username))
     .maybeSingle();
 
   // Guards the insert, not the resume above: a claimer who already joined must
