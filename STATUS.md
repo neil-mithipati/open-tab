@@ -1,21 +1,19 @@
 # Agent status
 
-Updated 2026-08-19 19:09 UTC · regenerated on every task completion.
+Updated 2026-08-19 20:25 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $9.42 | $20.00 | ████░░░░░░ 47% |
+| open-tab | $2.31 | $20.00 | █░░░░░░░░░ 11% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| builder-light | open-tab | 2026-08-19T19:01:30Z | 2 |
-| publisher | open-tab | 2026-08-19T19:03:40Z | 1 |
-| builder | open-tab | 2026-08-19T19:05:06Z | 2 |
-| reviewer | open-tab | 2026-08-19T19:07:45Z | 10 |
+| builder | open-tab | 2026-08-19T20:25:17Z | 2 |
+| reviewer | open-tab | 2026-08-19T20:25:32Z | 1 |
 
 ## Tasks
 
@@ -30,39 +28,27 @@ Updated 2026-08-19 19:09 UTC · regenerated on every task completion.
 | `OT-106` | done | Allocate rounding remainders so charges sum to the total — null | builder |
 | `OT-107` | running | Rate-limit the parse route and share/claim actions — null | builder-deep |
 | `OT-108` | done | Add indexes on all foreign keys — null | builder |
-| `OT-109` | **blocked** | "Toast system: share/save errors surface, link-copied confirms" — >- | builder |
+| `OT-109` | running | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
 | `OT-110` | **blocked** | Privacy policy page — >- | builder |
-| `OT-111` | **blocked** | Account deletion — user-initiated, complete, confirmed — >- | builder-deep |
+| `OT-111` | todo | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
 | `OT-112` | done | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder |
-| `OT-113` | **blocked** | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — >- | builder |
+| `OT-113` | running | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
 | `OT-114` | done | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
-| `OT-115` | **blocked** | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI — >- | builder |
+| `OT-115` | todo | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI — null | builder |
 | `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
-| `OT-117` | todo | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder |
+| `OT-117` | todo | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-19T19:08:31Z  open-tab  SubagentStop  
-2026-08-19T19:08:31Z  open-tab  SubagentStop  
-2026-08-19T19:08:31Z  open-tab  SubagentStop  
-2026-08-19T19:08:31Z  open-tab  SubagentStop  
-2026-08-19T19:08:31Z  open-tab  SubagentStop  
-2026-08-19T19:08:48Z  open-tab  SubagentStop  
-2026-08-19T19:08:48Z  open-tab  SubagentStop  
-2026-08-19T19:08:48Z  open-tab  SubagentStop  
-2026-08-19T19:08:48Z  open-tab  SubagentStop  
-2026-08-19T19:08:48Z  open-tab  SubagentStop  
-2026-08-19T19:08:51Z  open-tab  SubagentStop  
-2026-08-19T19:08:51Z  open-tab  SubagentStop  
-2026-08-19T19:08:51Z  open-tab  SubagentStop  
-2026-08-19T19:08:51Z  open-tab  SubagentStop  
-2026-08-19T19:08:51Z  open-tab  SubagentStop  
-2026-08-19T19:09:03Z  open-tab  SubagentStop  
-2026-08-19T19:09:03Z  open-tab  SubagentStop  
-2026-08-19T19:09:03Z  open-tab  SubagentStop  
-2026-08-19T19:09:03Z  open-tab  SubagentStop  
-2026-08-19T19:09:03Z  open-tab  SubagentStop  
+2026-08-19T20:25:06Z  open-tab  SubagentStart  builder
+2026-08-19T20:25:17Z  open-tab  SubagentStart  builder
+2026-08-19T20:25:32Z  open-tab  SubagentStart  reviewer
+2026-08-19T20:25:37Z  open-tab  SubagentStop  
+2026-08-19T20:25:37Z  open-tab  SubagentStop  
+2026-08-19T20:25:37Z  open-tab  SubagentStop  
+2026-08-19T20:25:37Z  open-tab  SubagentStop  
+2026-08-19T20:25:37Z  open-tab  SubagentStop  
 ```
 
 ---
