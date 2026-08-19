@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import { CaptureStep } from "@/components/receipt/CaptureStep";
@@ -26,6 +26,19 @@ export default function NewReceiptPage() {
   const [view, setView] = useState<"parsed" | "original">("parsed");
   const { toasts, showToast, dismiss } = useToast();
 
+  // Tracks the pending post-share navigation so it can be cancelled if the
+  // user leaves before it fires. A single slot (not a set) is deliberate: a
+  // second share re-arms this ref with the newer timer, and cleanup on
+  // unmount clears whichever timer is current — closing the double-tap case
+  // (finding 3) without any extra bookkeeping.
+  const shareNavTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (shareNavTimer.current) clearTimeout(shareNavTimer.current);
+    };
+  }, []);
+
   async function doShare() {
     setSharing(true);
     const result = await persistAndShare(flow.state);
@@ -39,8 +52,12 @@ export default function NewReceiptPage() {
       showToast("Share link ready.");
     }
     // Give the toast a moment on screen before the page (and its viewport)
-    // unmounts — an immediate push truncates it to a sub-second flash.
-    setTimeout(() => {
+    // unmounts — an immediate push truncates it to a sub-second flash. The
+    // timer is ref-tracked and cleared on unmount so it can never navigate
+    // once the user has already left this page.
+    if (shareNavTimer.current) clearTimeout(shareNavTimer.current);
+    shareNavTimer.current = setTimeout(() => {
+      shareNavTimer.current = null;
       flow.reset();
       router.push(`/receipts/${receiptId}`);
     }, 1500);
@@ -138,8 +155,12 @@ export default function NewReceiptPage() {
 
       // The profile and friend caches can also be stale by now (the split step
       // auto-adds friends from the browser), so drop them before navigating or
-      // the dashboard renders without this tab.
-      await refreshUserCaches();
+      // the dashboard renders without this tab. Its own try/catch: the save
+      // above already succeeded, so a cache-refresh failure here is cosmetic
+      // and must not surface as "Couldn't save."
+      try {
+        await refreshUserCaches();
+      } catch {}
 
       flow.reset();
       router.push("/dashboard");
@@ -197,7 +218,7 @@ export default function NewReceiptPage() {
             </button>
             <button
               onClick={handleDone}
-              disabled={saving}
+              disabled={saving || sharing}
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 ${
                 allPaid
                   ? "bg-emerald-500 text-white hover:bg-emerald-400"
