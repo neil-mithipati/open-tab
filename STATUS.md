@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 21:29 UTC · regenerated on every task completion.
+Updated 2026-08-19 21:30 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $20.68 | $100.00 | ██░░░░░░░░ 20% |
+| open-tab | $22.12 | $100.00 | ██░░░░░░░░ 22% |
 
 ## Agents
 
@@ -28,7 +28,7 @@ Updated 2026-08-19 21:29 UTC · regenerated on every task completion.
 | `OT-107` | done | Rate-limit the parse route and share/claim actions — null | builder-deep |
 | `OT-108` | done | Add indexes on all foreign keys — null | builder |
 | `OT-109` | done | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
-| `OT-110` | running | Privacy policy page — null | builder |
+| `OT-110` | done | Privacy policy page — null | builder |
 | `OT-111` | done | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
 | `OT-112` | done | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder |
 | `OT-113` | done | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
@@ -37,33 +37,33 @@ Updated 2026-08-19 21:29 UTC · regenerated on every task completion.
 | `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
 | `OT-117` | done | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
 | `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
-| `OT-119` | running | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
+| `OT-119` | done | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
 | `OT-120` | running | charges RLS has no with-check — anyone can plant a charge row on a tab they don't own — null | builder-deep |
 | `OT-121` | todo | parallel-cap third fail-open on an unopenable log; remove the wildcard SubagentStart — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T21:28:09Z  open-tab  SubagentStop  
-2026-08-19T21:28:09Z  open-tab  SubagentStop  
-2026-08-19T21:28:39Z  open-tab  SubagentStop  
-2026-08-19T21:28:39Z  open-tab  SubagentStop  
-2026-08-19T21:28:39Z  open-tab  SubagentStop  
-2026-08-19T21:28:39Z  open-tab  SubagentStop  
-2026-08-19T21:28:39Z  open-tab  SubagentStop  
-2026-08-19T21:28:39Z  open-tab  SubagentStop  
-2026-08-19T21:28:41Z  open-tab  SubagentStop  
-2026-08-19T21:28:41Z  open-tab  SubagentStop  
-2026-08-19T21:28:41Z  open-tab  SubagentStop  
-2026-08-19T21:28:41Z  open-tab  SubagentStop  
-2026-08-19T21:28:41Z  open-tab  SubagentStop  
-2026-08-19T21:28:41Z  open-tab  SubagentStop  
 2026-08-19T21:29:10Z  open-tab  SubagentStop  
 2026-08-19T21:29:10Z  open-tab  SubagentStop  
-2026-08-19T21:29:10Z  open-tab  SubagentStop  
-2026-08-19T21:29:10Z  open-tab  SubagentStop  
-2026-08-19T21:29:10Z  open-tab  SubagentStop  
-2026-08-19T21:29:10Z  open-tab  SubagentStop  
+2026-08-19T21:29:12Z  open-tab  SubagentStop  
+2026-08-19T21:29:12Z  open-tab  SubagentStop  
+2026-08-19T21:29:12Z  open-tab  SubagentStop  
+2026-08-19T21:29:12Z  open-tab  SubagentStop  
+2026-08-19T21:29:12Z  open-tab  SubagentStop  
+2026-08-19T21:29:12Z  open-tab  SubagentStop  
+2026-08-19T21:29:42Z  open-tab  SubagentStop  
+2026-08-19T21:29:42Z  open-tab  SubagentStop  
+2026-08-19T21:29:42Z  open-tab  SubagentStop  
+2026-08-19T21:29:42Z  open-tab  SubagentStop  
+2026-08-19T21:29:42Z  open-tab  SubagentStop  
+2026-08-19T21:29:42Z  open-tab  SubagentStop  
+2026-08-19T21:30:13Z  open-tab  SubagentStop  
+2026-08-19T21:30:13Z  open-tab  SubagentStop  
+2026-08-19T21:30:13Z  open-tab  SubagentStop  
+2026-08-19T21:30:13Z  open-tab  SubagentStop  
+2026-08-19T21:30:13Z  open-tab  SubagentStop  
+2026-08-19T21:30:13Z  open-tab  SubagentStop  
 ```
 
 ---
