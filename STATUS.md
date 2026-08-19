@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 20:42 UTC · regenerated on every task completion.
+Updated 2026-08-19 20:43 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $4.22 | $20.00 | ██░░░░░░░░ 21% |
+| open-tab | $5.35 | $20.00 | ██░░░░░░░░ 26% |
 
 ## Agents
 
@@ -25,13 +25,13 @@ Updated 2026-08-19 20:42 UTC · regenerated on every task completion.
 | `OT-104` | done | Compress receipt photos client-side before upload; cap size and MIME server-side — null | builder |
 | `OT-105` | done | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint — null | builder-deep |
 | `OT-106` | done | Allocate rounding remainders so charges sum to the total — null | builder |
-| `OT-107` | running | Rate-limit the parse route and share/claim actions — null | builder-deep |
+| `OT-107` | done | Rate-limit the parse route and share/claim actions — null | builder-deep |
 | `OT-108` | done | Add indexes on all foreign keys — null | builder |
-| `OT-109` | running | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
+| `OT-109` | done | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
 | `OT-110` | **blocked** | Privacy policy page — >- | builder |
 | `OT-111` | running | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
 | `OT-112` | done | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder |
-| `OT-113` | running | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
+| `OT-113` | done | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
 | `OT-114` | done | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
 | `OT-115` | todo | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI — null | builder |
 | `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
@@ -40,26 +40,26 @@ Updated 2026-08-19 20:42 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:42Z  open-tab  SubagentStop  
-2026-08-19T20:41:47Z  open-tab  SubagentStop  reviewer
-2026-08-19T20:42:01Z  open-tab  SubagentStart  builder-deep
-2026-08-19T20:42:01Z  open-tab  SubagentStart  builder-deep
-2026-08-19T20:42:05Z  open-tab  SubagentStop  reviewer
-2026-08-19T20:42:05Z  open-tab  SubagentStop  reviewer
 2026-08-19T20:42:13Z  open-tab  SubagentStop  
 2026-08-19T20:42:13Z  open-tab  SubagentStop  
 2026-08-19T20:42:13Z  open-tab  SubagentStop  
 2026-08-19T20:42:13Z  open-tab  SubagentStop  
 2026-08-19T20:42:13Z  open-tab  SubagentStop  
+2026-08-19T20:42:32Z  open-tab  SubagentStop  
+2026-08-19T20:42:32Z  open-tab  SubagentStop  
+2026-08-19T20:42:32Z  open-tab  SubagentStop  
+2026-08-19T20:42:32Z  open-tab  SubagentStop  
+2026-08-19T20:42:32Z  open-tab  SubagentStop  
+2026-08-19T20:43:03Z  open-tab  SubagentStop  
+2026-08-19T20:43:03Z  open-tab  SubagentStop  
+2026-08-19T20:43:03Z  open-tab  SubagentStop  
+2026-08-19T20:43:03Z  open-tab  SubagentStop  
+2026-08-19T20:43:03Z  open-tab  SubagentStop  
+2026-08-19T20:43:15Z  open-tab  SubagentStop  
+2026-08-19T20:43:15Z  open-tab  SubagentStop  
+2026-08-19T20:43:15Z  open-tab  SubagentStop  
+2026-08-19T20:43:15Z  open-tab  SubagentStop  
+2026-08-19T20:43:15Z  open-tab  SubagentStop  
 ```
 
 ---
