@@ -47,9 +47,16 @@ function usableCount(
 }
 
 // Counts receipts the caller created in the last hour. One parse costs one
-// fresh receipt — the parse route refuses to re-parse a receipt that already
-// carries parsed data — so receipt creation is a usable proxy for parse
-// attempts without a dedicated log table.
+// fresh receipt, so receipt creation is a usable proxy for parse attempts
+// without a dedicated log table.
+//
+// That proxy holds only because the parse route consumes a receipt on its
+// first parse ATTEMPT: it stamps receipts.parsed_at (0020) before calling the
+// model and refuses every later request for the same receiptId. Before that
+// stamp existed the route could only detect a parse that had produced data, so
+// a parse that produced nothing left the row looking fresh and one upload
+// replayed for free while this count sat at 1. Move the stamp to after the
+// model call, or drop it, and this limiter stops bounding model spend.
 //
 // `excludeReceiptId` is the receipt this parse is for. CaptureStep inserts that
 // row before calling the route, so counting it made the Nth parse of the hour

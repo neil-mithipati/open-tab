@@ -9,7 +9,13 @@ const parseReceiptImage = vi.fn();
 // the ownership lookup returns; the update the route makes after a parse writes
 // back into it, so a replayed request sees what the first one stored.
 type Row = Record<string, unknown> | null;
-const db: { receipt: Row; itemCount: number } = { receipt: null, itemCount: 0 };
+const db: {
+  receipt: Row;
+  itemCount: number;
+  // Set to make the claim's conditional update fail, the way an unapplied
+  // migration 0020 would.
+  claimError: { message: string; code?: string } | null;
+} = { receipt: null, itemCount: 0, claimError: null };
 const spies = {
   receiptUpdate: vi.fn(),
   receiptDelete: vi.fn(),
@@ -18,28 +24,72 @@ const spies = {
 };
 
 vi.mock("@/lib/supabase/server", () => {
+  // The claim is a conditional update — `.eq(...).eq(...).is("parsed_at",
+  // null).select("id")` — so the mock has to model filters rather than assume
+  // a fixed chain shape. A single builder collects them, matches the row
+  // itself, and is awaitable like a real PostgrestFilterBuilder, which is what
+  // makes the atomicity testable: whichever request applies its update first
+  // flips parsed_at, and every later one matches nothing.
+  type Filters = { eq: [string, unknown][]; isNull: string[] };
+
+  const matchesRow = (filters: Filters): boolean => {
+    const row = db.receipt;
+    if (!row) return false;
+    if (!filters.eq.every(([col, val]) => row[col] === val)) return false;
+    return filters.isNull.every((col) => row[col] === null || row[col] === undefined);
+  };
+
+  interface WriteBuilder<T> extends PromiseLike<T> {
+    eq(col: string, val: unknown): WriteBuilder<T>;
+    is(col: string, val: unknown): WriteBuilder<T>;
+    select(cols?: string): Promise<T>;
+  }
+
+  function writeBuilder<T>(filters: Filters, run: () => T): WriteBuilder<T> {
+    const builder: WriteBuilder<T> = {
+      eq(col, val) {
+        filters.eq.push([col, val]);
+        return builder;
+      },
+      is(col, val) {
+        if (val === null) filters.isNull.push(col);
+        return builder;
+      },
+      select: async () => run(),
+      then: (onOk, onErr) => Promise.resolve(run()).then(onOk, onErr),
+    };
+    return builder;
+  }
+
   const receipts = () => ({
     select: () => ({
       eq: () => ({
         eq: () => ({ single: async () => ({ data: db.receipt }) }),
       }),
     }),
-    update: (values: Record<string, unknown>) => ({
-      eq: async (_col: string, id: string) => {
+    update: (values: Record<string, unknown>) => {
+      const filters: Filters = { eq: [], isNull: [] };
+      return writeBuilder(filters, () => {
+        const isClaim = filters.isNull.includes("parsed_at");
+        if (isClaim && db.claimError) return { data: null, error: db.claimError };
+        if (!matchesRow(filters)) return { data: [], error: null };
+        const id = filters.eq.find(([col]) => col === "id")?.[1];
         spies.receiptUpdate(values, id);
-        if (db.receipt) Object.assign(db.receipt, values);
-        return {};
-      },
-    }),
-    delete: () => ({
-      eq: (_c1: string, id: string) => ({
-        eq: async (_c2: string, userId: string) => {
-          spies.receiptDelete(id, userId);
-          db.receipt = null;
-          return {};
-        },
-      }),
-    }),
+        Object.assign(db.receipt as Record<string, unknown>, values);
+        return { data: [{ id }], error: null };
+      });
+    },
+    delete: () => {
+      const filters: Filters = { eq: [], isNull: [] };
+      return writeBuilder(filters, () => {
+        if (!matchesRow(filters)) return { data: [], error: null };
+        const id = filters.eq.find(([col]) => col === "id")?.[1];
+        const userId = filters.eq.find(([col]) => col === "created_by")?.[1];
+        spies.receiptDelete(id, userId);
+        db.receipt = null;
+        return { data: [{ id }], error: null };
+      });
+    },
   });
 
   const receiptItems = () => ({
@@ -100,13 +150,30 @@ function rawRequest(body: string) {
 
 const UNPARSED = {
   id: "r1",
+  created_by: "u1",
   image_url: "https://x/receipt-images/u1/r1.jpg",
+  // 0020's marker. Null means the receipt's one parse has never been claimed.
+  parsed_at: null,
   merchant_name: null,
   date_of_receipt: null,
   subtotal: null,
   tax: null,
   tip: null,
   total: null,
+};
+
+// What Gemini returns for a blank, dark, or unreadable photo: valid JSON, all
+// nulls, no items. Identical in shape to parseReceipt.ts's EMPTY fallback,
+// which is what a reply that fails JSON.parse produces. Neither writes
+// anything a later request could read as evidence of a parse.
+const EMPTY_RESULT = {
+  merchant_name: null,
+  date_of_receipt: null,
+  subtotal: null,
+  tax: null,
+  tip: null,
+  total: null,
+  items: [],
 };
 
 const PARSE_RESULT = {
@@ -127,6 +194,7 @@ beforeEach(() => {
   Object.values(spies).forEach((spy) => spy.mockReset());
   db.receipt = { ...UNPARSED };
   db.itemCount = 0;
+  db.claimError = null;
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     arrayBuffer: async () => new ArrayBuffer(10),
@@ -230,6 +298,150 @@ describe("POST /api/receipts/parse", () => {
 
     expect(res.status).toBe(409);
     expect(parseReceiptImage).not.toHaveBeenCalled();
+  });
+
+  // ── the parse that produces nothing ───────────────────────────────────────
+  // The evidence checks above can only see a parse that SUCCEEDED. These are
+  // the parses that write nothing back, which is why the receipt has to be
+  // marked before the model call rather than after it.
+  it("stamps the receipt before calling Gemini, not after", async () => {
+    let stampedAtCallTime: unknown;
+    parseReceiptImage.mockImplementation(async () => {
+      stampedAtCallTime = db.receipt?.parsed_at;
+      return PARSE_RESULT;
+    });
+
+    await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(stampedAtCallTime).toEqual(expect.any(String));
+  });
+
+  it("does not re-parse a receipt whose parse came back all nulls", async () => {
+    parseReceiptImage.mockResolvedValue(EMPTY_RESULT);
+
+    const first = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    expect(first.status).toBe(200);
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+
+    const replay = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(replay.status).toBe(409);
+    expect(await replay.json()).toEqual({ error: "already_parsed" });
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a whole replay loop after one empty parse", async () => {
+    parseReceiptImage.mockResolvedValue(EMPTY_RESULT);
+
+    await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    for (let i = 0; i < 10; i++) {
+      expect((await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))).status).toBe(409);
+    }
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not re-parse a receipt whose parse threw and returned 500", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    parseReceiptImage.mockRejectedValue(new Error("gemini exploded"));
+
+    const first = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    expect(first.status).toBe(500);
+
+    const replay = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(replay.status).toBe(409);
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
+  });
+
+  // ── manual entry after a failed parse ─────────────────────────────────────
+  // The alternative fix — discarding the row on an empty parse or a 500, the
+  // way the 429 path does — would have closed the same hole by taking the
+  // user's tab away. It must stay: an unparseable receipt is exactly when
+  // someone needs to type the items in by hand.
+  it("keeps the receipt row after a parse that came back all nulls", async () => {
+    parseReceiptImage.mockResolvedValue(EMPTY_RESULT);
+
+    await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(spies.receiptDelete).not.toHaveBeenCalled();
+    expect(spies.storageRemove).not.toHaveBeenCalled();
+    expect(db.receipt).toMatchObject({ id: "r1", created_by: "u1", status: "open" });
+  });
+
+  it("keeps the receipt row after a parse that threw", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    parseReceiptImage.mockRejectedValue(new Error("gemini exploded"));
+
+    await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(spies.receiptDelete).not.toHaveBeenCalled();
+    expect(spies.storageRemove).not.toHaveBeenCalled();
+    expect(db.receipt).toMatchObject({ id: "r1", created_by: "u1" });
+    logged.mockRestore();
+  });
+
+  it("still has the row to edit after the replay is refused", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    parseReceiptImage.mockRejectedValue(new Error("gemini exploded"));
+
+    await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    const replay = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(replay.status).toBe(409);
+    // 409 is not 429: nothing is discarded, so the manual editor still opens
+    // on this receipt. CaptureStep sends every non-429 failure to "split".
+    expect(spies.receiptDelete).not.toHaveBeenCalled();
+    expect(db.receipt).toMatchObject({ id: "r1" });
+    logged.mockRestore();
+  });
+
+  // ── the race ──────────────────────────────────────────────────────────────
+  it("calls Gemini once for N concurrent requests on one receiptId", async () => {
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))
+      )
+    );
+    const statuses = results.map((res) => res.status).sort();
+
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+    expect(statuses).toEqual([200, 409, 409, 409, 409]);
+  });
+
+  it("claims the parse with a filter that only matches an unclaimed receipt", async () => {
+    await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    // The claim is the update carrying parsed_at; it is what makes the race
+    // above resolve to one winner rather than five.
+    expect(spies.receiptUpdate).toHaveBeenCalledWith(
+      { parsed_at: expect.any(String) },
+      "r1"
+    );
+  });
+
+  it("refuses rather than calling Gemini when the claim cannot be written", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    db.claimError = { message: 'column "parsed_at" does not exist', code: "42703" };
+
+    const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "parse_unavailable" });
+    expect(parseReceiptImage).not.toHaveBeenCalled();
+    logged.mockRestore();
+  });
+
+  it("does not burn the parse on a request refused before the model call", async () => {
+    const res = await POST(request({ receiptId: "r1", mimeType: "image/gif" }));
+
+    expect(res.status).toBe(400);
+    expect(db.receipt?.parsed_at).toBeNull();
+
+    // so a corrected retry still parses
+    const retry = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    expect(retry.status).toBe(200);
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
   });
 
   // ── the hourly limit ──────────────────────────────────────────────────────

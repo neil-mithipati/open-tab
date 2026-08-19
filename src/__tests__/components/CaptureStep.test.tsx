@@ -82,26 +82,40 @@ describe("CaptureStep", () => {
     expect(refreshUserCaches).toHaveBeenCalledTimes(2);
   });
 
-  it("still falls through to manual entry on any other parse failure", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: async () => ({ error: "parse_failed" }),
-    }) as unknown as typeof fetch;
-    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  // A receipt that would not parse is exactly when someone needs to type the
+  // items in by hand, so the row has to survive the failure and the flow has to
+  // keep pointing at it. Only the 429 path clears receiptId, because only the
+  // 429 path deletes the row.
+  it.each([
+    ["a parse error", 500, { error: "parse_failed" }],
+    ["a refused replay", 409, { error: "already_parsed" }],
+  ])(
+    "still falls through to manual entry on %s, with the row intact",
+    async (_label, status, payload) => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status,
+        json: async () => payload,
+      }) as unknown as typeof fetch;
+      const logged = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const { flow, goTo } = fakeFlow();
-    const { container } = render(<CaptureStep flow={flow} />);
+      const { flow, goTo, update } = fakeFlow();
+      const { container } = render(<CaptureStep flow={flow} />);
 
-    await userEvent.upload(
-      pickFile(container),
-      new File(["x"], "receipt.jpg", { type: "image/jpeg" })
-    );
+      await userEvent.upload(
+        pickFile(container),
+        new File(["x"], "receipt.jpg", { type: "image/jpeg" })
+      );
 
-    await waitFor(() => {
-      expect(goTo).toHaveBeenLastCalledWith("split");
-    });
-    expect(screen.queryByText(/scan limit reached/i)).not.toBeInTheDocument();
-    logged.mockRestore();
-  });
+      await waitFor(() => {
+        expect(goTo).toHaveBeenLastCalledWith("split");
+      });
+      expect(screen.queryByText(/scan limit reached/i)).not.toBeInTheDocument();
+      // the manual editor opens on the receipt that was just created, not on
+      // nothing
+      expect(update).toHaveBeenCalledWith("receiptId", "r1");
+      expect(update).not.toHaveBeenCalledWith("receiptId", null);
+      logged.mockRestore();
+    }
+  );
 });
