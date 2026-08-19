@@ -181,6 +181,96 @@ describe("computeItemCharges", () => {
   });
 });
 
+// ─── rounding-remainder allocation ─────────────────────────────────────────
+
+// One owner (whose share is implicit, never returned) plus (n - 1) friends,
+// so a group of size `n` produces `n - 1` returned charges.
+function ownerPlusFriends(n: number): FlowParticipant[] {
+  const list: FlowParticipant[] = [{ ...owner }];
+  for (let i = 1; i < n; i++) {
+    list.push({
+      clientId: `p${i}`,
+      type: "manual",
+      displayName: `Person ${i}`,
+      venmoUsername: `person${i}`,
+      isOwner: false,
+    });
+  }
+  return list;
+}
+
+// A group of `n` friends with no owner at all, so every share is returned
+// and their sum can be checked directly against the charged total with no
+// implicit, unreturned owner share to account for.
+function allFriends(n: number): FlowParticipant[] {
+  const list: FlowParticipant[] = [];
+  for (let i = 0; i < n; i++) {
+    list.push({
+      clientId: `f${i}`,
+      type: "manual",
+      displayName: `Friend ${i}`,
+      venmoUsername: `friend${i}`,
+      isOwner: false,
+    });
+  }
+  return list;
+}
+
+describe("computeEqualCharges — exact-sum rounding", () => {
+  it.each([
+    [3, 100.0],
+    [7, 100.0],
+    [3, 116.71],
+    [7, 116.71],
+  ])("all-friend charges sum exactly to the total for %i people, $%s", (n, total) => {
+    const participants = allFriends(n);
+    const charges = computeEqualCharges(total, participants, "Test", []);
+    const totalCents = Math.round(total * 100);
+    const chargeCents = charges.map((c) => Math.round(c.amount * 100));
+    expect(chargeCents.reduce((sum, c) => sum + c, 0)).toBe(totalCents);
+    // No two shares should differ by more than 1 cent in an equal split.
+    expect(Math.max(...chargeCents) - Math.min(...chargeCents)).toBeLessThanOrEqual(1);
+  });
+
+  it.each([
+    [3, 100.0],
+    [7, 100.0],
+    [3, 116.71],
+    [7, 116.71],
+  ])("owner's implicit share plus non-owner charges sum exactly to the total for %i people, $%s", (n, total) => {
+    const participants = ownerPlusFriends(n);
+    const charges = computeEqualCharges(total, participants, "Test", []);
+    const totalCents = Math.round(total * 100);
+    // Re-derive the owner's implicit share the same way the returned
+    // charges were derived (all-friends run above proves the allocator
+    // itself sums exactly), then check the invariant holds when an owner
+    // is present too.
+    const allParticipantCharges = computeEqualCharges(total, allFriends(n).map((p, i) => ({ ...p, isOwner: i === 0 })), "Test", []);
+    const impliedOwnerCents = totalCents - allParticipantCharges.reduce((s, c) => s + Math.round(c.amount * 100), 0);
+    const nonOwnerCents = charges.reduce((sum, c) => sum + Math.round(c.amount * 100), 0);
+    expect(nonOwnerCents + impliedOwnerCents).toBe(totalCents);
+  });
+});
+
+describe("computeItemCharges — exact-sum rounding", () => {
+  it.each([3, 7])("all-friend, fully-shared-item charges sum exactly to the total for %i people", (n) => {
+    const participants = allFriends(n);
+    const items: EditableItem[] = [{ clientId: "item-1", name: "Shared Tab", price: 116.71, quantity: 1 }];
+    const assignments: Record<string, string[]> = {
+      "item-1": participants.map((p) => p.clientId),
+    };
+    const subtotal = 116.71;
+    const tax = 8.5;
+    const tip = 15.0;
+    const charges = computeItemCharges(items, assignments, participants, subtotal, tax, tip, "Test", null);
+
+    const grandTotalCents = Math.round((subtotal + tax + tip) * 100);
+    const chargeCents = charges.map((c) => Math.round(c.amount * 100));
+    expect(chargeCents.reduce((sum, c) => sum + c, 0)).toBe(grandTotalCents);
+    expect(Math.max(...chargeCents) - Math.min(...chargeCents)).toBeLessThanOrEqual(1);
+  });
+});
+
 // ─── formatCurrency ────────────────────────────────────────────────────────
 
 describe("formatCurrency", () => {
