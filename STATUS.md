@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 18:52 UTC · regenerated on every task completion.
+Updated 2026-08-19 18:53 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $3 | $20.00 | █░░░░░░░░░ 15% |
+| open-tab | $3.76 | $20.00 | █░░░░░░░░░ 18% |
 
 ## Agents
 
@@ -16,7 +16,7 @@ Updated 2026-08-19 18:52 UTC · regenerated on every task completion.
 | builder | open-tab | 2026-08-19T18:34:40Z | 1 |
 | builder-deep | open-tab | 2026-08-19T18:35:00Z | 1 |
 | reviewer | open-tab | 2026-08-19T18:50:01Z | 8 |
-| publisher | open-tab | 2026-08-19T18:52:03Z | 10 |
+| publisher | open-tab | 2026-08-19T18:52:03Z | 9 |
 
 ## Tasks
 
@@ -38,31 +38,31 @@ Updated 2026-08-19 18:52 UTC · regenerated on every task completion.
 | `OT-113` | **blocked** | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — >- | builder |
 | `OT-114` | **blocked** | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — >- | builder |
 | `OT-115` | **blocked** | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI — >- | builder |
-| `OT-116` | running | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
+| `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T18:51:52Z  open-tab  SubagentStop  
-2026-08-19T18:51:52Z  open-tab  SubagentStop  
-2026-08-19T18:52:02Z  open-tab  SubagentStop  
-2026-08-19T18:52:02Z  open-tab  SubagentStop  
-2026-08-19T18:52:02Z  open-tab  SubagentStop  
-2026-08-19T18:52:02Z  open-tab  SubagentStop  
-2026-08-19T18:52:02Z  open-tab  SubagentStop  
-2026-08-19T18:52:03Z  open-tab  SubagentStart  publisher
-2026-08-19T18:52:03Z  open-tab  SubagentStart  publisher
-2026-08-19T18:52:06Z  open-tab  SubagentStop  reviewer
-2026-08-19T18:52:18Z  open-tab  SubagentStop  
-2026-08-19T18:52:18Z  open-tab  SubagentStop  
-2026-08-19T18:52:18Z  open-tab  SubagentStop  
-2026-08-19T18:52:18Z  open-tab  SubagentStop  
-2026-08-19T18:52:18Z  open-tab  SubagentStop  
-2026-08-19T18:52:24Z  open-tab  SubagentStop  
-2026-08-19T18:52:24Z  open-tab  SubagentStop  
-2026-08-19T18:52:24Z  open-tab  SubagentStop  
-2026-08-19T18:52:24Z  open-tab  SubagentStop  
-2026-08-19T18:52:24Z  open-tab  SubagentStop  
+2026-08-19T18:52:51Z  open-tab  SubagentStop  
+2026-08-19T18:52:51Z  open-tab  SubagentStop  
+2026-08-19T18:52:51Z  open-tab  SubagentStop  
+2026-08-19T18:52:51Z  open-tab  SubagentStop  
+2026-08-19T18:52:52Z  open-tab  SubagentStop  publisher
+2026-08-19T18:52:55Z  open-tab  SubagentStop  
+2026-08-19T18:52:55Z  open-tab  SubagentStop  
+2026-08-19T18:52:55Z  open-tab  SubagentStop  
+2026-08-19T18:52:55Z  open-tab  SubagentStop  
+2026-08-19T18:52:55Z  open-tab  SubagentStop  
+2026-08-19T18:53:06Z  open-tab  SubagentStop  
+2026-08-19T18:53:06Z  open-tab  SubagentStop  
+2026-08-19T18:53:06Z  open-tab  SubagentStop  
+2026-08-19T18:53:06Z  open-tab  SubagentStop  
+2026-08-19T18:53:06Z  open-tab  SubagentStop  
+2026-08-19T18:53:26Z  open-tab  SubagentStop  
+2026-08-19T18:53:26Z  open-tab  SubagentStop  
+2026-08-19T18:53:26Z  open-tab  SubagentStop  
+2026-08-19T18:53:26Z  open-tab  SubagentStop  
+2026-08-19T18:53:26Z  open-tab  SubagentStop  
 ```
 
 ---
