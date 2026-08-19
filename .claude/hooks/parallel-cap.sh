@@ -59,7 +59,16 @@ MAX_BUILDERS="${MAX_PARALLEL_BUILDERS:-${MAX_PARALLEL:-2}}"
 MAX_TOTAL="${MAX_PARALLEL_TOTAL:-6}"
 
 input=$(cat 2>/dev/null)
-command -v jq >/dev/null 2>&1 || exit 0
+
+# jq is load-bearing for every check below. Allowing when it is absent would be
+# the same fail-open this hook exists to prevent: unbounded parallel dispatch,
+# just triggered by a missing binary instead of a bad log line. Deny instead,
+# and build the JSON by hand since deny() itself needs jq and cannot be used
+# here.
+if ! command -v jq >/dev/null 2>&1; then
+  printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"parallel-cap: jq is not installed, so this hook cannot count running subagents. Refusing to dispatch rather than run uncapped. Install jq to restore parallel-dispatch limits."}}'
+  exit 0
+fi
 
 deny() {
   jq -n --arg msg "$1" '{
@@ -85,6 +94,38 @@ is_positive_int() {
 is_positive_int "$MAX_BUILDERS" || deny "parallel-cap: builder limit is not a positive integer (got '$MAX_BUILDERS'). Refusing to dispatch rather than run uncapped. Fix MAX_PARALLEL_BUILDERS or MAX_PARALLEL."
 is_positive_int "$MAX_TOTAL"    || deny "parallel-cap: MAX_PARALLEL_TOTAL is not a positive integer (got '$MAX_TOTAL'). Refusing to dispatch rather than run uncapped."
 
+# `[ -e ]` reports "absent" both when the log genuinely does not exist and when
+# a directory on the way to it denies search — a chmod 000 on .claude/state is
+# enough. Reproduced with two live builders: the hook allowed, cap unenforced.
+# That is the same fail-open as an unreadable log one level down, so check the
+# ancestors first. Order matters: each -e test is only meaningful because every
+# earlier directory already passed -x.
+for dir in "$ROOT" "$ROOT/.claude" "$ROOT/.claude/state"; do
+  if [ -e "$dir" ] && [ ! -x "$dir" ]; then
+    deny "parallel-cap: $dir exists but is not searchable, so $EVENTS cannot be read to count running subagents. Refusing to dispatch rather than run uncapped."
+  fi
+done
+
+# No log yet is the ordinary "nothing has run" state, not a failure — allow so
+# a fresh checkout or a rotated-away file doesn't jam the very first dispatch.
+# Reached only once the path to it is known to be traversable, so "absent" here
+# really means absent.
+[ -e "$EVENTS" ] || exit 0
+
+# EVENTS must be a regular, readable file before jq ever touches it. `jq -Rsr`
+# on a path it cannot open (permission-denied, or a directory sitting where the
+# log should be) does not fail usefully: measured, it prints a full line of
+# zeros ("0 0 0 0 0 0 ") to stdout and exits 2. That output is NON-EMPTY, so
+# `[ -z "$counts" ]` never fires, and content_lines reads as 0, which SKIPS the
+# corruption guard too. Against HEAD's hook this was a silent ALLOW with two
+# live builders — reproduced, both for chmod 000 and for a directory in place
+# of the log. So: this check is what covers the "unreadable file" case, the
+# corruption guard below does not, and the jq exit-status guard below is the
+# second line of defence rather than the first.
+if [ ! -f "$EVENTS" ] || [ ! -r "$EVENTS" ]; then
+  deny "parallel-cap: $EVENTS exists but is not a readable regular file (permission denied, or a directory in its place). Refusing to dispatch rather than run uncapped."
+fi
+
 [ -s "$EVENTS" ] || exit 0
 
 # A builder cannot legitimately run for an hour, so only count a start as
@@ -93,7 +134,8 @@ is_positive_int "$MAX_TOTAL"    || deny "parallel-cap: MAX_PARALLEL_TOTAL is not
 # without emitting a stop), not a running agent, so it is excluded. This is
 # what stops a crashed agent wedging the cap forever.
 STALE_AFTER_SECONDS=3600
-cutoff_epoch=$(( $(date -u +%s) - STALE_AFTER_SECONDS ))
+now_epoch=$(date -u +%s)
+cutoff_epoch=$(( now_epoch - STALE_AFTER_SECONDS ))
 
 # Read the log LINE BY LINE and drop unparseable lines, rather than `jq -s`
 # slurping it as a JSON stream. Parallel agents append to this file
@@ -103,13 +145,25 @@ cutoff_epoch=$(( $(date -u +%s) - STALE_AFTER_SECONDS ))
 # dispatch, which costs real money. Reading with -R makes the file itself
 # always parseable (it is just text) and confines the damage of a torn line to
 # that one event.
-counts=$(jq -Rsr --argjson cutoff "$cutoff_epoch" '
+counts=$(jq -Rsr --argjson cutoff "$cutoff_epoch" --argjson now "$now_epoch" '
   # Keep two tallies: how many lines held actual content, and how many of those
   # parsed as JSON objects. If content lines exist but NONE parsed, the file is
   # wholly corrupt rather than merely torn, and the count below would be a
   # meaningless 0 that silently allows. That case is denied further down.
   ( [ split("\n")[] | select(. != "" and (test("^[[:space:]]*$") | not)) ] | length ) as $content_lines
   | ( [ split("\n")[] | (fromjson? // empty) | select(type == "object") ] ) as $records
+  # Visibility, not enforcement: a SubagentStart missing agent_id is dropped
+  # before pairing (it cannot be matched to anything) and one missing ts is
+  # excluded later as stale (see the fail-safe below). Both used to be silent.
+  # Neither count changes the cap decision; they are surfaced so a maintainer
+  # can see agents going uncounted instead of discovering it as a mystery gap.
+  | ( $records | map(select(.event == "SubagentStart"))
+      | map(select(.agent_id == null or .agent_id == "")) | length
+    ) as $missing_agent_id_starts
+  | ( $records | map(select(.event == "SubagentStart"))
+      | map(select(.agent_id != null and .agent_id != "" and (.ts == null or .ts == "")))
+      | length
+    ) as $missing_ts_starts
   | ( $records
       | map(select(.event == "SubagentStart" or .event == "SubagentStop"))
       | map(select(.agent_id != null and .agent_id != ""))
@@ -134,18 +188,28 @@ counts=$(jq -Rsr --argjson cutoff "$cutoff_epoch" '
       # whose start record lacks a usable ts.
       | select(if $start_epoch == null then false else $start_epoch >= $cutoff end)
       # Type comes from the START record only, never from a stop.
-      | { t: ($starts[0].agent_type // "") }
+      | { id: $starts[0].agent_id, t: ($starts[0].agent_type // ""), age: ($now - $start_epoch) }
     ]
   | { total: length,
-      builders: ( [ .[] | select(.t == "builder-light" or .t == "builder" or .t == "builder-deep") ] | length ) }
-  | "\(.total) \(.builders) \($content_lines) \($records | length)"
+      builders: ( [ .[] | select(.t == "builder-light" or .t == "builder" or .t == "builder-deep") ] | length ),
+      # Diagnostic only, never read for a decision. Emitted as one space-free
+      # token so the shell word-split below stays positional.
+      inventory: ( [ .[] | "\(.id):\(.t // "?"):\(.age | floor)s" ] | join(",") ) }
+  | "\(.total) \(.builders) \($content_lines) \($records | length) \($missing_agent_id_starts) \($missing_ts_starts) \(.inventory)"
 ' "$EVENTS" 2>/dev/null)
+jq_rc=$?
 
-# Whole-file read/parse failure (unreadable file, jq internal error). Fail
-# closed: deny rather than allow. An allow here is the fail-open that motivated
-# this task; a deny is merely a retry.
-if [ -z "$counts" ]; then
-  deny "parallel-cap: could not read $EVENTS to count running subagents. Refusing to dispatch rather than run uncapped."
+# The unreadable-file / directory-in-place-of-the-log case is caught earlier, by
+# the explicit -f/-r check, and does not rely on this guard: jq's stdout there is
+# the non-empty "0 0 0 0 0 0 ", which would sail past `[ -z "$counts" ]` and read
+# as "0 running", i.e. ALLOW. Its exit status of 2 does reach here, so this is a
+# genuine backstop for that case, but a backstop only — do not delete the -f/-r
+# check on the strength of it. What this primarily guards is any OTHER
+# whole-invocation jq failure (an internal error, a program bug): same class,
+# different cause. Fail closed on either a non-zero exit or empty output. An
+# allow here is the fail-open that motivated this task; a deny is merely a retry.
+if [ "$jq_rc" -ne 0 ] || [ -z "$counts" ]; then
+  deny "parallel-cap: could not read $EVENTS to count running subagents (jq exit $jq_rc). Refusing to dispatch rather than run uncapped."
 fi
 
 set -- $counts
@@ -153,6 +217,23 @@ total="${1:-}"
 builders="${2:-}"
 content_lines="${3:-}"
 parsed_records="${4:-}"
+missing_agent_id_starts="${5:-0}"
+missing_ts_starts="${6:-0}"
+live_inventory="${7:-}"
+
+# Log, don't silently drop. Neither of these changes the cap decision — see
+# the jq comments above for why each is excluded — but a maintainer should be
+# able to see agents going uncounted instead of finding it as a mystery gap.
+case "$missing_agent_id_starts" in
+  ''|*[!0-9]*) : ;;
+  0) : ;;
+  *) echo "parallel-cap: warning: $missing_agent_id_starts SubagentStart record(s) in $EVENTS are missing agent_id and cannot be paired or counted toward any cap." >&2 ;;
+esac
+case "$missing_ts_starts" in
+  ''|*[!0-9]*) : ;;
+  0) : ;;
+  *) echo "parallel-cap: warning: $missing_ts_starts SubagentStart record(s) in $EVENTS are missing ts; if unpaired by a stop, they are treated as stale rather than running." >&2 ;;
+esac
 
 # Non-empty file in which nothing at all parsed: treat as whole-file corruption
 # and fail closed. A genuinely empty log is already handled by the -s test
@@ -168,9 +249,24 @@ if ! is_count "$total" || ! is_count "$builders"; then
   deny "parallel-cap: could not parse the running-subagent count (got '$counts'). Refusing to dispatch rather than run uncapped."
 fi
 
+# Say WHICH agents are being counted whenever a cap denies. An agent killed by
+# a turn limit emits no SubagentStop, so its start stays unpaired and holds a
+# slot until the staleness cutoff ages it out — a denial that looks identical to
+# the counter-drift bug that cost three sessions. This does not change the
+# decision or the deny message; it just means the next reader can tell a phantom
+# from a genuinely running agent by its age instead of re-diagnosing the hook.
+# Not a fix for the phantom itself: nothing in the log distinguishes a dead
+# agent from a live one, so that needs its own task.
+warn_live_inventory() {
+  [ -n "$live_inventory" ] || return 0
+  echo "parallel-cap: counted as running (agent_id:type:age-since-start). Each of these has a SubagentStart and no SubagentStop; if one has not actually been running that long, it died without logging a stop and holds a slot until the ${STALE_AFTER_SECONDS}s cutoff:" >&2
+  printf '%s\n' "$live_inventory" | tr ',' '\n' | sed 's/^/parallel-cap:   /' >&2
+}
+
 # The total cap applies to every dispatch regardless of type, so it holds even
 # when the agent type cannot be read out of the payload at all.
 if [ "$total" -ge "$MAX_TOTAL" ]; then
+  warn_live_inventory
   deny "$total subagents already running — MAX_PARALLEL_TOTAL=$MAX_TOTAL. Wait for some to finish. Raise it by exporting MAX_PARALLEL_TOTAL before ./bin/lane."
 fi
 
@@ -187,6 +283,7 @@ subagent=$(printf '%s' "$input" | jq -r '
 case "$subagent" in
   builder-light|builder|builder-deep)
     if [ "$builders" -ge "$MAX_BUILDERS" ]; then
+      warn_live_inventory
       deny "$builders builder(s) already running — MAX_PARALLEL=$MAX_BUILDERS. Wait for one to finish before dispatching another. Override by exporting MAX_PARALLEL before ./bin/lane if you want more concurrent burn."
     fi
     ;;

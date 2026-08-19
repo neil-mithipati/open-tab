@@ -140,6 +140,19 @@
         ]
       },
       {
+        "matcher": "^reviewer-light$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "reviewer-light"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
         "matcher": "builder-light|builder|builder-deep",
         "hooks": [
           {
@@ -216,6 +229,19 @@
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
             "args": [
               "reviewer"
+            ],
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^reviewer-light$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "reviewer-light"
             ],
             "async": true
           }
