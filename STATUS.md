@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 13:39 UTC · regenerated on every task completion.
+Updated 2026-08-19 13:40 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $9.33 | $10.00 | █████████░ 93% |
+| open-tab | $10.23 | $10.00 | ██████████ 102% |
 
 ## Agents
 
@@ -28,38 +28,38 @@ Updated 2026-08-19 13:39 UTC · regenerated on every task completion.
 | `OT-104` | done | Compress receipt photos client-side before upload; cap size and MIME server-side — null | builder |
 | `OT-105` | done | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint — null | builder-deep |
 | `OT-106` | done | Allocate rounding remainders so charges sum to the total — null | builder |
-| `OT-107` | running | Rate-limit the parse route and share/claim actions — null | builder-deep |
-| `OT-108` | todo | Add indexes on all foreign keys — null | builder |
-| `OT-109` | todo | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
-| `OT-110` | todo | Privacy policy page — null | builder-light |
-| `OT-111` | todo | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
-| `OT-112` | todo | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder-light |
-| `OT-113` | todo | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
+| `OT-107` | **blocked** | Rate-limit the parse route and share/claim actions — >- | builder-deep |
+| `OT-108` | **blocked** | Add indexes on all foreign keys — >- | builder |
+| `OT-109` | **blocked** | "Toast system: share/save errors surface, link-copied confirms" — >- | builder |
+| `OT-110` | **blocked** | Privacy policy page — >- | builder-light |
+| `OT-111` | **blocked** | Account deletion — user-initiated, complete, confirmed — >- | builder-deep |
+| `OT-112` | **blocked** | Document NEXT_PUBLIC_APP_URL in .env.example — >- | builder-light |
+| `OT-113` | **blocked** | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — >- | builder |
 | `OT-114` | **blocked** | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — >- | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T13:39:05Z  open-tab  SubagentStop  
-2026-08-19T13:39:05Z  open-tab  SubagentStop  
-2026-08-19T13:39:05Z  open-tab  SubagentStop  
-2026-08-19T13:39:05Z  open-tab  SubagentStop  
-2026-08-19T13:39:05Z  open-tab  SubagentStop  
-2026-08-19T13:39:17Z  open-tab  SubagentStop  
-2026-08-19T13:39:17Z  open-tab  SubagentStop  
-2026-08-19T13:39:17Z  open-tab  SubagentStop  
-2026-08-19T13:39:17Z  open-tab  SubagentStop  
-2026-08-19T13:39:17Z  open-tab  SubagentStop  
-2026-08-19T13:39:31Z  open-tab  SubagentStop  
-2026-08-19T13:39:31Z  open-tab  SubagentStop  
-2026-08-19T13:39:31Z  open-tab  SubagentStop  
-2026-08-19T13:39:31Z  open-tab  SubagentStop  
-2026-08-19T13:39:31Z  open-tab  SubagentStop  
-2026-08-19T13:39:49Z  open-tab  SubagentStop  
-2026-08-19T13:39:49Z  open-tab  SubagentStop  
-2026-08-19T13:39:49Z  open-tab  SubagentStop  
-2026-08-19T13:39:49Z  open-tab  SubagentStop  
-2026-08-19T13:39:49Z  open-tab  SubagentStop  
+2026-08-19T13:40:18Z  open-tab  SubagentStop  
+2026-08-19T13:40:18Z  open-tab  SubagentStop  
+2026-08-19T13:40:18Z  open-tab  SubagentStop  
+2026-08-19T13:40:18Z  open-tab  SubagentStop  
+2026-08-19T13:40:18Z  open-tab  SubagentStop  
+2026-08-19T13:40:19Z  open-tab  SubagentStop  
+2026-08-19T13:40:19Z  open-tab  SubagentStop  
+2026-08-19T13:40:19Z  open-tab  SubagentStop  
+2026-08-19T13:40:19Z  open-tab  SubagentStop  
+2026-08-19T13:40:19Z  open-tab  SubagentStop  
+2026-08-19T13:40:20Z  open-tab  SubagentStop  
+2026-08-19T13:40:20Z  open-tab  SubagentStop  
+2026-08-19T13:40:20Z  open-tab  SubagentStop  
+2026-08-19T13:40:20Z  open-tab  SubagentStop  
+2026-08-19T13:40:20Z  open-tab  SubagentStop  
+2026-08-19T13:40:52Z  open-tab  SubagentStop  
+2026-08-19T13:40:52Z  open-tab  SubagentStop  
+2026-08-19T13:40:52Z  open-tab  SubagentStop  
+2026-08-19T13:40:52Z  open-tab  SubagentStop  
+2026-08-19T13:40:52Z  open-tab  SubagentStop  
 ```
 
 ---
