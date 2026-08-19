@@ -7,13 +7,14 @@
 | OT-104 | Compress receipt photos client-side before upload; cap size and MIME server-side | Done | — |
 | OT-105 | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint | Done | — |
 | OT-106 | Allocate rounding remainders so charges sum to the total | Done | — |
-| OT-107 | Rate-limit the parse route and share/claim actions | Blocked | dispatch-blocked (infrastructure, not this task): `.claude/hooks/parallel-cap.sh` denies every builder dispatch. `.claude/state/events.jsonl` holds two orphaned `SubagentStart` records at 2026-08-19T12:26:57Z from the OT-107 builder that died without emitting `SubagentStop`, so the hook computes 2 running against `MAX_PARALLEL=2`. Nothing is actually running. Fix is two reconciling `SubagentStop` lines appended to `events.jsonl`; the orchestrator was denied write access to that file by the sandbox classifier and must not route around it. Owner action required. |
-| OT-108 | Add indexes on all foreign keys | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
-| OT-109 | Toast system: share/save errors surface, link-copied confirms | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
-| OT-110 | Privacy policy page | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
-| OT-111 | Account deletion — user-initiated, complete, confirmed | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
-| OT-112 | Document NEXT_PUBLIC_APP_URL in .env.example | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
-| OT-113 | ReceiptEditPage delete-then-reinsert → saveReceiptState | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
+| OT-107 | Rate-limit the parse route and share/claim actions | In Progress | — |
+| OT-108 | Add indexes on all foreign keys | Blocked | blocked on OT-114 only. the spend-cap reason previously recorded here is stale: the lane cap is now $20.00 and measured spend reset to ~$0.20, so budget does not block anything. the live blocker is the parallel-cap counter reading 3 (>= MAX_PARALLEL=2), which denies every builder dispatch. verified 2026-08-19T14:25Z by attempting a real builder-light dispatch, refused with "3 builder(s) already running — MAX_PARALLEL=2". no builders are actually running; the count is drift. needs OT-114 applied. |
+| OT-109 | Toast system: share/save errors surface, link-copied confirms | Blocked | same dispatch-blocked cause as OT-108 (see that row) |
+| OT-110 | Privacy policy page | Blocked | same dispatch-blocked cause as OT-108 (see that row) |
+| OT-111 | Account deletion — user-initiated, complete, confirmed | Blocked | same dispatch-blocked cause as OT-108 (see that row) |
+| OT-112 | Document NEXT_PUBLIC_APP_URL in .env.example | Blocked | same dispatch-blocked cause as OT-108 (see that row) |
+| OT-113 | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState | Blocked | same dispatch-blocked cause as OT-108 (see that row) |
+| OT-114 | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring | Blocked | deadlocked; one owner action breaks it. the previous reason was wrong on the key point: .claude/settings.json and .claude/hooks/parallel-cap.sh are both WRITABLE by an agent — verified by write probe 2026-08-19T14:25Z. only .claude/state/ is classifier-blocked, and acceptance criterion 5 already forbids this task from touching it. so the fix is dispatchable as specced. the real blocker is circular: this task is tiered `builder`, and builder dispatch is exactly what the counter bug denies (count 3 >= MAX_PARALLEL=2). break the loop with a one-time relaunch at a raised cap (`MAX_PARALLEL=8 ./bin/lane open-tab`), then dispatch this normally. |
 
 ## Backlog (unscheduled, no ledger task)
 
