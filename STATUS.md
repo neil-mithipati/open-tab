@@ -1,19 +1,19 @@
 # Agent status
 
-Updated 2026-08-19 21:02 UTC · regenerated on every task completion.
+Updated 2026-08-19 21:03 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $20.44 | $100.00 | ██░░░░░░░░ 20% |
+| open-tab | $22.01 | $100.00 | ██░░░░░░░░ 22% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | publisher | open-tab | 2026-08-19T20:45:43Z | 1 |
-| reviewer | open-tab | 2026-08-19T20:51:03Z | 2 |
+| reviewer | open-tab | 2026-08-19T21:02:40Z | 3 |
 
 ## Tasks
 
@@ -38,31 +38,31 @@ Updated 2026-08-19 21:02 UTC · regenerated on every task completion.
 | `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
 | `OT-117` | running | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
 | `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
-| `OT-119` | running | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
+| `OT-119` | todo | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T20:54:45Z  open-tab  SubagentStop  
-2026-08-19T20:54:45Z  open-tab  SubagentStop  
-2026-08-19T20:55:17Z  open-tab  SubagentStop  
-2026-08-19T20:55:17Z  open-tab  SubagentStop  
-2026-08-19T20:55:17Z  open-tab  SubagentStop  
-2026-08-19T20:55:17Z  open-tab  SubagentStop  
-2026-08-19T20:55:17Z  open-tab  SubagentStop  
-2026-08-19T20:56:06Z  open-tab  SubagentStop  reviewer
-2026-08-19T21:00:18Z  open-tab  SubagentStop  
-2026-08-19T21:00:18Z  open-tab  SubagentStop  
-2026-08-19T21:00:18Z  open-tab  SubagentStop  
-2026-08-19T21:00:18Z  open-tab  SubagentStop  
-2026-08-19T21:00:18Z  open-tab  SubagentStop  
-2026-08-19T21:01:54Z  open-tab  SubagentStart  builder-deep
-2026-08-19T21:02:18Z  open-tab  SubagentStart  builder-deep
-2026-08-19T21:02:25Z  open-tab  SubagentStop  
-2026-08-19T21:02:25Z  open-tab  SubagentStop  
-2026-08-19T21:02:25Z  open-tab  SubagentStop  
-2026-08-19T21:02:25Z  open-tab  SubagentStop  
-2026-08-19T21:02:25Z  open-tab  SubagentStop  
+2026-08-19T21:02:57Z  open-tab  SubagentStop  
+2026-08-19T21:02:57Z  open-tab  SubagentStop  
+2026-08-19T21:02:57Z  open-tab  SubagentStop  
+2026-08-19T21:02:57Z  open-tab  SubagentStop  
+2026-08-19T21:02:57Z  open-tab  SubagentStop  
+2026-08-19T21:03:11Z  open-tab  SubagentStop  
+2026-08-19T21:03:11Z  open-tab  SubagentStop  
+2026-08-19T21:03:11Z  open-tab  SubagentStop  
+2026-08-19T21:03:11Z  open-tab  SubagentStop  
+2026-08-19T21:03:11Z  open-tab  SubagentStop  
+2026-08-19T21:03:20Z  open-tab  SubagentStop  
+2026-08-19T21:03:20Z  open-tab  SubagentStop  
+2026-08-19T21:03:20Z  open-tab  SubagentStop  
+2026-08-19T21:03:20Z  open-tab  SubagentStop  
+2026-08-19T21:03:20Z  open-tab  SubagentStop  
+2026-08-19T21:03:28Z  open-tab  SubagentStop  
+2026-08-19T21:03:28Z  open-tab  SubagentStop  
+2026-08-19T21:03:28Z  open-tab  SubagentStop  
+2026-08-19T21:03:28Z  open-tab  SubagentStop  
+2026-08-19T21:03:28Z  open-tab  SubagentStop  
 ```
 
 ---
