@@ -46,6 +46,12 @@ async function ProfileContent() {
           </Link>
         </GlassCard>
         <DeleteAccountSection />
+        <Link
+          href="/privacy"
+          className="text-center text-xs text-secondary/70 underline underline-offset-4"
+        >
+          Privacy
+        </Link>
       </div>
     );
   }
@@ -104,6 +110,12 @@ async function ProfileContent() {
         <LogoutButton />
       </div>
       <DeleteAccountSection />
+      <Link
+        href="/privacy"
+        className="text-center text-xs text-secondary/70 underline underline-offset-4"
+      >
+        Privacy
+      </Link>
     </div>
   );
 }
