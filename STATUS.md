@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-19 12:25 UTC · regenerated on every task completion.
+Updated 2026-08-19 12:27 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -12,7 +12,8 @@ Updated 2026-08-19 12:25 UTC · regenerated on every task completion.
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| publisher | default | 2026-08-19T12:25:35Z | 2 |
+| publisher | default | 2026-08-19T12:25:35Z | 1 |
+| builder | default | 2026-08-19T12:26:57Z | 2 |
 
 ## Tasks
 
@@ -25,7 +26,7 @@ Updated 2026-08-19 12:25 UTC · regenerated on every task completion.
 | `OT-104` | done | Compress receipt photos client-side before upload; cap size and MIME server-side — null | builder |
 | `OT-105` | done | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint — null | builder-deep |
 | `OT-106` | done | Allocate rounding remainders so charges sum to the total — null | builder |
-| `OT-107` | todo | Rate-limit the parse route and share/claim actions — null | builder |
+| `OT-107` | running | Rate-limit the parse route and share/claim actions — null | builder |
 | `OT-108` | todo | Add indexes on all foreign keys — null | builder-light |
 | `OT-109` | todo | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
 | `OT-110` | todo | Privacy policy page — null | builder-light |
@@ -43,6 +44,19 @@ Updated 2026-08-19 12:25 UTC · regenerated on every task completion.
 2026-08-19T12:25:52Z  default  SubagentStop  
 2026-08-19T12:25:52Z  default  SubagentStop  
 2026-08-19T12:25:52Z  default  SubagentStop  
+2026-08-19T12:26:02Z  default  SubagentStop  publisher
+2026-08-19T12:26:08Z  default  SubagentStop  
+2026-08-19T12:26:08Z  default  SubagentStop  
+2026-08-19T12:26:08Z  default  SubagentStop  
+2026-08-19T12:26:08Z  default  SubagentStop  
+2026-08-19T12:26:08Z  default  SubagentStop  
+2026-08-19T12:26:57Z  default  SubagentStart  builder
+2026-08-19T12:26:57Z  default  SubagentStart  builder
+2026-08-19T12:27:14Z  default  SubagentStop  
+2026-08-19T12:27:14Z  default  SubagentStop  
+2026-08-19T12:27:14Z  default  SubagentStop  
+2026-08-19T12:27:14Z  default  SubagentStop  
+2026-08-19T12:27:14Z  default  SubagentStop  
 ```
 
 ---
