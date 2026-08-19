@@ -16,6 +16,23 @@ under these limits.
 
 ## Pending migrations — apply before the next deploy
 
+**`supabase/migrations/0016_participant_unique_and_save_rpc.sql` — apply
+BEFORE or WITH the next code deploy, not after.**
+
+OT-105 (merged) replaces the browser-side delete-then-reinsert save paths
+with a single atomic `save_receipt_state` RPC (`security definer`,
+owner-checked against `auth.uid()`), called from a new server action
+(`src/app/actions/saveReceipt.ts`) instead of sequential client round-trips.
+The migration also adds a unique index on
+`receipt_participants (receipt_id, lower(venmo_username))` to stop
+concurrent claim joins from creating duplicate, separately-charged
+participants.
+
+The merged code already calls the new RPC — **apply this migration first**,
+same as 0015 below. Before applying, run the dedupe check query in the
+migration's header comment; if it returns rows, dedupe those participants
+before applying the unique index, or the migration will fail.
+
 **`supabase/migrations/0015_profiles_rls_and_friendship_check.sql` — apply
 BEFORE or WITH the next code deploy, not after.**
 
