@@ -7,13 +7,13 @@
 | OT-104 | Compress receipt photos client-side before upload; cap size and MIME server-side | Done | — |
 | OT-105 | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint | Done | — |
 | OT-106 | Allocate rounding remainders so charges sum to the total | Done | — |
-| OT-107 | Rate-limit the parse route and share/claim actions | In Progress | — |
-| OT-108 | Add indexes on all foreign keys | In Progress | — |
-| OT-109 | Toast system: share/save errors surface, link-copied confirms | Todo | — |
-| OT-110 | Privacy policy page | Todo | — |
-| OT-111 | Account deletion — user-initiated, complete, confirmed | Todo | — |
-| OT-112 | Document NEXT_PUBLIC_APP_URL in .env.example | In Progress | — |
-| OT-113 | ReceiptEditPage delete-then-reinsert → saveReceiptState | Todo | — |
+| OT-107 | Rate-limit the parse route and share/claim actions | Blocked | dispatch-blocked (infrastructure, not this task): `.claude/hooks/parallel-cap.sh` denies every builder dispatch. `.claude/state/events.jsonl` holds two orphaned `SubagentStart` records at 2026-08-19T12:26:57Z from the OT-107 builder that died without emitting `SubagentStop`, so the hook computes 2 running against `MAX_PARALLEL=2`. Nothing is actually running. Fix is two reconciling `SubagentStop` lines appended to `events.jsonl`; the orchestrator was denied write access to that file by the sandbox classifier and must not route around it. Owner action required. |
+| OT-108 | Add indexes on all foreign keys | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
+| OT-109 | Toast system: share/save errors surface, link-copied confirms | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
+| OT-110 | Privacy policy page | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
+| OT-111 | Account deletion — user-initiated, complete, confirmed | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
+| OT-112 | Document NEXT_PUBLIC_APP_URL in .env.example | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
+| OT-113 | ReceiptEditPage delete-then-reinsert → saveReceiptState | Blocked | same dispatch-blocked cause as OT-107 (see that row) |
 
 ## Backlog (unscheduled, no ledger task)
 
