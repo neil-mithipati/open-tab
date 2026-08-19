@@ -7,6 +7,7 @@ import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { computeEqualCharges, computeItemCharges } from "@/lib/utils";
 import { persistAndShare } from "@/lib/receiptShare";
+import { saveReceiptState } from "@/app/actions/saveReceipt";
 import { refreshUserCaches } from "@/app/actions/cache";
 import { VenmoPromptModal } from "@/components/receipt/VenmoPromptModal";
 import type { ComputedCharge } from "@/types";
@@ -77,95 +78,48 @@ export function ReceiptEditPage({ seed }: Props) {
       computed = computeItemCharges(items, assignments, participants, itemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
     }
 
-    // Round 1: delete participants first (cascades charges + item_assignments),
-    // then items (cascade on item_assignments is already gone)
-    await supabase.from("receipt_participants").delete().eq("receipt_id", receiptId);
-    await supabase.from("receipt_items").delete().eq("receipt_id", receiptId);
-
-    // Round 2: re-insert items and participants, get DB IDs back
-    const [{ data: dbItems }, { data: dbParticipants }] = await Promise.all([
-      items.length > 0
-        ? supabase.from("receipt_items").insert(
-            items.map((item, i) => ({
-              receipt_id: receiptId,
-              name: item.name,
-              price: item.price,
-              quantity: item.quantity,
-              sort_order: i,
-            }))
-          ).select("id, sort_order")
-        : Promise.resolve({ data: [] }),
-      participants.length > 0
-        ? supabase.from("receipt_participants").insert(
-            participants.map((p) => ({
-              receipt_id: receiptId,
-              user_id: p.userId ?? null,
-              venmo_username: p.venmoUsername,
-              display_name: p.displayName,
-              is_owner: p.isOwner,
-            }))
-          ).select("id, venmo_username")
-        : Promise.resolve({ data: [] }),
-    ]);
-
-    // Build lookup maps
-    const sortedDbItems = [...(dbItems ?? [])].sort((a: { id: string; sort_order: number }, b: { id: string; sort_order: number }) => a.sort_order - b.sort_order);
-    const itemClientToDbId: Record<string, string> = {};
-    items.forEach((item, i) => {
-      if (sortedDbItems[i]) itemClientToDbId[item.clientId] = sortedDbItems[i].id;
-    });
-
-    const venmoToDbId = Object.fromEntries(
-      (dbParticipants ?? []).map((p: { id: string; venmo_username: string }) => [p.venmo_username, p.id])
-    );
-    const participantClientToDbId = Object.fromEntries(
-      participants.map((p) => [p.clientId, venmoToDbId[p.venmoUsername]])
-    );
-
-    // Build item_assignments rows
-    const assignmentRows: { receipt_item_id: string; participant_id: string }[] = [];
-    for (const [itemClientId, pClientIds] of Object.entries(assignments)) {
-      const itemDbId = itemClientToDbId[itemClientId];
-      if (!itemDbId) continue;
-      for (const pClientId of pClientIds) {
-        const pDbId = participantClientToDbId[pClientId];
-        if (!pDbId) continue;
-        assignmentRows.push({ receipt_item_id: itemDbId, participant_id: pDbId });
-      }
-    }
-
-    const chargeRows = computed
-      .map((c) => ({
-        receipt_id: receiptId,
-        from_user_id: user.id,
-        to_participant_id: venmoToDbId[c.participant.venmoUsername] ?? null,
-        amount: c.amount,
-        venmo_link: c.venmoLink,
-        paid_at: paidClientIds.has(c.participant.clientId) ? new Date().toISOString() : null,
-      }))
-      .filter((r): r is typeof r & { to_participant_id: string } => r.to_participant_id !== null);
-
     // Manual mode: clicking Done finalizes the check (→ closed).
     // Without a complete split there are no charges, so it stays open.
     const status = computed.length > 0 ? "closed" : "open";
 
-    // Round 3: write assignments, charges, update receipt
-    await Promise.all([
-      assignmentRows.length > 0 ? supabase.from("item_assignments").insert(assignmentRows) : Promise.resolve(),
-      chargeRows.length > 0 ? supabase.from("charges").insert(chargeRows) : Promise.resolve(),
-      supabase.from("receipts").update({
+    // One round trip, one transaction: the swap either lands whole or the tab
+    // is left exactly as it was.
+    const saved = await saveReceiptState({
+      receiptId,
+      items: items.map((item) => ({
+        clientId: item.clientId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      participants: participants.map((p) => ({
+        clientId: p.clientId,
+        userId: p.userId ?? null,
+        venmoUsername: p.venmoUsername,
+        displayName: p.displayName,
+        isOwner: p.isOwner,
+      })),
+      assignments,
+      charges: computed.map((c) => ({
+        participantClientId: c.participant.clientId,
+        amount: c.amount,
+        venmoLink: c.venmoLink,
+        paidAt: paidClientIds.has(c.participant.clientId) ? new Date().toISOString() : null,
+      })),
+      receipt: {
         status,
-        split_mode: splitMode,
-        merchant_name: merchantName,
+        splitMode,
+        merchantName,
         subtotal: Math.round(itemSubtotal * 100) / 100,
-        tax: tax,
-        tip: tip,
+        tax,
+        tip,
         total: Math.round(totalAmount * 100) / 100,
-      }).eq("id", receiptId),
-    ]);
+      },
+    });
+    if (saved.error) { setSaving(false); return; }
 
-    // Written from the browser, so the cached tab list still holds the old
-    // totals and status — drop it before heading back to the dashboard.
+    // The profile and friend caches can also be stale by now, so drop them
+    // before navigating or the dashboard renders without this tab.
     await refreshUserCaches();
 
     router.push("/dashboard");
