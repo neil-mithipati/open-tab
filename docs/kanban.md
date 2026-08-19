@@ -8,11 +8,11 @@
 | OT-105 | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint | Done | — |
 | OT-106 | Allocate rounding remainders so charges sum to the total | Done | — |
 | OT-107 | Rate-limit the parse route and share/claim actions | In Progress | — |
-| OT-108 | Add indexes on all foreign keys | Todo | — |
+| OT-108 | Add indexes on all foreign keys | In Progress | — |
 | OT-109 | Toast system: share/save errors surface, link-copied confirms | Todo | — |
 | OT-110 | Privacy policy page | Todo | — |
 | OT-111 | Account deletion — user-initiated, complete, confirmed | Todo | — |
-| OT-112 | Document NEXT_PUBLIC_APP_URL in .env.example | Todo | — |
+| OT-112 | Document NEXT_PUBLIC_APP_URL in .env.example | In Progress | — |
 | OT-113 | ReceiptEditPage delete-then-reinsert → saveReceiptState | Todo | — |
 
 ## Backlog (unscheduled, no ledger task)
