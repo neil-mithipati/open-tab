@@ -9,11 +9,20 @@ const BUCKET = "receipt-images";
 
 // storage.list() pages; ask for a full page and walk until a short one comes
 // back, so an account with hundreds of receipt photos still gets cleared.
+//
+// "A short page is the last page" is an assumption, and it is worth naming: a
+// server-side row cap below LIST_PAGE would return fewer objects than asked
+// for while more remain, and this loop would stop early and leave them behind.
+// Unlike the charge scan below there is nothing to check the page against —
+// storage.list() reports no total — and the cost if it happens is orphaned
+// photos in the bucket rather than a row left on somebody else's tab.
 const LIST_PAGE = 100;
 
-// Same idea for the charge scan in step 3. A truncated read there is silent
-// data loss: a misfiled row nobody looked at falls through to the delete
-// instead of being re-pointed, and it is another user's row.
+// Same idea for the charge scan in step 3, but a truncated read there is
+// silent data loss: a misfiled row nobody looked at falls through to the
+// delete instead of being re-pointed, and it is another user's row. So that
+// loop does not trust page length. It asks for an exact count and walks until
+// it has seen every matching row. See step 3.
 const CHARGE_PAGE = 500;
 
 export type DeleteAccountResult = { redirectTo: string } | { error: string };
@@ -150,11 +159,20 @@ export async function deleteAccount(): Promise<DeleteAccountResult> {
   // So: find them, hand them back to the receipt's real owner, and only then
   // delete what is left. What is left is charges on this user's own receipts,
   // which step 4 would cascade away regardless.
+  //
+  // The scan pages, and it does not assume a short page means the last page: a
+  // server-side row cap below CHARGE_PAGE truncates every page, which would
+  // end the walk after the first one and leave the rows behind it unseen —
+  // exactly the misfiled rows this step exists to find. So it asks for an
+  // exact count and stops on that, advancing by what actually arrived rather
+  // than by what it asked for. An empty page ends the loop either way, which
+  // is also what happens if the server sends no count at all.
   const foreignReceipts = new Map<string, string>();
-  for (let offset = 0; ; offset += CHARGE_PAGE) {
-    const { data, error } = await service
+  let scanned = 0;
+  for (let offset = 0; ; ) {
+    const { data, error, count } = await service
       .from("charges")
-      .select("receipt_id, receipts!inner(created_by)")
+      .select("receipt_id, receipts!inner(created_by)", { count: "exact" })
       .eq("from_user_id", user.id)
       .order("id")
       .range(offset, offset + CHARGE_PAGE - 1);
@@ -170,7 +188,13 @@ export async function deleteAccount(): Promise<DeleteAccountResult> {
       if (!owner || owner === user.id) continue;
       foreignReceipts.set(row.receipt_id, owner);
     }
-    if (page.length < CHARGE_PAGE) break;
+
+    scanned += page.length;
+    offset += page.length;
+    if (page.length === 0) break;
+    if (typeof count === "number") {
+      if (scanned >= count) break;
+    } else if (page.length < CHARGE_PAGE) break;
   }
 
   // One update per affected receipt rather than per row: the set is small (a
