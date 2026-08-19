@@ -1,19 +1,18 @@
 # Agent status
 
-Updated 2026-08-19 20:25 UTC · regenerated on every task completion.
+Updated 2026-08-19 20:27 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $2.31 | $20.00 | █░░░░░░░░░ 11% |
+| open-tab | $3.71 | $20.00 | █░░░░░░░░░ 18% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| builder | open-tab | 2026-08-19T20:25:17Z | 2 |
-| reviewer | open-tab | 2026-08-19T20:25:32Z | 1 |
+| reviewer | open-tab | 2026-08-19T20:27:04Z | 3 |
 
 ## Tasks
 
@@ -41,14 +40,26 @@ Updated 2026-08-19 20:25 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T20:25:06Z  open-tab  SubagentStart  builder
-2026-08-19T20:25:17Z  open-tab  SubagentStart  builder
-2026-08-19T20:25:32Z  open-tab  SubagentStart  reviewer
-2026-08-19T20:25:37Z  open-tab  SubagentStop  
-2026-08-19T20:25:37Z  open-tab  SubagentStop  
-2026-08-19T20:25:37Z  open-tab  SubagentStop  
-2026-08-19T20:25:37Z  open-tab  SubagentStop  
-2026-08-19T20:25:37Z  open-tab  SubagentStop  
+2026-08-19T20:26:09Z  open-tab  SubagentStop  builder
+2026-08-19T20:26:13Z  open-tab  SubagentStop  builder
+2026-08-19T20:26:17Z  open-tab  SubagentStop  
+2026-08-19T20:26:17Z  open-tab  SubagentStop  
+2026-08-19T20:26:17Z  open-tab  SubagentStop  
+2026-08-19T20:26:17Z  open-tab  SubagentStop  
+2026-08-19T20:26:17Z  open-tab  SubagentStop  
+2026-08-19T20:26:25Z  open-tab  SubagentStop  publisher
+2026-08-19T20:26:35Z  open-tab  SubagentStop  
+2026-08-19T20:26:35Z  open-tab  SubagentStop  
+2026-08-19T20:26:35Z  open-tab  SubagentStop  
+2026-08-19T20:26:35Z  open-tab  SubagentStop  
+2026-08-19T20:26:35Z  open-tab  SubagentStop  
+2026-08-19T20:26:51Z  open-tab  SubagentStart  reviewer
+2026-08-19T20:27:04Z  open-tab  SubagentStart  reviewer
+2026-08-19T20:27:07Z  open-tab  SubagentStop  
+2026-08-19T20:27:07Z  open-tab  SubagentStop  
+2026-08-19T20:27:07Z  open-tab  SubagentStop  
+2026-08-19T20:27:07Z  open-tab  SubagentStop  
+2026-08-19T20:27:07Z  open-tab  SubagentStop  
 ```
 
 ---
