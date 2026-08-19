@@ -12,6 +12,7 @@ import { persistAndShare } from "@/lib/receiptShare";
 import { saveReceiptState } from "@/app/actions/saveReceipt";
 import { refreshUserCaches } from "@/app/actions/cache";
 import { VenmoPromptModal } from "@/components/receipt/VenmoPromptModal";
+import { useToast, ToastViewport } from "@/components/ui/Toast";
 import type { ComputedCharge } from "@/types";
 import { X, Check, AlignJustify, Image as ImageIcon, Share2 } from "lucide-react";
 
@@ -23,14 +24,20 @@ export default function NewReceiptPage() {
   const [showVenmoPrompt, setShowVenmoPrompt] = useState(false);
   const [paidClientIds, setPaidClientIds] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"parsed" | "original">("parsed");
+  const { toasts, showToast, dismiss } = useToast();
 
   async function doShare() {
     setSharing(true);
     const result = await persistAndShare(flow.state);
     setSharing(false);
     if ("needsVenmo" in result) { setShowVenmoPrompt(true); return; }
-    if ("error" in result) return;
-    try { await navigator.clipboard.writeText(result.url); } catch {}
+    if ("error" in result) { showToast("Couldn't share the tab. Try again.", "error"); return; }
+    try {
+      await navigator.clipboard.writeText(result.url);
+      showToast("Link copied — send it to your friends.");
+    } catch {
+      showToast("Share link ready.");
+    }
     flow.reset();
     router.push(`/receipts/${receiptId}`);
   }
@@ -122,7 +129,7 @@ export default function NewReceiptPage() {
         total: Math.round(totalAmount * 100) / 100,
       },
     });
-    if (saved.error) { setSaving(false); return; }
+    if (saved.error) { setSaving(false); showToast(saved.error, "error"); return; }
 
     // The profile and friend caches can also be stale by now (the split step
     // auto-adds friends from the browser), so drop them before navigating or
@@ -218,6 +225,8 @@ export default function NewReceiptPage() {
           onCancel={() => setShowVenmoPrompt(false)}
         />
       )}
+
+      <ToastViewport toasts={toasts} dismiss={dismiss} />
     </div>
   );
 }
