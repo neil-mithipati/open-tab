@@ -61,7 +61,7 @@ A task is done when all of these hold. No exceptions, no partial credit.
 
 1. Every gate listed as `required` in `.claude/gates.json` reports `pass`.
 2. The acceptance criteria in the task file are each satisfiable by inspection.
-3. The change is confined to the branch named in the task.
+3. The change is confined to the worktree named in the task.
 4. Nothing outside the task's declared file scope was modified.
 
 "It should work" is not done. Green gates are done.
@@ -72,20 +72,36 @@ never acceptable for a required gate.** If you cannot run one, report
 listed as `pending` have no script yet; report those `n/a` honestly, and the
 reviewer runs the underlying tool directly instead.
 
-## Branches, not worktrees
+## Worktrees
 
-One task, one branch, checked out in the repo's single working directory — not a
-separate worktree. This means **builders run one at a time within an app.** Only
-one branch can be checked out here at once, so a second builder starting before
-the first finishes would check out from under it. If you want true parallel
-builders on one app, that requires real `git worktree` isolation, which this
-scaffold does not implement — do not tell a builder to work in a worktree, because
-nothing creates one and it will either fail or, worse, silently work in the main
-checkout instead.
+One task, one worktree — an isolated checkout, separate from every other task's.
+This is what makes parallel dispatch safe: two builders never touch the same
+files on disk at once, because they're never in the same directory.
 
-Branch naming: `task/<id>`, created from `main` at dispatch, merged back to `main`
-by the orchestrator once the task is `done`, deleted after merge. The orchestrator
-never leaves a stale branch behind a completed task.
+Never create or remove a worktree by hand. Two scripts do it:
+
+- **`bin/new-worktree <task-id> [base-branch]`** — creates `../wt-<id>` on branch
+  `task/<id>`, prints the path on the last line of stdout. Record that path in
+  the task's `worktree:` field. It also shares `node_modules` via a symlink when
+  the lockfile matches main's, rather than reinstalling per task — and it
+  guards against a real git gotcha where a symlinked `node_modules` can slip
+  past a `.gitignore` written with a trailing slash and get committed by
+  accident. Use the script; don't reimplement this by hand.
+- **`bin/finish-worktree <task-id>`** — merges `task/<id>` into the trunk branch, then
+  removes the worktree and deletes the branch. Run only from the main checkout,
+  never from inside a worktree. Refuses rather than forcing through anything
+  unsafe: uncommitted changes, or a merge that doesn't apply clean. On refusal
+  it leaves everything exactly as it was — nothing is deleted until the merge
+  has actually succeeded.
+
+A builder, reviewer, or publisher operating on a task works **inside that
+task's worktree directory**, not in the main checkout — `cd` there first. The
+ledger itself stays in the main checkout only; it is never edited from inside a
+worktree.
+
+Independent tasks can run in parallel — dispatch as many as the backlog
+supports. Two tasks are independent if neither depends on the other's result.
+If one genuinely needs the other merged first, dispatch them in sequence.
 
 ## Reversibility
 
@@ -118,6 +134,7 @@ tier: builder        # builder-light | builder | builder-deep
 review: full         # full | skip
 attempts: 0
 branch: task/TB-004
+worktree: ../wt-TB-004
 files:
   - src/components/Shuffle.tsx
 blocked_reason: null

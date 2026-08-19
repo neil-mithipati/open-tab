@@ -58,6 +58,7 @@ if [ -s "$EVENTS" ]; then
 fi
 
 total=0; orphaned=0; stale=0; dup=0; nocrit=0; untouched=0
+tier_light=0; tier_normal=0; tier_deep=0
 titles=""
 findings=""
 
@@ -67,6 +68,11 @@ for f in "$LEDGER"/*.md; do
   id=$(field "$f" id); st=$(field "$f" state); ti=$(field "$f" title)
   tier=$(field "$f" tier); att=$(field "$f" attempts)
   id="${id:-$(basename "$f" .md)}"
+  case "$tier" in
+    builder-light) tier_light=$((tier_light + 1)) ;;
+    builder-deep)  tier_deep=$((tier_deep + 1)) ;;
+    builder)       tier_normal=$((tier_normal + 1)) ;;
+  esac
 
   # file mtime as a proxy for last touch
   mt=$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo "$now")
@@ -135,6 +141,45 @@ rm -f /tmp/audit-files.$$
 
 printf '\033[1mledger audit\033[0m — %s task(s) in %s\n' "$total" "$LEDGER"
 printf 'stale threshold: %sm (override with STALE_MIN)\n\n' "$STALE_MIN"
+
+# Worktree directories on disk with no live claim on them — either the task
+# finished and bin/finish-worktree was skipped, or it crashed mid-task and
+# never got a chance to clean up. Either way, disk sitting around unaccounted
+# for is the thing worth surfacing; deciding whether it's safe to remove is
+# the owner's call, not this script's.
+claimed_worktrees=""
+for f in "$LEDGER"/*.md; do
+  [ -e "$f" ] || continue
+  wt=$(field "$f" worktree)
+  [ -n "$wt" ] && claimed_worktrees="$claimed_worktrees|$(basename "$wt")|"
+done
+for d in "$ROOT"/../wt-*; do
+  [ -d "$d" ] || continue
+  name=$(basename "$d")
+  case "$claimed_worktrees" in
+    *"|$name|"*) ;;
+    *)
+      findings="$findings
+  ORPHANED-WORKTREE $name — on disk, no ledger task claims it"
+      ;;
+  esac
+done
+
+tier_total=$((tier_light + tier_normal + tier_deep))
+if [ "$tier_total" -gt 0 ]; then
+  printf '\033[1mtier distribution\033[0m  builder-light %s · builder %s · builder-deep %s\n' \
+    "$tier_light" "$tier_normal" "$tier_deep"
+  # A signal worth a nudge, not a finding worth blocking on — genuinely
+  # trivial tasks (a rename, a copy string, a version bump) exist in most
+  # real backlogs, and builder-light staying at zero for 15+ tasks usually
+  # means the orchestrator is defaulting to builder rather than actively
+  # classifying each one.
+  if [ "$tier_light" -eq 0 ] && [ "$tier_total" -ge 15 ]; then
+    printf '  \033[33m!\033[0m builder-light has never been used across %s tasks — worth checking\n' "$tier_total"
+    printf '    whether genuinely trivial tasks are being routed to builder anyway\n'
+  fi
+  echo
+fi
 
 if [ -z "$(printf '%s' "$findings" | tr -d '[:space:]')" ]; then
   printf '\033[32mno findings\033[0m — every task is either moving or legitimately blocked\n'

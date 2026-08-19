@@ -11,6 +11,7 @@ gate into a suggestion.
 
 - `lint`: `npm run lint`
 - `test`: `npm run test`
+- `typecheck`: `npm run typecheck`
 
 ## Pending
 
@@ -18,7 +19,7 @@ No script exists for these, so they are not enforced. Add the script, then
 move the name into `required` in `gates.json` — re-running the install
 preserves manual promotions.
 
-- `typecheck`: no `npm run typecheck` script found
+- none
 
 ## Interim cover
 

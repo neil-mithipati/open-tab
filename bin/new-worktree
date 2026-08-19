@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# bin/new-worktree — creates an isolated checkout for one task so builders can
+# run in parallel without one clobbering another's files.
+#
+#   ./bin/new-worktree TB-004 [base-branch]
+#
+# Prints the worktree path on the last line of stdout on success — that's the
+# value to record in the task's `worktree:` field. Everything else goes to
+# stderr, so the caller can safely capture just that line.
+#
+# base-branch defaults to main. The branch created is task/<id>.
+
+set -euo pipefail
+
+ID="${1:-}"
+BASE="${2:-}"
+
+if [ -z "$ID" ]; then
+  echo "usage: ./bin/new-worktree <task-id> [base-branch]" >&2
+  exit 1
+fi
+
+# Keep the id filesystem- and branch-name-safe rather than trusting it verbatim.
+case "$ID" in
+  *[!A-Za-z0-9_-]*) echo "task id must be alphanumeric, - or _ only: $ID" >&2; exit 1 ;;
+esac
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not a git repo" >&2; exit 1; }
+cd "$ROOT"
+
+# Default to whatever branch is actually checked out here, not a hardcoded
+# "main" — plenty of repos still default to "master" or something else
+# entirely, and this script is always meant to run from the trunk checkout.
+if [ -z "$BASE" ]; then
+  BASE="$(git symbolic-ref --short -q HEAD || true)"
+  if [ -z "$BASE" ]; then
+    echo "HEAD is detached and no base branch was given — pass one explicitly" >&2
+    exit 1
+  fi
+fi
+
+BRANCH="task/$ID"
+WT_DIR="../wt-$ID"
+WT_ABS="$(cd "$(dirname "$ROOT")" && pwd)/wt-$ID"
+
+if git worktree list --porcelain | grep -qF "$WT_ABS"; then
+  echo "worktree already exists for $ID: $WT_DIR" >&2
+  echo "$WT_DIR"
+  exit 0
+fi
+
+if git rev-parse --verify -q "$BRANCH" >/dev/null; then
+  echo "branch $BRANCH already exists — reusing it rather than creating fresh" >&2
+  git worktree add "$WT_DIR" "$BRANCH" >&2
+else
+  git worktree add -b "$BRANCH" "$WT_DIR" "$BASE" >&2
+fi
+
+# Guarantee node_modules is git-ignored before creating a symlink there, rather
+# than trusting whatever the repo's own .gitignore happens to say. This matters
+# because of a real git gotcha: a .gitignore entry written as `node_modules/`
+# (trailing slash) only matches an actual directory — it does NOT match a
+# symlink named node_modules, even one pointing at a directory. `git add -A`
+# would then pick up and commit the symlink itself, merging an absolute,
+# machine-specific path into main. `.git/info/exclude` is local-only, never
+# committed, and a bare `node_modules` (no trailing slash) matches regardless of
+# type. Added unconditionally rather than checked first: checking whether
+# node_modules is "already ignored" at this point tests the real directory at
+# $ROOT, not the symlink that will exist at a different path inside the
+# worktree — the wrong question. Appending is idempotent either way.
+EXCLUDE_FILE="$(git rev-parse --git-common-dir 2>/dev/null)/info/exclude"
+if [ -n "$EXCLUDE_FILE" ]; then
+  mkdir -p "$(dirname "$EXCLUDE_FILE")"
+  grep -qxF "node_modules" "$EXCLUDE_FILE" 2>/dev/null || echo "node_modules" >> "$EXCLUDE_FILE"
+fi
+
+# Share dependencies rather than reinstalling per task, but only when it's safe.
+# Guard on $WT_DIR/node_modules not already existing: if it's somehow tracked in
+# git (unusual, but not this script's job to fix), `ln -s` would nest a symlink
+# *inside* that existing directory instead of replacing it — and that nested
+# symlink then gets committed and merged into main. Checked, not assumed.
+if [ -e "$WT_DIR/node_modules" ]; then
+  echo "node_modules: already present in the worktree (tracked in git?) — leaving it as-is" >&2
+elif [ -d "$ROOT/node_modules" ]; then
+  if [ -f "$ROOT/package-lock.json" ] && [ -f "$WT_DIR/package-lock.json" ] \
+     && cmp -s "$ROOT/package-lock.json" "$WT_DIR/package-lock.json"; then
+    ln -s "$(cd "$ROOT/node_modules" && pwd)" "$WT_DIR/node_modules"
+    echo "node_modules: symlinked (lockfiles match)" >&2
+  else
+    echo "node_modules: lockfiles differ or none found — installing fresh" >&2
+    ( cd "$WT_DIR" && npm install >&2 )
+  fi
+fi
+
+echo "worktree ready: $WT_DIR on $BRANCH" >&2
+echo "$WT_DIR"

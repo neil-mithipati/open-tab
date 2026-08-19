@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# bin/finish-worktree — merges a task's branch into main and removes the
+# worktree. Must be run from the main checkout, never from inside a worktree.
+#
+#   ./bin/finish-worktree TB-004
+#
+# Refuses rather than forcing through anything unsafe: uncommitted changes in
+# the worktree, or a merge that doesn't fast-forward or apply clean. On refusal
+# the worktree is left exactly as it was — nothing is deleted until the merge
+# has actually succeeded.
+
+set -euo pipefail
+
+ID="${1:-}"
+[ -z "$ID" ] && { echo "usage: ./bin/finish-worktree <task-id>" >&2; exit 1; }
+
+case "$ID" in
+  *[!A-Za-z0-9_-]*) echo "task id must be alphanumeric, - or _ only: $ID" >&2; exit 1 ;;
+esac
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not a git repo" >&2; exit 1; }
+cd "$ROOT"
+
+CUR_BRANCH="$(git symbolic-ref --short -q HEAD || true)"
+if [ -z "$CUR_BRANCH" ]; then
+  echo "HEAD is detached — run this from the trunk checkout, not inside a worktree" >&2
+  exit 1
+fi
+# Refuse to run from inside a task worktree, whatever the trunk happens to be
+# named — checked by looking for a task/ branch prefix pattern rather than
+# assuming the trunk is literally called "main" or "master".
+case "$CUR_BRANCH" in
+  task/*) echo "run this from the trunk checkout, not from inside a worktree (currently on: $CUR_BRANCH)" >&2; exit 1 ;;
+esac
+
+BRANCH="task/$ID"
+WT_DIR="../wt-$ID"
+
+if ! git rev-parse --verify -q "$BRANCH" >/dev/null; then
+  echo "no branch $BRANCH — nothing to finish" >&2
+  exit 1
+fi
+
+if [ -d "$WT_DIR" ]; then
+  if [ -n "$(git -C "$WT_DIR" status --porcelain 2>/dev/null)" ]; then
+    echo "worktree $WT_DIR has uncommitted changes — commit or discard them first" >&2
+    echo "refusing to merge or remove anything" >&2
+    exit 1
+  fi
+fi
+
+if ! git merge --no-ff --no-edit "$BRANCH" 2>/tmp/finish-worktree-merge-err.$$; then
+  cat /tmp/finish-worktree-merge-err.$$ >&2
+  rm -f /tmp/finish-worktree-merge-err.$$
+  git merge --abort 2>/dev/null || true
+  echo "merge failed — worktree and branch left in place for manual resolution" >&2
+  exit 1
+fi
+rm -f /tmp/finish-worktree-merge-err.$$
+
+echo "merged $BRANCH into $CUR_BRANCH" >&2
+
+if [ -d "$WT_DIR" ]; then
+  git worktree remove "$WT_DIR" --force 2>&1 >&2
+  echo "worktree removed: $WT_DIR" >&2
+fi
+
+git branch -d "$BRANCH" 2>&1 >&2
+echo "branch deleted: $BRANCH" >&2
+echo "done"
