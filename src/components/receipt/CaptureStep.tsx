@@ -5,6 +5,7 @@ import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { refreshUserCaches } from "@/app/actions/cache";
 import { compressImage } from "@/lib/image/compressImage";
+import { useToast, ToastViewport } from "@/components/ui/Toast";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import { Camera } from "lucide-react";
 
@@ -12,6 +13,7 @@ type Flow = ReturnType<typeof useReceiptFlow>;
 
 export function CaptureStep({ flow }: { flow: Flow }) {
   const [error, setError] = useState("");
+  const { toasts, showToast, dismiss } = useToast();
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -73,6 +75,28 @@ export function CaptureStep({ flow }: { flow: Flow }) {
         mimeType,
       }),
     });
+
+    if (res.status === 429) {
+      // Hitting the hourly scan limit is the one failure the user can act on,
+      // so it gets said out loud instead of dropping them on an empty manual
+      // form. The route discards the receipt row and its uploaded image on a
+      // 429, so there is nothing left to edit — go back to capture.
+      const err = await res.json().catch(() => ({}));
+      const limit = typeof err?.limit === "number" ? err.limit : null;
+      showToast(
+        limit
+          ? `Scan limit reached — ${limit} receipts an hour. Try again later.`
+          : "Scan limit reached. Try again later.",
+        "error"
+      );
+      flow.update("receiptId", null);
+      flow.update("signedUrl", null);
+      // The row created above is gone again, so the cached dashboard list is
+      // out of date a second time.
+      refreshUserCaches();
+      flow.goTo("capture");
+      return;
+    }
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -155,6 +179,10 @@ export function CaptureStep({ flow }: { flow: Flow }) {
         className="hidden"
         onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
       />
+
+      {/* This step owns its own toast queue — Toast.tsx has no provider by
+          design, so each call site renders one viewport. */}
+      <ToastViewport toasts={toasts} dismiss={dismiss} />
     </div>
   );
 }

@@ -162,7 +162,12 @@ export async function joinReceipt(
 
   // Guards the insert, not the resume above: a claimer who already joined must
   // always get back to their own row, even on a busy receipt. Only genuinely
-  // new participants count against the cap.
+  // new participants count against the cap — and only ones who arrived through
+  // this path, since the owner's own save rewrites every participant row and
+  // would otherwise trip the cap on a big table (see isClaimJoinRateLimited).
+  // The count-then-insert below is not atomic, so two simultaneous joins can
+  // both read the same count and land one over: a soft cap by construction,
+  // and over-admitting by the width of that window is harmless.
   if (await isClaimJoinRateLimited(supabase, receipt.id)) {
     return { error: "Too many people joining right now — try again in a bit." };
   }
