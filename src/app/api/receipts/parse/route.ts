@@ -16,6 +16,7 @@ type ServiceClient = Awaited<ReturnType<typeof getSupabaseServiceClient>>;
 interface StoredReceipt {
   id: string;
   image_url: string | null;
+  parsed_at: string | null;
   merchant_name: string | null;
   date_of_receipt: string | null;
   subtotal: number | null;
@@ -25,7 +26,7 @@ interface StoredReceipt {
 }
 
 const RECEIPT_COLUMNS =
-  "id, image_url, merchant_name, date_of_receipt, subtotal, tax, tip, total";
+  "id, image_url, parsed_at, merchant_name, date_of_receipt, subtotal, tax, tip, total";
 
 function present(value: unknown): boolean {
   return value !== null && value !== undefined;
@@ -45,13 +46,23 @@ function ownStoragePath(userId: string, receipt: StoredReceipt): string | null {
   return ownPathPattern.test(path) ? path : null;
 }
 
-// Anything this route writes back from a parse. A receipt carrying any of it
-// has already been through Gemini once.
+// Has this receipt's one parse already been spent? Two kinds of evidence.
+//
+// parsed_at (0020) is the authoritative one: the route stamps it before the
+// model call, so it covers the parses that produced nothing — an all-nulls
+// result off a blank image, the EMPTY fallback when Gemini's reply fails
+// JSON.parse, a thrown error returning 500 — which is exactly the set that
+// left no other trace and so replayed forever off one upload.
+//
+// The parsed-data checks below stay because parsed_at backfills to null: rows
+// parsed before 0020 shipped have data but no stamp, and this is what still
+// refuses them.
 async function alreadyParsed(
   service: ServiceClient,
   receipt: StoredReceipt
 ): Promise<boolean> {
   if (
+    present(receipt.parsed_at) ||
     present(receipt.merchant_name) ||
     present(receipt.date_of_receipt) ||
     present(receipt.subtotal) ||
@@ -70,10 +81,55 @@ async function alreadyParsed(
   return (count ?? 0) > 0;
 }
 
+// "taken" is a lost race or a replay; "unavailable" is a write that failed.
+// Both refuse, with different status codes, so a real outage is not reported
+// back as a duplicate request.
+type ParseClaim = "claimed" | "taken" | "unavailable";
+
+// Take the receipt's one parse, atomically. `parsed_at is null` in the filter
+// makes this a compare-and-set: Postgres applies the whole update under a row
+// lock, so of N concurrent requests for the same receiptId exactly one matches
+// a row and the rest match none.
+//
+// Called immediately before the model call, never after it. Marking success
+// after the fact is what left the empty-parse hole open.
+
+async function claimParse(
+  service: ServiceClient,
+  userId: string,
+  receipt: StoredReceipt
+): Promise<ParseClaim> {
+  const { data, error } = await service
+    .from("receipts")
+    .update({ parsed_at: new Date().toISOString() })
+    .eq("id", receipt.id)
+    .eq("created_by", userId)
+    .is("parsed_at", null)
+    .select("id");
+
+  if (error) {
+    // Fails CLOSED, unlike the rate limiter, which fails open. The limiter
+    // going inert costs a caller more scans than intended; this going inert
+    // costs unbounded paid inference off a single upload, which is the defect
+    // this gate exists to close. The usual cause is 0020 not applied, and a
+    // refusal that says so is fixable in minutes.
+    console.error(
+      `[parse] could not claim receipt ${receipt.id} (${error.code ?? "no code"}: ${error.message}) — refusing rather than calling the model unguarded; is migration 0020 applied?`
+    );
+    return "unavailable";
+  }
+  return (data?.length ?? 0) > 0 ? "claimed" : "taken";
+}
+
 // A receipt row and its uploaded image exist only to be parsed. When the parse
 // is refused for the hour, leaving them behind means an empty tab on the user's
 // dashboard and a stored object nothing will ever read. Safe to remove here:
 // ownership was verified and the row provably carries no parsed data.
+//
+// Only ever called on the 429 path, which runs before the parse is claimed.
+// The `parsed_at is null` filter enforces that rather than trusting it: if a
+// concurrent request claimed the parse in between, this deletes nothing and
+// leaves that request's receipt alone.
 async function discardUnparsedReceipt(
   service: ServiceClient,
   userId: string,
@@ -87,7 +143,8 @@ async function discardUnparsedReceipt(
     .from("receipts")
     .delete()
     .eq("id", receipt.id)
-    .eq("created_by", userId);
+    .eq("created_by", userId)
+    .is("parsed_at", null);
 }
 
 export async function POST(request: Request) {
@@ -132,9 +189,12 @@ export async function POST(request: Request) {
   // invocation, and only this check ties the two together: without it the same
   // receiptId replayed in a loop bought unbounded Gemini calls off one upload
   // while the count sat at 1. A receipt is consumed by its first parse.
-  // (Two requests racing before either writes can still both parse — the same
-  // bounded overshoot the claim-join cap accepts, and it costs one extra call,
-  // not unbounded ones.)
+  //
+  // This read is a cheap early refusal, not the guarantee. Racing requests all
+  // pass it before any of them writes, and the cost of that window is not one
+  // extra call — it is however many requests an attacker fires at once, times
+  // roughly 15 fresh receipts an hour. claimParse below is what actually
+  // bounds it: one atomic compare-and-set, one winner.
   if (await alreadyParsed(service, receipt)) {
     return NextResponse.json({ error: "already_parsed" }, { status: 409 });
   }
@@ -181,10 +241,27 @@ export async function POST(request: Request) {
 
   const base64 = Buffer.from(buffer).toString("base64");
 
+  // Last thing before the model call, and after every validation that can
+  // refuse for free — a bad mime type or an unreadable upload must not burn
+  // the receipt's one parse. Everything past this line is billable, so
+  // everything past this line is already marked, including the outcomes that
+  // write nothing back.
+  const claim = await claimParse(service, user.id, receipt);
+  if (claim === "taken") {
+    return NextResponse.json({ error: "already_parsed" }, { status: 409 });
+  }
+  if (claim === "unavailable") {
+    return NextResponse.json({ error: "parse_unavailable" }, { status: 503 });
+  }
+
   let parsed;
   try {
     parsed = await parseReceiptImage(base64, mimeType);
   } catch (err) {
+    // The receipt row and its image stay. The parse is spent, but the user
+    // still owns a tab they can fill in by hand — CaptureStep sends any
+    // non-429 failure to the manual editor with the receiptId intact, and
+    // taking the row away would take that away with it.
     console.error("[parse] Gemini error:", err);
     return NextResponse.json({ error: "parse_failed" }, { status: 500 });
   }
