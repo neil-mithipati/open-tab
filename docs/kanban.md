@@ -7,59 +7,160 @@
 | OT-104 | Compress receipt photos client-side before upload; cap size and MIME server-side | Done | — |
 | OT-105 | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint | Done | — |
 | OT-106 | Allocate rounding remainders so charges sum to the total | Done | — |
-| OT-107 | Rate-limit the parse route and share/claim actions | In Progress | — (attempt 3 is live; a builder is running on it now) |
-| OT-108 | Add indexes on all foreign keys | Blocked | BLOCKER CLEARED — awaiting review + merge, not blocked on any code. work is complete and committed (93d55ec): migration 0018 written, all four acceptance criteria met, lint clean, tests 187/187. the only blocker was the required `typecheck` gate being red on main; OT-116 fixed exactly that and merged at 8d6c09d, and `npm run typecheck` on main now passes clean (verified this session). remaining sequence: merge main into this branch, re-run gates, review, merge. adds a migration under supabase/, so review: full is mandatory and must not be skipped. |
-| OT-109 | Toast system: share/save errors surface, link-copied confirms | Blocked | blocked on OT-114 merging. VERIFIED this session by direct measurement, not projected from reading the hook: the parallel-cap counter reads net=6, but ZERO builders are actually running. root cause confirmed — in .claude/settings.json, SubagentStart is logged TWICE (a wildcard `matcher: "*"` log-event hook PLUS the per-type `^builder$` matcher) while SubagentStop is logged ONCE (per-type only), so every builder start drifts the count +1. evidence: every SubagentStart in .claude/state/events.jsonl appears 2x and every SubagentStop 1x; deduplicated, the real figures are starts=7 stops=8 net=-1. the earlier claim in this field that "only 1 of the 8 is a real builder (OT-107 attempt 3)" was wrong — none are. OT-114's committed fix (af67ef3) removes the duplicate hook and re-derives the count by pairing start to stop on agent_id with a staleness cutoff. no dependency on any other task; dispatchable the moment OT-114 merges. |
-| OT-110 | Privacy policy page | Blocked | blocked on OT-111 only, and that dependency is real: section 5 of this policy states users can delete their account, and publishing that claim before the capability exists would be false. see ## Sequencing in the body. the OT-114 half of the previous reason was wrong and is retracted below. |
-| OT-111 | Account deletion — user-initiated, complete, confirmed | Blocked | blocked on OT-114 merging. VERIFIED this session by direct measurement, not projected from reading the hook: the parallel-cap counter reads net=6, but ZERO builders are actually running. root cause confirmed — in .claude/settings.json, SubagentStart is logged TWICE (a wildcard `matcher: "*"` log-event hook PLUS the per-type `^builder$` matcher) while SubagentStop is logged ONCE (per-type only), so every builder start drifts the count +1. evidence: every SubagentStart in .claude/state/events.jsonl appears 2x and every SubagentStop 1x; deduplicated, the real figures are starts=7 stops=8 net=-1. the earlier claim in this field that "only 1 of the 8 is a real builder (OT-107 attempt 3)" was wrong — none are. OT-114's committed fix (af67ef3) removes the duplicate hook and re-derives the count by pairing start to stop on agent_id with a staleness cutoff. no dependency on any other task; dispatchable the moment OT-114 merges. |
-| OT-112 | Document NEXT_PUBLIC_APP_URL in .env.example | Blocked | blocked on OT-114 merging. VERIFIED this session by direct measurement, not projected from reading the hook: the parallel-cap counter reads net=6, but ZERO builders are actually running. root cause confirmed — in .claude/settings.json, SubagentStart is logged TWICE (a wildcard `matcher: "*"` log-event hook PLUS the per-type `^builder$` matcher) while SubagentStop is logged ONCE (per-type only), so every builder start drifts the count +1. evidence: every SubagentStart in .claude/state/events.jsonl appears 2x and every SubagentStop 1x; deduplicated, the real figures are starts=7 stops=8 net=-1. the earlier claim in this field that "only 1 of the 8 is a real builder (OT-107 attempt 3)" was wrong — none are. OT-114's committed fix (af67ef3) removes the duplicate hook and re-derives the count by pairing start to stop on agent_id with a staleness cutoff. no dependency on any other task; dispatchable the moment OT-114 merges. the partial work in ../wt-OT-112 is intact and safe to build on. attempts stays 1: no attempt 2 ever ran. |
-| OT-113 | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState | Blocked | blocked on OT-114 merging. VERIFIED this session by direct measurement, not projected from reading the hook: the parallel-cap counter reads net=6, but ZERO builders are actually running. root cause confirmed — in .claude/settings.json, SubagentStart is logged TWICE (a wildcard `matcher: "*"` log-event hook PLUS the per-type `^builder$` matcher) while SubagentStop is logged ONCE (per-type only), so every builder start drifts the count +1. evidence: every SubagentStart in .claude/state/events.jsonl appears 2x and every SubagentStop 1x; deduplicated, the real figures are starts=7 stops=8 net=-1. the earlier claim in this field that "only 1 of the 8 is a real builder (OT-107 attempt 3)" was wrong — none are. OT-114's committed fix (af67ef3) removes the duplicate hook and re-derives the count by pairing start to stop on agent_id with a staleness cutoff. no dependency on any other task; dispatchable the moment OT-114 merges. |
-| OT-114 | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring | Blocked | BLOCKER CLEARED — awaiting review + merge, not blocked on any code. work is complete and committed (af67ef3): both fixes landed, lint clean, tests 187/187. the only blocker was the required `typecheck` gate being red on main; OT-116 fixed exactly that and merged at 8d6c09d, and `npm run typecheck` on main now passes clean (verified this session). remaining sequence: merge main into this branch, re-run gates, review, merge. this is the keystone task — the parallel-cap drift it fixes is what four other tasks (OT-109, OT-111, OT-112, OT-113) are waiting on. touches .claude/, so review: full is mandatory and must not be skipped. |
-| OT-115 | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI | Blocked | blocked on OT-107 only, and that dependency is real: this task edits the same three files OT-107 is rewriting (src/lib/rateLimit.ts, CaptureStep.tsx, api/receipts/parse/route.ts), so dispatching both at once would conflict. sequence: OT-107 lands and merges, then this. the OT-114 half of the previous reason was wrong and is retracted below. |
+| OT-107 | Rate-limit the parse route and share/claim actions | Done | — |
+| OT-108 | Add indexes on all foreign keys | Done | — |
+| OT-109 | Toast system: share/save errors surface, link-copied confirms | Done | — |
+| OT-110 | Privacy policy page | Done | — (reviewer-light MERGE, merged; section 5 matches deleteAccount.ts exactly, no "your name only" phrasing) |
+| OT-111 | Account deletion — user-initiated, complete, confirmed | Done | — (merged to main, attempt 2, commit bcd75f7; both HIGH review findings closed) |
+| OT-112 | Document NEXT_PUBLIC_APP_URL in .env.example | Done | — |
+| OT-113 | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState | Done | — |
+| OT-114 | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring | Done | — |
+| OT-115 | Rate-limit hardening: parse limiter is bypassable by replay (HIGH), plus fail-open silence, off-by-one ceiling, no 429 UI | Done | — (reviewed MERGE, merged; main 272/272, lint and typecheck clean. HIGH materially but NOT fully closed — a blank/unreadable image still yields a replayable empty parse; continued as OT-123) |
 | OT-116 | Make main typecheck-clean — two pre-existing errors block the required gate for every task | Done | — |
+| OT-117 | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads | Done | — (reviewed MERGE against fixtures with the old hook as control, merged, then verified live against the exact fixture that produced the jam: now allows dispatch) |
+| OT-118 | Save and share failures are still swallowed on three call sites; Done can wedge | Done | — (review passed, merged to main, worktree and branch removed) |
+| OT-119 | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share | Done | — (reviewer-light MERGE, merged; commit e7ca92e restored after a worktree reversion, main confirms 249/249) |
+| OT-120 | charges RLS has no with-check — anyone can plant a charge row on a tab they don't own | Done | — (reviewed MERGE, merged; main 292/292, lint and typecheck clean. Migration 0019 has NOT been applied to any live database yet — the fix is inert until it is) |
+| OT-121 | parallel-cap third fail-open on an unopenable log; remove the wildcard SubagentStart | Done | — (reviewed MERGE against fixtures with HEAD as control, merged; main 304/304. Unreadable log, directory-at-path, and unsearchable `.claude` all now DENY. Wildcard `SubagentStart` confirmed removed — it only ever existed in main's uncommitted working copy, not in committed HEAD. A fifth fail-open, in `deny()` itself, routed to OT-127) |
+| OT-122 | read-only agents can still mutate a worktree through Bash git commands | Done | — (reviewed MERGE against 12 fixture repos, merged; main 292/292. Detect-and-repair chosen over a PreToolUse hook; all seven refusal shapes hold, all-or-nothing confirmed. Five findings routed to OT-126) |
+| OT-123 | Parse replay is still open on an empty parse — needs a `parsed_at` marker written before the model call | Done | — (reviewed MERGE, merged; main 304/304. HIGH from OT-115 now fully closed — five concurrent requests for one receipt cost one Gemini call. Ships as migration 0020. **Migration 0020 must be applied BEFORE this code deploys** — applied late, every parse errors and scanning is down for every user, since the claim deliberately fails closed. Six findings routed to OT-129) |
+| OT-124 | Owner save erases `joined_via_share`, hiding real claimers from the owner's view | In Progress | — (builder result on commit `791d027`, UNREVIEWED: lint/typecheck clean, 317/317. In review. attempts 1) |
+| OT-125 | the fleet's own agent cards and tooling are untracked or uncommitted in git | Done | — (reviewed MERGE, merged; main 304/304. `reviewer-light.md` and `bin/doctor` now tracked, executable bit preserved. Merge itself was blocked by the very problem the task fixed — main's untracked copies had to be reconciled by hand, not discarded) |
+| OT-126 | detect-and-repair can discard a genuine revert; staged blob not captured in the patch | Done | — (reviewed MERGE against 13 fixture repos, merged; main 304/304. A deliberate revert-to-an-earlier-value now refuses instead of being silently discarded; `MM` paths refuse. Tier-routing lesson: `finish-worktree` changes should route `builder-deep`, since the script performs an irreversible action regardless of diff size. Two residual holes routed to OT-129) |
+| OT-127 | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it | In Progress | — (builder-deep running, attempts 1. Third live occurrence of a turn-exhausted agent wedging a slot, cleared by hand each time. Also carries the fifth fail-open in `deny()` itself) |
+| OT-128 | review the unreviewed kit install change by change and commit what survives | In Progress | — (builder running, attempts 1. Reconciling two versions of `reviewer.md` — OT-122's merged read-only paragraph plus the install's separate +6/-1 delta) |
+| OT-129 | backlog from the OT-123, OT-124 and OT-126 reviews | Blocked | held at the lane spend cap ($87.57 of $100.00), not by any dependency; filed during wind-down, never dispatched, attempts stays 0. Lowest priority of the four open tasks — nothing here loses data and two of the `finish-worktree` holes are unreachable in this repo's current path set |
 
-## Sync notes (2026-08-19, correction batch)
+## Sync notes (2026-08-19, cycle 9)
 
-**OT-116 moved to Done.** Ledger state is `done` — reviewed (passed), all three
-required gates green, merged at 8d6c09d, worktree and branch removed. The prior
-sync ran while the reviewer was still in progress and left the card at In
-Progress; this corrects it. No other card changed. OT-107 stays In Progress —
-its reviewer is still running, per the ledger.
+Reconciled against `ledger/*.md`, all 30 files read in full. Card-by-card,
+matched on id — no cards deleted.
 
-## Sync notes (2026-08-19, this batch)
+Moves this batch:
 
-**Corrected blocked reasons — OT-109, OT-111, OT-112, OT-113.** All four
-previously read "8 builders running, only 1 real." That was wrong. Corrected
-ledger text (verified this session by direct measurement): the counter reads
-net=6 but ZERO builders are actually running. Root cause: `.claude/settings.json`
-logs `SubagentStart` twice (a wildcard `matcher: "*"` hook plus the per-type
-`^builder$` matcher) while `SubagentStop` logs once, so every start drifts the
-count +1. Deduplicated real figures: starts=7, stops=8, net=-1. OT-114's
-committed fix (af67ef3) removes the duplicate hook and re-derives the count by
-pairing start to stop on agent_id with a staleness cutoff. All four stay
-blocked on OT-114 merging.
+- **OT-121** In Progress → **Done**. Attempt 2 (builder-deep) merged; three
+  fail-opens closed and verified against fixtures with HEAD as a live control.
+  A fifth fail-open, in `deny()`'s own `jq -n` call, was found by the reviewer
+  and routed to OT-127 rather than fixed here.
+- **OT-122** In Progress → **Done**. Merged; five findings, including the
+  `reviewer.md` merge hazard, routed to OT-126.
+- **OT-123** Todo → **Done**. Merged. **Deployment-order note carried onto the
+  card and into `docs/deployment.md` and the README**: migration 0020 must land
+  before this code does, or scanning goes down for everyone.
+- **OT-124** Todo → **In Progress**. Builder result landed on commit `791d027`
+  but is explicitly marked UNREVIEWED in its own ledger entry — left as In
+  Progress, not Done, until a reviewer verdict exists. `files:` grew to include
+  `src/lib/rateLimit.ts` and its test; the ledger records this as the filer's own
+  frontmatter having been incomplete at dispatch, corrected in the body.
+- **OT-125** created and closed within this window: Todo → **Done**. Merged.
+- **OT-126** created and closed within this window: Todo → **Done**. Merged.
+- **OT-127** created, `in-progress` per frontmatter — dispatched directly to
+  builder-deep, no Todo state observed at sync time.
+- **OT-128** created, `in-progress` per frontmatter — same, dispatched directly.
+- **OT-129** created, `blocked` per frontmatter. Blocked reason carried verbatim
+  from the ledger.
 
-**Corrected blocked reasons — OT-108, OT-114.** Both previously read blocked
-on the `typecheck` gate being red on main. That is no longer true — main is
-typecheck-clean as of 8d6c09d (OT-116 merged). Both now read "BLOCKER
-CLEARED — awaiting review + merge," with work already complete and committed
-(93d55ec, af67ef3) and gates green. Sequence for both: merge main into branch,
-re-run gates, review, merge.
+Left alone, no drift: OT-100–OT-120 all checked against the ledger and left as
+Done — no changes.
 
-**No change.** OT-107 and OT-116 stay In Progress — reviewers are currently
-running on both, neither has a result yet, neither moves to Done this batch.
-OT-100 through OT-106 stay Done. OT-110 and OT-115 stay Blocked on their real
-dependencies (OT-111, OT-107 respectively), unchanged this batch.
+No tasks in `ledger/` are missing from this board; nothing to flag as vanished.
 
-**Ledger is authoritative.** All text above was pulled verbatim from
-`ledger/*.md` frontmatter and body; nothing paraphrased, nothing carried over
-from the prior (incorrect) board text.
+### On the lane-cap raise
+
+The owner raised the lane spend cap from $100 to $125, which is recorded as
+having unblocked dispatch on OT-124, OT-127, and OT-128. **OT-129 is not among
+them** — its own ledger `blocked_reason` states a spend figure ($87.57) already
+under the old $100 cap, and gives a different reason for staying blocked: it was
+filed during wind-down, was never dispatched, and is explicitly ranked lowest
+priority of the four open tasks with instructions to take the other three first.
+The ledger's own state is `blocked`, so this board matches it as blocked — that
+is the reconciliation, not a judgment call.
+
+### Errors the owner corrected in the ledger this session — recorded, not re-litigated
+
+Three self-corrections were found in the bodies of `ledger/OT-121.md` and
+`ledger/OT-124.md`, all already resolved and consistent with current
+frontmatter, so no board drift results:
+
+1. **OT-121** — a claim written across several earlier entries that main's
+   committed HEAD carried a wildcard `SubagentStart` was wrong; the wildcard
+   existed only in main's uncommitted working copy. Corrected in the merge
+   writeup.
+2. **OT-124** — the task's `files:` frontmatter omitted `src/lib/rateLimit.ts`
+   and its test even though the task body mandated editing both; noted in the
+   body as "the frontmatter was incomplete — my error" and the frontmatter now
+   lists both.
+3. **OT-124** (and OT-122 before it) — a `todo → in-progress` edit was missed at
+   dispatch time, leaving the ledger reading `todo` while an agent was already
+   running against the task. Named in OT-124's body as the third instance this
+   session, all three self-attributed.
+
+No unresolved frontmatter/body contradiction found this cycle — every case above
+was already caught and fixed by the time this sync ran.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools are present in
+this session, and `.claude/notion.json` has `use_scratch_only: true` with
+`kanban_database_id: null`. Per the fallback rule this is expected, not an
+error — writing to `docs/kanban.md` is the correct outcome, not a degraded one.
+
+## Sync notes (2026-08-19, cycle 8)
+
+Reconciled against `ledger/*.md`, all 25 files read. Card-by-card, matched on
+id — no cards deleted.
+
+Moves this batch:
+
+- **OT-115** In Progress → **Done**. Reviewed MERGE, merged; main 272/272,
+  lint and typecheck clean. `attempts: 1`. HIGH finding materially but not
+  fully closed — see the doc write-up; residual routed to new task OT-123.
+- **OT-120** In Progress → **Done**. Reviewed MERGE, merged; main 292/292,
+  lint and typecheck clean. `attempts: 1`. Migration 0019 not applied to any
+  live database yet, per the ledger's own "OPEN FOR THE OWNER" note.
+- **OT-122** Todo → **In Progress**. Dispatched to `builder-deep` once a
+  builder slot freed after OT-120 merged.
+
+New cards:
+
+- **OT-123** created, `todo` per frontmatter, `tier: builder-deep`. Direct
+  continuation of OT-115's HIGH — a blank/unreadable image still yields an
+  empty parse indistinguishable from unparsed, so it replays forever off one
+  upload. Same urgency as OT-115's original finding: unbounded paid Gemini
+  spend on a live, reachable endpoint.
+- **OT-124** created, `todo` per frontmatter, `tier: builder-deep`. Pre-existing
+  defect (an owner save erases `joined_via_share`) made load-bearing by
+  OT-115's claim-limiter fix, which now relies on the erasure to avoid
+  locking out new joiners.
+- **Dependency noted on both cards**: OT-123 and OT-124 both edit
+  `src/lib/rateLimit.ts`. Per the ledger's sequencing notes on each file,
+  OT-123 must merge before OT-124 dispatches — do not run them in parallel.
+
+No frontmatter/body contradiction found this cycle. OT-115, OT-120, OT-121,
+OT-122, OT-123, and OT-124 were all read in full; every body narrative is
+consistent with its own frontmatter. (Two cycles back this caught a real
+divergence on OT-120; last cycle one on OT-122 slipped through undetected —
+this cycle's OT-122 body is now consistent with its `in-progress` frontmatter,
+recording the same fix at the same time it happened.)
+
+Left alone, no drift:
+
+- **OT-121** unchanged — still In Progress, `attempts: 1`, `tier: builder-deep`.
+  Attempt 1 ran out of turns (not ideas) mid-verification with uncommitted
+  work surviving in the worktree; tier raised from `builder` to `builder-deep`
+  for turn headroom, which the ledger is explicit is not the escalate-on-retry
+  rule and does not indicate the task resisted solution.
+- OT-100–OT-109, OT-111–OT-114, OT-116–OT-119 all checked against the ledger
+  and left as Done — no changes.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools are present in
+this session, and `.claude/notion.json` has `use_scratch_only: true` with
+`kanban_database_id: null`. Per the fallback rule this is expected, not an
+error — writing to `docs/kanban.md` is the correct outcome, not a degraded
+one.
 
 ## Backlog (unscheduled, no ledger task)
-
-These have no corresponding file in `ledger/`. They were previously listed on
-the board as OT-113/OT-114/OT-115 with task ids, which put the board ahead of
-the ledger. Moved here until a task file exists.
 
 - Friendship request/accept model — reverse friendship row is inserted without
   b's consent (spec-accepted for OT-103, revisit).
@@ -67,3 +168,12 @@ the ledger. Moved here until a task file exists.
   migration 0015 — manual re-run currently errors (fails closed, not urgent).
 - `find_profile_by_venmo_username` should reject empty/whitespace username on
   direct RPC call.
+- (from OT-120 review) `deleteAccount.ts`'s storage.list pagination assumes a
+  short page means the last page, with no total to check against — worth a
+  guard or at least a comment naming the assumption (LOW).
+- (from OT-120 review) `deleteAccount.ts`'s charge-scan offset paging can skip
+  rows if another writer deletes this user's charges mid-scan (LOW).
+- (from OT-120 review) if migration 0019 ever ran outside a transaction and the
+  `create policy` step failed, the old policy would be left dropped — fails
+  closed, and the Supabase CLI wraps migrations in a transaction anyway, so
+  this is a documentation note more than a defect (LOW).

@@ -1,5 +1,20 @@
 # Deployment notes
 
+## `supabase/migrations/0020_receipts_parsed_at.sql` — apply BEFORE the next code deploy (OT-123, merged)
+
+OT-123 closes the last gap in the parse-replay defense: a receipt whose parse
+produced nothing (blank/unreadable photo, or a thrown Gemini error) used to be
+indistinguishable from an unparsed one, so it could be re-submitted forever off
+one upload. The route now stamps `parsed_at` on the row **before** calling
+Gemini, so the claim is consumed whether or not the parse succeeds.
+
+The claim is deliberately fail-closed. **If 0020 is applied after this code
+deploys, every parse errors (`42703`, undefined column) and returns 503 —
+scanning is down for every user until the migration runs.** 0020 is backward
+compatible with the currently deployed code, so apply it first, or in the same
+deploy step before the new build serves traffic. Same ordering rule as 0015,
+0016, and 0019 below.
+
 ## Receipt photo storage ceiling raised (OT-104, merged)
 
 Receipt photos are now compressed on-device before upload (downscaled and
