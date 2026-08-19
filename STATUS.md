@@ -1,19 +1,19 @@
 # Agent status
 
-Updated 2026-08-19 21:26 UTC · regenerated on every task completion.
+Updated 2026-08-19 21:28 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $16.96 | $100.00 | █░░░░░░░░░ 16% |
+| open-tab | $19.08 | $100.00 | █░░░░░░░░░ 19% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-19T21:25:36Z | 2 |
-| reviewer-light | open-tab | 2026-08-19T21:25:54Z | 2 |
+| reviewer-light | open-tab | 2026-08-19T21:25:54Z | 1 |
 
 ## Tasks
 
@@ -36,34 +36,35 @@ Updated 2026-08-19 21:26 UTC · regenerated on every task completion.
 | `OT-114` | done | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
 | `OT-115` | running | "Rate-limit hardening: parse limiter is bypassable by replay (HIGH), plus fail-open silence, off-by-one ceiling, no 429 UI" — null | builder-deep |
 | `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
-| `OT-117` | running | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
+| `OT-117` | done | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
 | `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
 | `OT-119` | running | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
 | `OT-120` | running | charges RLS has no with-check — anyone can plant a charge row on a tab they don't own — null | builder-deep |
+| `OT-121` | todo | parallel-cap third fail-open on an unopenable log; remove the wildcard SubagentStart — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T21:26:38Z  open-tab  SubagentStop  
-2026-08-19T21:26:43Z  open-tab  SubagentStop  
-2026-08-19T21:26:43Z  open-tab  SubagentStop  
-2026-08-19T21:26:43Z  open-tab  SubagentStop  
-2026-08-19T21:26:43Z  open-tab  SubagentStop  
-2026-08-19T21:26:43Z  open-tab  SubagentStop  
-2026-08-19T21:26:43Z  open-tab  SubagentStop  
-2026-08-19T21:26:55Z  open-tab  SubagentStop  
-2026-08-19T21:26:55Z  open-tab  SubagentStop  
-2026-08-19T21:26:55Z  open-tab  SubagentStop  
-2026-08-19T21:26:55Z  open-tab  SubagentStop  
-2026-08-19T21:26:55Z  open-tab  SubagentStop  
-2026-08-19T21:26:55Z  open-tab  SubagentStop  
-2026-08-19T21:26:57Z  open-tab  SubagentStop  
-2026-08-19T21:26:57Z  open-tab  SubagentStop  
-2026-08-19T21:26:57Z  open-tab  SubagentStop  
-2026-08-19T21:26:57Z  open-tab  SubagentStop  
-2026-08-19T21:26:57Z  open-tab  SubagentStop  
-2026-08-19T21:26:57Z  open-tab  SubagentStop  
-2026-08-19T21:26:57Z  open-tab  SubagentStop  publisher
+2026-08-19T21:27:14Z  open-tab  SubagentStop  
+2026-08-19T21:27:24Z  open-tab  SubagentStop  reviewer-light
+2026-08-19T21:27:28Z  open-tab  SubagentStop  
+2026-08-19T21:27:28Z  open-tab  SubagentStop  
+2026-08-19T21:27:28Z  open-tab  SubagentStop  
+2026-08-19T21:27:28Z  open-tab  SubagentStop  
+2026-08-19T21:27:28Z  open-tab  SubagentStop  
+2026-08-19T21:27:28Z  open-tab  SubagentStop  
+2026-08-19T21:27:36Z  open-tab  SubagentStop  
+2026-08-19T21:27:36Z  open-tab  SubagentStop  
+2026-08-19T21:27:36Z  open-tab  SubagentStop  
+2026-08-19T21:27:36Z  open-tab  SubagentStop  
+2026-08-19T21:27:36Z  open-tab  SubagentStop  
+2026-08-19T21:27:36Z  open-tab  SubagentStop  
+2026-08-19T21:28:00Z  open-tab  SubagentStop  
+2026-08-19T21:28:00Z  open-tab  SubagentStop  
+2026-08-19T21:28:00Z  open-tab  SubagentStop  
+2026-08-19T21:28:00Z  open-tab  SubagentStop  
+2026-08-19T21:28:00Z  open-tab  SubagentStop  
+2026-08-19T21:28:00Z  open-tab  SubagentStop  
 ```
 
 ---
