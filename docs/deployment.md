@@ -14,7 +14,17 @@ must be 10 MB or smaller and its MIME type must be `image/jpeg`,
 enforced in route code — but note it if a future upload path needs to stay
 under these limits.
 
-## Pending migrations — apply before the next deploy
+## Migrations 0015 and 0016 — APPLIED 2026-08-19
+
+Both applied to the live database by the owner on 2026-08-19. The duplicate
+check for 0016 returned no rows, so the unique index applied clean.
+
+Note the ordering consequence: 0015 locks `profiles` to own-row-only, and any
+build predating OT-103 reads `profiles` directly from the browser. Such a build
+now renders empty friend lists, empty friend search, and non-resolving invite
+links. Current main is correct; older builds are not.
+
+The original notes follow, kept for context.
 
 **`supabase/migrations/0016_participant_unique_and_save_rpc.sql` — apply
 BEFORE or WITH the next code deploy, not after.**
