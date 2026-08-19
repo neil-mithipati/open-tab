@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 18:37 UTC · regenerated on every task completion.
+Updated 2026-08-19 18:38 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $4.45 | $20.00 | ██░░░░░░░░ 22% |
+| open-tab | $5.41 | $20.00 | ██░░░░░░░░ 27% |
 
 ## Agents
 
@@ -31,11 +31,11 @@ Updated 2026-08-19 18:37 UTC · regenerated on every task completion.
 | `OT-106` | done | Allocate rounding remainders so charges sum to the total — null | builder |
 | `OT-107` | running | Rate-limit the parse route and share/claim actions — null | builder-deep |
 | `OT-108` | **blocked** | Add indexes on all foreign keys — >- | builder |
-| `OT-109` | todo | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
+| `OT-109` | **blocked** | "Toast system: share/save errors surface, link-copied confirms" — >- | builder |
 | `OT-110` | **blocked** | Privacy policy page — >- | builder |
-| `OT-111` | todo | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
+| `OT-111` | **blocked** | Account deletion — user-initiated, complete, confirmed — >- | builder-deep |
 | `OT-112` | **blocked** | Document NEXT_PUBLIC_APP_URL in .env.example — >- | builder |
-| `OT-113` | todo | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
+| `OT-113` | **blocked** | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — >- | builder |
 | `OT-114` | **blocked** | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — >- | builder |
 | `OT-115` | **blocked** | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI — >- | builder |
 | `OT-116` | running | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
@@ -43,26 +43,26 @@ Updated 2026-08-19 18:37 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T18:36:08Z  open-tab  SubagentStop  
-2026-08-19T18:36:08Z  open-tab  SubagentStop  
-2026-08-19T18:36:17Z  open-tab  SubagentStop  builder
-2026-08-19T18:36:42Z  open-tab  SubagentStop  
-2026-08-19T18:36:42Z  open-tab  SubagentStop  
-2026-08-19T18:36:42Z  open-tab  SubagentStop  
-2026-08-19T18:36:42Z  open-tab  SubagentStop  
-2026-08-19T18:36:42Z  open-tab  SubagentStop  
-2026-08-19T18:36:54Z  open-tab  SubagentStart  reviewer
-2026-08-19T18:36:54Z  open-tab  SubagentStart  reviewer
-2026-08-19T18:37:15Z  open-tab  SubagentStop  
-2026-08-19T18:37:15Z  open-tab  SubagentStop  
-2026-08-19T18:37:15Z  open-tab  SubagentStop  
-2026-08-19T18:37:15Z  open-tab  SubagentStop  
-2026-08-19T18:37:15Z  open-tab  SubagentStop  
-2026-08-19T18:37:28Z  open-tab  SubagentStop  
-2026-08-19T18:37:28Z  open-tab  SubagentStop  
-2026-08-19T18:37:28Z  open-tab  SubagentStop  
-2026-08-19T18:37:28Z  open-tab  SubagentStop  
-2026-08-19T18:37:28Z  open-tab  SubagentStop  
+2026-08-19T18:38:02Z  open-tab  SubagentStop  
+2026-08-19T18:38:02Z  open-tab  SubagentStop  
+2026-08-19T18:38:02Z  open-tab  SubagentStop  
+2026-08-19T18:38:02Z  open-tab  SubagentStop  
+2026-08-19T18:38:02Z  open-tab  SubagentStop  
+2026-08-19T18:38:09Z  open-tab  SubagentStop  
+2026-08-19T18:38:09Z  open-tab  SubagentStop  
+2026-08-19T18:38:09Z  open-tab  SubagentStop  
+2026-08-19T18:38:09Z  open-tab  SubagentStop  
+2026-08-19T18:38:09Z  open-tab  SubagentStop  
+2026-08-19T18:38:25Z  open-tab  SubagentStop  
+2026-08-19T18:38:25Z  open-tab  SubagentStop  
+2026-08-19T18:38:25Z  open-tab  SubagentStop  
+2026-08-19T18:38:25Z  open-tab  SubagentStop  
+2026-08-19T18:38:25Z  open-tab  SubagentStop  
+2026-08-19T18:38:37Z  open-tab  SubagentStop  
+2026-08-19T18:38:37Z  open-tab  SubagentStop  
+2026-08-19T18:38:37Z  open-tab  SubagentStop  
+2026-08-19T18:38:37Z  open-tab  SubagentStop  
+2026-08-19T18:38:37Z  open-tab  SubagentStop  
 ```
 
 ---
