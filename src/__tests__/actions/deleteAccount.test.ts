@@ -10,9 +10,22 @@ let calls: Call[] = [];
 type StorageEntry = { id: string | null; name: string };
 let storageObjects: StorageEntry[] = [];
 
+// `charges` is modelled as a real table rather than a call log: the fix for
+// charges sitting on someone else's receipt is a read, then an update, then a
+// scoped delete, and only the rows left standing at the end prove it worked.
+// `owner` stands in for the joined `receipts.created_by`.
+type ChargeRecord = {
+  id: string;
+  receipt_id: string;
+  from_user_id: string;
+  owner: string;
+};
+let chargesTable: ChargeRecord[] = [];
+
 let sessionUser: { id: string; is_anonymous?: boolean } | null = null;
 let storageListError: unknown = null;
 let storageRemoveError: unknown = null;
+// Keyed by table, or by `table.verb` when one table needs two outcomes.
 let tableErrors: Record<string, unknown> = {};
 let authDeleteError: unknown = null;
 
@@ -34,12 +47,20 @@ function storageChain() {
 }
 
 // PostgREST builders are awaited directly (no terminal .single()), so the chain
-// resolves itself once `then` is invoked. `.eq()` is where the filter is known,
-// so that is where the call gets logged.
+// resolves itself once `then` is invoked. The first `.eq()` is where the call
+// gets logged; a second one appends the full filter list to the same entry.
 function tableChain(table: string) {
   const chain: Record<string, unknown> = {};
   let verb = "";
   let payload: unknown;
+  let entry: Call | undefined;
+  const filters: { column: string; value: unknown }[] = [];
+  let range: { from: number; to: number } | null = null;
+
+  chain.select = () => {
+    verb = "select";
+    return chain;
+  };
   chain.update = (p: unknown) => {
     verb = "update";
     payload = p;
@@ -49,12 +70,53 @@ function tableChain(table: string) {
     verb = "delete";
     return chain;
   };
-  chain.eq = (column: string, value: unknown) => {
-    calls.push({ op: `${table}.${verb}`, args: { column, value, payload } });
+  chain.order = () => chain;
+  chain.range = (from: number, to: number) => {
+    range = { from, to };
     return chain;
   };
-  chain.then = (resolve: (v: { error: unknown }) => void) =>
-    resolve({ error: tableErrors[table] ?? null });
+  chain.eq = (column: string, value: unknown) => {
+    filters.push({ column, value });
+    if (entry) {
+      (entry.args as Record<string, unknown>).filters = [...filters];
+    } else {
+      entry = { op: `${table}.${verb}`, args: { column, value, payload } };
+      calls.push(entry);
+    }
+    return chain;
+  };
+  chain.then = (resolve: (v: { data?: unknown; error: unknown }) => void) => {
+    const error = tableErrors[`${table}.${verb}`] ?? tableErrors[table] ?? null;
+    if (table !== "charges") return resolve({ error });
+
+    const matches = (row: ChargeRecord) =>
+      filters.every(
+        (f) => (row as unknown as Record<string, unknown>)[f.column] === f.value
+      );
+
+    if (verb === "select") {
+      if (error) return resolve({ data: null, error });
+      const rows = chargesTable
+        .filter(matches)
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const page = range ? rows.slice(range.from, range.to + 1) : rows;
+      // Shaped like `select("receipt_id, receipts!inner(created_by)")`.
+      return resolve({
+        data: page.map((r) => ({
+          receipt_id: r.receipt_id,
+          receipts: { created_by: r.owner },
+        })),
+        error: null,
+      });
+    }
+    if (!error && verb === "update") {
+      for (const row of chargesTable.filter(matches)) Object.assign(row, payload);
+    }
+    if (!error && verb === "delete") {
+      chargesTable = chargesTable.filter((row) => !matches(row));
+    }
+    return resolve({ error });
+  };
   return chain;
 }
 
@@ -101,6 +163,9 @@ beforeEach(() => {
     { id: "o1", name: "r1.jpg" },
     { id: "o2", name: "r2.jpg" },
   ];
+  chargesTable = [
+    { id: "c1", receipt_id: "r-mine", from_user_id: "me", owner: "me" },
+  ];
   sessionUser = { id: "me" };
   storageListError = null;
   storageRemoveError = null;
@@ -115,6 +180,28 @@ describe("deleteAccount — session boundary", () => {
   it("takes no arguments", async () => {
     const { deleteAccount } = await import("@/app/actions/deleteAccount");
     expect(deleteAccount.length).toBe(0);
+  });
+
+  // Arity alone is not the guard it looks like: `(userId = "x")` and
+  // `(...args)` both report length 0 while still accepting a target. A server
+  // action is reachable by direct POST, so the caller can send arguments the
+  // signature never declared. Assert the effect instead of the shape.
+  it("ignores an argument forced past the signature", async () => {
+    sessionUser = { id: "me" };
+    const { deleteAccount } = await import("@/app/actions/deleteAccount");
+    const forced = deleteAccount as unknown as (
+      target: string
+    ) => Promise<unknown>;
+
+    const result = await forced("victim");
+
+    expect(result).toEqual({ redirectTo: "/" });
+    expect(find("profiles.delete")).toMatchObject({
+      args: { column: "id", value: "me" },
+    });
+    expect(find("auth.admin.deleteUser")).toMatchObject({ args: "me" });
+    // Nothing the caller sent reached any query, under any name.
+    expect(JSON.stringify(calls)).not.toContain("victim");
   });
 
   it("refuses without a session and touches nothing", async () => {
@@ -155,6 +242,7 @@ describe("deleteAccount — ordering", () => {
       "storage.list",
       "storage.remove",
       "receipt_participants.update",
+      "charges.select",
       "charges.delete",
       "profiles.delete",
       "auth.admin.deleteUser",
@@ -215,14 +303,119 @@ describe("deleteAccount — anonymisation", () => {
     expect(Object.keys(payload)).toEqual(["user_id"]);
   });
 
-  // Charges the user issued live on their own receipts, so scoping by
-  // from_user_id never reaches a charge on someone else's tab.
+  // Scoped to this user's id and nothing wider. What that scope is safe to
+  // delete depends on the re-point that runs first — see below.
   it("scopes the charge delete to charges the user issued", async () => {
     await run();
 
     expect(find("charges.delete")).toMatchObject({
       args: { column: "from_user_id", value: "me" },
     });
+  });
+});
+
+// Regression. A charge row is meant to carry the receipt owner's id, but an
+// older client-side save path stamped the session user, and a non-owner
+// participant could reach it. So rows carrying this user's id can be sitting
+// on a tab somebody else created, and deleting by `from_user_id` alone would
+// take them off that person's tab.
+describe("deleteAccount — charges on someone else's tab", () => {
+  beforeEach(() => {
+    chargesTable = [
+      { id: "c1", receipt_id: "r-mine", from_user_id: "me", owner: "me" },
+      { id: "c2", receipt_id: "r-alice", from_user_id: "me", owner: "alice" },
+      { id: "c3", receipt_id: "r-alice", from_user_id: "me", owner: "alice" },
+      { id: "c4", receipt_id: "r-alice", from_user_id: "alice", owner: "alice" },
+    ];
+  });
+
+  it("leaves every charge row on alice's receipt standing", async () => {
+    await run();
+
+    expect(
+      chargesTable.filter((r) => r.receipt_id === "r-alice").map((r) => r.id)
+    ).toEqual(["c2", "c3", "c4"]);
+  });
+
+  it("hands the misfiled rows to the receipt's owner", async () => {
+    await run();
+
+    expect(chargesTable).toEqual([
+      { id: "c2", receipt_id: "r-alice", from_user_id: "alice", owner: "alice" },
+      { id: "c3", receipt_id: "r-alice", from_user_id: "alice", owner: "alice" },
+      { id: "c4", receipt_id: "r-alice", from_user_id: "alice", owner: "alice" },
+    ]);
+  });
+
+  it("re-points before deleting, once per affected receipt", async () => {
+    await run();
+
+    expect(ops().filter((o) => o === "charges.update")).toHaveLength(1);
+    expect(indexOf("charges.update")).toBeLessThan(indexOf("charges.delete"));
+    expect(find("charges.update")).toMatchObject({
+      args: {
+        payload: { from_user_id: "alice" },
+        filters: [
+          { column: "from_user_id", value: "me" },
+          { column: "receipt_id", value: "r-alice" },
+        ],
+      },
+    });
+  });
+
+  it("scans only the charges carrying this user's id", async () => {
+    await run();
+
+    expect(find("charges.select")).toMatchObject({
+      args: { column: "from_user_id", value: "me" },
+    });
+  });
+
+  it("stops before deleting anything when the re-point fails", async () => {
+    tableErrors = { "charges.update": { message: "boom" } };
+
+    const result = await run();
+
+    expect(result).toEqual({ error: "Couldn't delete your account. Try again." });
+    expect(ops()).not.toContain("charges.delete");
+    expect(ops()).not.toContain("profiles.delete");
+    expect(chargesTable.map((r) => r.id)).toEqual(["c1", "c2", "c3", "c4"]);
+  });
+
+  it("stops before deleting anything when the scan fails", async () => {
+    tableErrors = { "charges.select": { message: "boom" } };
+
+    const result = await run();
+
+    expect(result).toEqual({ error: "Couldn't delete your account. Try again." });
+    expect(ops()).not.toContain("charges.delete");
+    expect(chargesTable).toHaveLength(4);
+  });
+
+  // A truncated scan is the same defect wearing a different hat: a misfiled
+  // row nobody read falls through to the delete.
+  it("finds a misfiled row past the first page of the scan", async () => {
+    chargesTable = [
+      ...Array.from({ length: 500 }, (_, i) => ({
+        id: `c${String(i).padStart(4, "0")}`,
+        receipt_id: "r-mine",
+        from_user_id: "me",
+        owner: "me",
+      })),
+      { id: "c9999", receipt_id: "r-alice", from_user_id: "me", owner: "alice" },
+    ];
+
+    await run();
+
+    expect(ops().filter((o) => o === "charges.select")).toHaveLength(2);
+    expect(chargesTable).toEqual([
+      {
+        id: "c9999",
+        receipt_id: "r-alice",
+        from_user_id: "alice",
+        owner: "alice",
+      },
+    ]);
   });
 });
 

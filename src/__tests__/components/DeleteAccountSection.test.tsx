@@ -34,11 +34,21 @@ describe("DeleteAccountSection", () => {
     expect(screen.queryByRole("button", { name: /delete forever/i })).not.toBeInTheDocument();
   });
 
+  // Both retained fields get named. `display_name` and `venmo_username` are
+  // NOT NULL in migration 0004, so the handle survives on every tab the user
+  // ever joined; naming only the name would be a false claim about a payment
+  // identifier, on the last screen before something irreversible.
   it("says plainly what is lost and what friends keep", async () => {
     await openModal();
     expect(screen.getByText(/permanent/i)).toBeInTheDocument();
     expect(screen.getByText(/receipt photos/i)).toBeInTheDocument();
-    expect(screen.getByText(/keep your name only/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/keep the name and venmo username you used/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/no longer linked to your account/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/your name only/i)).not.toBeInTheDocument();
   });
 
   it("keeps the confirm button disabled until the word is typed", async () => {
@@ -66,6 +76,37 @@ describe("DeleteAccountSection", () => {
     await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalledTimes(1));
     expect(mockDeleteAccount).toHaveBeenCalledWith();
     expect(mockReplace).toHaveBeenCalledWith("/");
+  });
+
+  it("submits on Enter once the word is typed", async () => {
+    const { user } = await openModal();
+    await user.type(screen.getByLabelText(/type/i), "delete");
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => expect(mockDeleteAccount).toHaveBeenCalledTimes(1));
+  });
+
+  // The input is never disabled, so a held Enter key repeats keydown. Without
+  // the loading guard that is a second account delete in flight against a
+  // session the first one is already tearing down.
+  it("does not fire a second delete while one is in flight", async () => {
+    let finish: (result: { redirectTo: string }) => void = () => {};
+    mockDeleteAccount.mockReturnValue(
+      new Promise<{ redirectTo: string }>((resolve) => {
+        finish = resolve;
+      })
+    );
+
+    const { user } = await openModal();
+    await user.type(screen.getByLabelText(/type/i), "delete");
+    await user.keyboard("{Enter}");
+    await user.keyboard("{Enter}");
+    await user.keyboard("{Enter}");
+
+    expect(mockDeleteAccount).toHaveBeenCalledTimes(1);
+
+    finish({ redirectTo: "/" });
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
   });
 
   // Cancel is a true no-op: the modal closes and nothing was called.

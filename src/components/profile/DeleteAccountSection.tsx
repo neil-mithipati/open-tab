@@ -38,8 +38,11 @@ function DeleteAccountModal({ onCancel }: { onCancel: () => void }) {
   // sent back to retype it teaches nothing about the consequences.
   const confirmed = typed.trim().toLowerCase() === CONFIRM_WORD;
 
+  // `loading` guards the entry, not just the button: the input is never
+  // disabled, so a held Enter key repeats keydown and would fire a second
+  // delete while the first is still in flight.
   async function handleDelete() {
-    if (!confirmed) return;
+    if (!confirmed || loading) return;
     setError("");
     setLoading(true);
     const result = await deleteAccount();
@@ -63,9 +66,13 @@ function DeleteAccountModal({ onCancel }: { onCancel: () => void }) {
             This is permanent. It deletes your account, every tab you created and
             its receipt photos, your friends and friend groups.
           </p>
+          {/* Says both retained fields out loud. One of them is a payment
+              handle, and this is the last screen before something
+              irreversible — see the anonymisation step in deleteAccount.ts. */}
           <p className="text-sm text-secondary mt-2">
             Tabs your friends created stay on their side so their totals still
-            add up — those keep your name only, nothing else.
+            add up. Those keep the name and Venmo username you used on them —
+            nothing else, and they&apos;re no longer linked to your account.
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -86,7 +93,10 @@ function DeleteAccountModal({ onCancel }: { onCancel: () => void }) {
               setTyped(e.target.value);
               setError("");
             }}
-            onKeyDown={(e) => e.key === "Enter" && handleDelete()}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" || loading) return;
+              handleDelete();
+            }}
             className="glass-panel-sm rounded-2xl bg-transparent text-sm text-primary px-3 py-3 outline-none w-full"
             autoFocus
           />
