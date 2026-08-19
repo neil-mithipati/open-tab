@@ -1,22 +1,22 @@
 # Agent status
 
-Updated 2026-08-19 18:34 UTC · regenerated on every task completion.
+Updated 2026-08-19 18:35 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $3.03 | $20.00 | █░░░░░░░░░ 15% |
+| open-tab | $3.26 | $20.00 | █░░░░░░░░░ 16% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| builder-deep | open-tab | 2026-08-19T13:31:48Z | 1 |
 | reviewer | open-tab | 2026-08-19T14:22:48Z | 2 |
-| builder | open-tab | 2026-08-19T18:30:03Z | 1 |
 | builder-light | open-tab | 2026-08-19T18:30:15Z | 4 |
 | publisher | open-tab | 2026-08-19T18:31:22Z | 7 |
+| builder | open-tab | 2026-08-19T18:34:40Z | 2 |
+| builder-deep | open-tab | 2026-08-19T18:35:00Z | 3 |
 
 ## Tasks
 
@@ -38,20 +38,11 @@ Updated 2026-08-19 18:34 UTC · regenerated on every task completion.
 | `OT-113` | todo | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
 | `OT-114` | running | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
 | `OT-115` | **blocked** | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI — >- | builder |
+| `OT-116` | running | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T18:32:41Z  open-tab  SubagentStop  
-2026-08-19T18:32:41Z  open-tab  SubagentStop  
-2026-08-19T18:32:41Z  open-tab  SubagentStop  
-2026-08-19T18:32:41Z  open-tab  SubagentStop  
-2026-08-19T18:32:41Z  open-tab  SubagentStop  
-2026-08-19T18:32:41Z  open-tab  SubagentStop  
-2026-08-19T18:32:41Z  open-tab  SubagentStop  
-2026-08-19T18:32:41Z  open-tab  SubagentStop  
-2026-08-19T18:32:41Z  open-tab  SubagentStop  
-2026-08-19T18:32:47Z  open-tab  SubagentStop  builder
 2026-08-19T18:33:12Z  open-tab  SubagentStop  
 2026-08-19T18:33:12Z  open-tab  SubagentStop  
 2026-08-19T18:33:12Z  open-tab  SubagentStop  
@@ -62,6 +53,16 @@ Updated 2026-08-19 18:34 UTC · regenerated on every task completion.
 2026-08-19T18:34:14Z  open-tab  SubagentStop  
 2026-08-19T18:34:14Z  open-tab  SubagentStop  
 2026-08-19T18:34:14Z  open-tab  SubagentStop  
+2026-08-19T18:34:24Z  open-tab  SubagentStop  builder
+2026-08-19T18:34:40Z  open-tab  SubagentStart  builder
+2026-08-19T18:34:40Z  open-tab  SubagentStart  builder
+2026-08-19T18:35:00Z  open-tab  SubagentStart  builder-deep
+2026-08-19T18:35:00Z  open-tab  SubagentStart  builder-deep
+2026-08-19T18:35:15Z  open-tab  SubagentStop  
+2026-08-19T18:35:15Z  open-tab  SubagentStop  
+2026-08-19T18:35:15Z  open-tab  SubagentStop  
+2026-08-19T18:35:15Z  open-tab  SubagentStop  
+2026-08-19T18:35:15Z  open-tab  SubagentStop  
 ```
 
 ---
