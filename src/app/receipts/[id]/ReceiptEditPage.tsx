@@ -10,6 +10,7 @@ import { persistAndShare } from "@/lib/receiptShare";
 import { saveReceiptState } from "@/app/actions/saveReceipt";
 import { refreshUserCaches } from "@/app/actions/cache";
 import { VenmoPromptModal } from "@/components/receipt/VenmoPromptModal";
+import { useToast, ToastViewport } from "@/components/ui/Toast";
 import type { ComputedCharge } from "@/types";
 import type { ReceiptFlowState } from "@/hooks/useReceiptFlow";
 import { X, Check, AlignJustify, Image as ImageIcon, Share2 } from "lucide-react";
@@ -26,6 +27,7 @@ export function ReceiptEditPage({ seed }: Props) {
   const [showVenmoPrompt, setShowVenmoPrompt] = useState(false);
   const [paidClientIds, setPaidClientIds] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"parsed" | "original">("parsed");
+  const { toasts, showToast, dismiss } = useToast();
 
   useEffect(() => { router.prefetch("/dashboard"); }, [router]);
 
@@ -63,66 +65,72 @@ export function ReceiptEditPage({ seed }: Props) {
     if (!receiptId) { router.push("/dashboard"); return; }
     setSaving(true);
 
-    const supabase = getSupabaseBrowserClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { showToast("Session expired. Sign in again.", "error"); return; }
 
-    const itemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
-    const totalAmount = total ?? itemSubtotal + (tax ?? 0) + (tip ?? 0);
+      const itemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
+      const totalAmount = total ?? itemSubtotal + (tax ?? 0) + (tip ?? 0);
 
-    // Compute charges only if split is complete
-    let computed: ComputedCharge[] = [];
-    if (splitMode === "equal" && nonOwnerParticipants.length >= 1) {
-      computed = computeEqualCharges(totalAmount, participants, merchantName, items);
-    } else if (splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1) {
-      computed = computeItemCharges(items, assignments, participants, itemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
+      // Compute charges only if split is complete
+      let computed: ComputedCharge[] = [];
+      if (splitMode === "equal" && nonOwnerParticipants.length >= 1) {
+        computed = computeEqualCharges(totalAmount, participants, merchantName, items);
+      } else if (splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1) {
+        computed = computeItemCharges(items, assignments, participants, itemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
+      }
+
+      // Manual mode: clicking Done finalizes the check (→ closed).
+      // Without a complete split there are no charges, so it stays open.
+      const status = computed.length > 0 ? "closed" : "open";
+
+      // One round trip, one transaction: the swap either lands whole or the tab
+      // is left exactly as it was.
+      const saved = await saveReceiptState({
+        receiptId,
+        items: items.map((item) => ({
+          clientId: item.clientId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        participants: participants.map((p) => ({
+          clientId: p.clientId,
+          userId: p.userId ?? null,
+          venmoUsername: p.venmoUsername,
+          displayName: p.displayName,
+          isOwner: p.isOwner,
+        })),
+        assignments,
+        charges: computed.map((c) => ({
+          participantClientId: c.participant.clientId,
+          amount: c.amount,
+          venmoLink: c.venmoLink,
+          paidAt: paidClientIds.has(c.participant.clientId) ? new Date().toISOString() : null,
+        })),
+        receipt: {
+          status,
+          splitMode,
+          merchantName,
+          subtotal: Math.round(itemSubtotal * 100) / 100,
+          tax,
+          tip,
+          total: Math.round(totalAmount * 100) / 100,
+        },
+      });
+      if (saved.error) { showToast(saved.error, "error"); return; }
+
+      // The profile and friend caches can also be stale by now, so drop them
+      // before navigating or the dashboard renders without this tab.
+      await refreshUserCaches();
+
+      router.push("/dashboard");
+    } catch {
+      showToast("Couldn't save. Try again.", "error");
+    } finally {
+      setSaving(false);
     }
-
-    // Manual mode: clicking Done finalizes the check (→ closed).
-    // Without a complete split there are no charges, so it stays open.
-    const status = computed.length > 0 ? "closed" : "open";
-
-    // One round trip, one transaction: the swap either lands whole or the tab
-    // is left exactly as it was.
-    const saved = await saveReceiptState({
-      receiptId,
-      items: items.map((item) => ({
-        clientId: item.clientId,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-      participants: participants.map((p) => ({
-        clientId: p.clientId,
-        userId: p.userId ?? null,
-        venmoUsername: p.venmoUsername,
-        displayName: p.displayName,
-        isOwner: p.isOwner,
-      })),
-      assignments,
-      charges: computed.map((c) => ({
-        participantClientId: c.participant.clientId,
-        amount: c.amount,
-        venmoLink: c.venmoLink,
-        paidAt: paidClientIds.has(c.participant.clientId) ? new Date().toISOString() : null,
-      })),
-      receipt: {
-        status,
-        splitMode,
-        merchantName,
-        subtotal: Math.round(itemSubtotal * 100) / 100,
-        tax,
-        tip,
-        total: Math.round(totalAmount * 100) / 100,
-      },
-    });
-    if (saved.error) { setSaving(false); return; }
-
-    // The profile and friend caches can also be stale by now, so drop them
-    // before navigating or the dashboard renders without this tab.
-    await refreshUserCaches();
-
-    router.push("/dashboard");
   }
 
   // Share for "crowd-claim": persist the current items/owner, then open the
@@ -130,12 +138,17 @@ export function ReceiptEditPage({ seed }: Props) {
   async function handleShare() {
     if (!receiptId) return;
     setSharing(true);
-    const result = await persistAndShare(flow.state);
-    setSharing(false);
-    if ("needsVenmo" in result) { setShowVenmoPrompt(true); return; }
-    if ("error" in result) return;
-    try { await navigator.clipboard.writeText(result.url); } catch {}
-    router.refresh();
+    try {
+      const result = await persistAndShare(flow.state);
+      if ("needsVenmo" in result) { setShowVenmoPrompt(true); return; }
+      if ("error" in result) { showToast(result.error, "error"); return; }
+      try { await navigator.clipboard.writeText(result.url); } catch {}
+      router.refresh();
+    } catch {
+      showToast("Couldn't share the tab. Try again.", "error");
+    } finally {
+      setSharing(false);
+    }
   }
 
   return (
@@ -180,7 +193,7 @@ export function ReceiptEditPage({ seed }: Props) {
           </button>
           <button
             onClick={handleDone}
-            disabled={saving}
+            disabled={saving || sharing}
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 ${
               allPaid
                 ? "bg-emerald-500 text-white hover:bg-emerald-400"
@@ -209,6 +222,8 @@ export function ReceiptEditPage({ seed }: Props) {
           onCancel={() => setShowVenmoPrompt(false)}
         />
       )}
+
+      <ToastViewport toasts={toasts} dismiss={dismiss} />
     </div>
   );
 }

@@ -38,8 +38,12 @@ export default function NewReceiptPage() {
     } catch {
       showToast("Share link ready.");
     }
-    flow.reset();
-    router.push(`/receipts/${receiptId}`);
+    // Give the toast a moment on screen before the page (and its viewport)
+    // unmounts — an immediate push truncates it to a sub-second flash.
+    setTimeout(() => {
+      flow.reset();
+      router.push(`/receipts/${receiptId}`);
+    }, 1500);
   }
 
   const { step, splitMode, participants, items, assignments, tax, tip, total, receiptId, merchantName, dateOfReceipt } = flow.state;
@@ -76,68 +80,74 @@ export default function NewReceiptPage() {
     if (!receiptId) { flow.reset(); router.push("/dashboard"); return; }
     setSaving(true);
 
-    const supabase = getSupabaseBrowserClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { showToast("Session expired. Sign in again.", "error"); return; }
 
-    const itemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
-    const totalAmount = total ?? itemSubtotal + (tax ?? 0) + (tip ?? 0);
+      const itemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
+      const totalAmount = total ?? itemSubtotal + (tax ?? 0) + (tip ?? 0);
 
-    // Compute charges only if split is complete
-    let computed: ComputedCharge[] = [];
-    if (splitMode === "equal" && nonOwnerParticipants.length >= 1) {
-      computed = computeEqualCharges(totalAmount, participants, merchantName, items);
-    } else if (splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1) {
-      computed = computeItemCharges(items, assignments, participants, itemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
+      // Compute charges only if split is complete
+      let computed: ComputedCharge[] = [];
+      if (splitMode === "equal" && nonOwnerParticipants.length >= 1) {
+        computed = computeEqualCharges(totalAmount, participants, merchantName, items);
+      } else if (splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1) {
+        computed = computeItemCharges(items, assignments, participants, itemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
+      }
+
+      // Manual mode: clicking Done finalizes the check (→ closed).
+      // Without a complete split there are no charges, so it stays open.
+      const status = computed.length > 0 ? "closed" : "open";
+
+      // One round trip, one transaction: the swap either lands whole or the tab
+      // is left exactly as it was.
+      const saved = await saveReceiptState({
+        receiptId,
+        items: items.map((item) => ({
+          clientId: item.clientId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        participants: participants.map((p) => ({
+          clientId: p.clientId,
+          userId: p.userId ?? null,
+          venmoUsername: p.venmoUsername,
+          displayName: p.displayName,
+          isOwner: p.isOwner,
+        })),
+        assignments,
+        charges: computed.map((c) => ({
+          participantClientId: c.participant.clientId,
+          amount: c.amount,
+          venmoLink: c.venmoLink,
+          paidAt: paidClientIds.has(c.participant.clientId) ? new Date().toISOString() : null,
+        })),
+        receipt: {
+          status,
+          splitMode,
+          merchantName,
+          subtotal: Math.round(itemSubtotal * 100) / 100,
+          tax,
+          tip,
+          total: Math.round(totalAmount * 100) / 100,
+        },
+      });
+      if (saved.error) { showToast(saved.error, "error"); return; }
+
+      // The profile and friend caches can also be stale by now (the split step
+      // auto-adds friends from the browser), so drop them before navigating or
+      // the dashboard renders without this tab.
+      await refreshUserCaches();
+
+      flow.reset();
+      router.push("/dashboard");
+    } catch {
+      showToast("Couldn't save. Try again.", "error");
+    } finally {
+      setSaving(false);
     }
-
-    // Manual mode: clicking Done finalizes the check (→ closed).
-    // Without a complete split there are no charges, so it stays open.
-    const status = computed.length > 0 ? "closed" : "open";
-
-    // One round trip, one transaction: the swap either lands whole or the tab
-    // is left exactly as it was.
-    const saved = await saveReceiptState({
-      receiptId,
-      items: items.map((item) => ({
-        clientId: item.clientId,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-      })),
-      participants: participants.map((p) => ({
-        clientId: p.clientId,
-        userId: p.userId ?? null,
-        venmoUsername: p.venmoUsername,
-        displayName: p.displayName,
-        isOwner: p.isOwner,
-      })),
-      assignments,
-      charges: computed.map((c) => ({
-        participantClientId: c.participant.clientId,
-        amount: c.amount,
-        venmoLink: c.venmoLink,
-        paidAt: paidClientIds.has(c.participant.clientId) ? new Date().toISOString() : null,
-      })),
-      receipt: {
-        status,
-        splitMode,
-        merchantName,
-        subtotal: Math.round(itemSubtotal * 100) / 100,
-        tax,
-        tip,
-        total: Math.round(totalAmount * 100) / 100,
-      },
-    });
-    if (saved.error) { setSaving(false); showToast(saved.error, "error"); return; }
-
-    // The profile and friend caches can also be stale by now (the split step
-    // auto-adds friends from the browser), so drop them before navigating or
-    // the dashboard renders without this tab.
-    await refreshUserCaches();
-
-    flow.reset();
-    router.push("/dashboard");
   }
 
   return (
