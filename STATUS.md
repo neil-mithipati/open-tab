@@ -1,18 +1,18 @@
 # Agent status
 
-Updated 2026-08-19 20:27 UTC · regenerated on every task completion.
+Updated 2026-08-19 20:39 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $3.71 | $20.00 | █░░░░░░░░░ 18% |
+| open-tab | $0.92 | $20.00 | ░░░░░░░░░░ 4% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| reviewer | open-tab | 2026-08-19T20:27:04Z | 3 |
+| reviewer | open-tab | 2026-08-19T20:38:59Z | 6 |
 
 ## Tasks
 
@@ -29,7 +29,7 @@ Updated 2026-08-19 20:27 UTC · regenerated on every task completion.
 | `OT-108` | done | Add indexes on all foreign keys — null | builder |
 | `OT-109` | running | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
 | `OT-110` | **blocked** | Privacy policy page — >- | builder |
-| `OT-111` | todo | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
+| `OT-111` | running | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
 | `OT-112` | done | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder |
 | `OT-113` | running | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — null | builder |
 | `OT-114` | done | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
@@ -40,26 +40,17 @@ Updated 2026-08-19 20:27 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T20:26:09Z  open-tab  SubagentStop  builder
-2026-08-19T20:26:13Z  open-tab  SubagentStop  builder
-2026-08-19T20:26:17Z  open-tab  SubagentStop  
-2026-08-19T20:26:17Z  open-tab  SubagentStop  
-2026-08-19T20:26:17Z  open-tab  SubagentStop  
-2026-08-19T20:26:17Z  open-tab  SubagentStop  
-2026-08-19T20:26:17Z  open-tab  SubagentStop  
-2026-08-19T20:26:25Z  open-tab  SubagentStop  publisher
-2026-08-19T20:26:35Z  open-tab  SubagentStop  
-2026-08-19T20:26:35Z  open-tab  SubagentStop  
-2026-08-19T20:26:35Z  open-tab  SubagentStop  
-2026-08-19T20:26:35Z  open-tab  SubagentStop  
-2026-08-19T20:26:35Z  open-tab  SubagentStop  
-2026-08-19T20:26:51Z  open-tab  SubagentStart  reviewer
-2026-08-19T20:27:04Z  open-tab  SubagentStart  reviewer
-2026-08-19T20:27:07Z  open-tab  SubagentStop  
-2026-08-19T20:27:07Z  open-tab  SubagentStop  
-2026-08-19T20:27:07Z  open-tab  SubagentStop  
-2026-08-19T20:27:07Z  open-tab  SubagentStop  
-2026-08-19T20:27:07Z  open-tab  SubagentStop  
+2026-08-19T20:38:33Z  open-tab  SubagentStart  reviewer
+2026-08-19T20:38:33Z  open-tab  SubagentStart  reviewer
+2026-08-19T20:38:45Z  open-tab  SubagentStart  reviewer
+2026-08-19T20:38:45Z  open-tab  SubagentStart  reviewer
+2026-08-19T20:38:59Z  open-tab  SubagentStart  reviewer
+2026-08-19T20:38:59Z  open-tab  SubagentStart  reviewer
+2026-08-19T20:39:05Z  open-tab  SubagentStop  
+2026-08-19T20:39:05Z  open-tab  SubagentStop  
+2026-08-19T20:39:05Z  open-tab  SubagentStop  
+2026-08-19T20:39:05Z  open-tab  SubagentStop  
+2026-08-19T20:39:05Z  open-tab  SubagentStop  
 ```
 
 ---
