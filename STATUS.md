@@ -1,18 +1,20 @@
 # Agent status
 
-Updated 2026-08-19 19:01 UTC · regenerated on every task completion.
+Updated 2026-08-19 19:02 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $0.38 | $20.00 | ░░░░░░░░░░ 1% |
+| open-tab | $1.2 | $20.00 | ░░░░░░░░░░ 5% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| builder-light | open-tab | 2026-08-19T19:01:19Z | 2 |
+| builder-light | open-tab | 2026-08-19T19:01:30Z | 2 |
+| reviewer | open-tab | 2026-08-19T19:01:48Z | 2 |
+| builder | open-tab | 2026-08-19T19:02:26Z | 2 |
 
 ## Tasks
 
@@ -30,7 +32,7 @@ Updated 2026-08-19 19:01 UTC · regenerated on every task completion.
 | `OT-109` | **blocked** | "Toast system: share/save errors surface, link-copied confirms" — >- | builder |
 | `OT-110` | **blocked** | Privacy policy page — >- | builder |
 | `OT-111` | **blocked** | Account deletion — user-initiated, complete, confirmed — >- | builder-deep |
-| `OT-112` | **blocked** | Document NEXT_PUBLIC_APP_URL in .env.example — >- | builder |
+| `OT-112` | running | Document NEXT_PUBLIC_APP_URL in .env.example — null | builder |
 | `OT-113` | **blocked** | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — >- | builder |
 | `OT-114` | running | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
 | `OT-115` | **blocked** | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI — >- | builder |
@@ -39,13 +41,26 @@ Updated 2026-08-19 19:01 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T19:01:19Z  open-tab  SubagentStart  builder-light
-2026-08-19T19:01:19Z  open-tab  SubagentStart  builder-light
 2026-08-19T19:01:26Z  open-tab  SubagentStop  
 2026-08-19T19:01:26Z  open-tab  SubagentStop  
-2026-08-19T19:01:26Z  open-tab  SubagentStop  
-2026-08-19T19:01:26Z  open-tab  SubagentStop  
-2026-08-19T19:01:26Z  open-tab  SubagentStop  
+2026-08-19T19:01:30Z  open-tab  SubagentStart  builder-light
+2026-08-19T19:01:30Z  open-tab  SubagentStart  builder-light
+2026-08-19T19:01:48Z  open-tab  SubagentStart  reviewer
+2026-08-19T19:01:48Z  open-tab  SubagentStart  reviewer
+2026-08-19T19:02:04Z  open-tab  SubagentStop  
+2026-08-19T19:02:04Z  open-tab  SubagentStop  
+2026-08-19T19:02:04Z  open-tab  SubagentStop  
+2026-08-19T19:02:04Z  open-tab  SubagentStop  
+2026-08-19T19:02:04Z  open-tab  SubagentStop  
+2026-08-19T19:02:17Z  open-tab  SubagentStop  builder-light
+2026-08-19T19:02:20Z  open-tab  SubagentStop  
+2026-08-19T19:02:20Z  open-tab  SubagentStop  
+2026-08-19T19:02:20Z  open-tab  SubagentStop  
+2026-08-19T19:02:20Z  open-tab  SubagentStop  
+2026-08-19T19:02:20Z  open-tab  SubagentStop  
+2026-08-19T19:02:26Z  open-tab  SubagentStart  builder
+2026-08-19T19:02:26Z  open-tab  SubagentStart  builder
+2026-08-19T19:02:27Z  open-tab  SubagentStop  builder-light
 ```
 
 ---
