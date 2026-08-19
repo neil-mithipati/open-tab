@@ -42,7 +42,10 @@ export function CaptureStep({ flow }: { flow: Flow }) {
 
     // upload image (compressed on success, original file on fallback)
     const compressed = blob !== file;
-    const ext = compressed ? "jpg" : (file.name.split(".").pop() ?? "jpg");
+    // A dotless filename makes split(".").pop() return the whole name, which
+    // would build a storage path the parse route's binding regex rejects.
+    const rawExt = compressed ? "jpg" : (file.name.split(".").pop() ?? "jpg");
+    const ext = /^[A-Za-z0-9]+$/.test(rawExt) ? rawExt : "jpg";
     const path = `${user.id}/${receipt.id}.${ext}`;
     const { error: uploadErr } = await supabase.storage
       .from("receipt-images")
