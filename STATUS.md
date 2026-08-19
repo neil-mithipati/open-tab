@@ -1,18 +1,19 @@
 # Agent status
 
-Updated 2026-08-19 21:32 UTC · regenerated on every task completion.
+Updated 2026-08-19 21:33 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $24.32 | $100.00 | ██░░░░░░░░ 24% |
+| open-tab | $26.26 | $100.00 | ██░░░░░░░░ 26% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-19T21:25:36Z | 2 |
+| builder | open-tab | 2026-08-19T21:32:47Z | 2 |
 
 ## Tasks
 
@@ -39,31 +40,32 @@ Updated 2026-08-19 21:32 UTC · regenerated on every task completion.
 | `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
 | `OT-119` | done | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
 | `OT-120` | running | charges RLS has no with-check — anyone can plant a charge row on a tab they don't own — null | builder-deep |
-| `OT-121` | todo | parallel-cap third fail-open on an unopenable log; remove the wildcard SubagentStart — null | builder |
+| `OT-121` | running | parallel-cap third fail-open on an unopenable log; remove the wildcard SubagentStart — null | builder |
+| `OT-122` | todo | read-only agents can still mutate a worktree through Bash git commands — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-19T21:31:47Z  open-tab  SubagentStop  
-2026-08-19T21:31:47Z  open-tab  SubagentStop  
-2026-08-19T21:31:54Z  open-tab  SubagentStop  
-2026-08-19T21:31:54Z  open-tab  SubagentStop  
-2026-08-19T21:31:54Z  open-tab  SubagentStop  
-2026-08-19T21:31:54Z  open-tab  SubagentStop  
-2026-08-19T21:31:54Z  open-tab  SubagentStop  
-2026-08-19T21:31:54Z  open-tab  SubagentStop  
-2026-08-19T21:32:01Z  open-tab  SubagentStop  
-2026-08-19T21:32:01Z  open-tab  SubagentStop  
-2026-08-19T21:32:01Z  open-tab  SubagentStop  
-2026-08-19T21:32:01Z  open-tab  SubagentStop  
-2026-08-19T21:32:01Z  open-tab  SubagentStop  
-2026-08-19T21:32:01Z  open-tab  SubagentStop  
-2026-08-19T21:32:18Z  open-tab  SubagentStop  
-2026-08-19T21:32:18Z  open-tab  SubagentStop  
-2026-08-19T21:32:18Z  open-tab  SubagentStop  
-2026-08-19T21:32:18Z  open-tab  SubagentStop  
-2026-08-19T21:32:18Z  open-tab  SubagentStop  
-2026-08-19T21:32:18Z  open-tab  SubagentStop  
+2026-08-19T21:32:50Z  open-tab  SubagentStop  
+2026-08-19T21:32:50Z  open-tab  SubagentStop  
+2026-08-19T21:33:18Z  open-tab  SubagentStop  
+2026-08-19T21:33:18Z  open-tab  SubagentStop  
+2026-08-19T21:33:18Z  open-tab  SubagentStop  
+2026-08-19T21:33:18Z  open-tab  SubagentStop  
+2026-08-19T21:33:18Z  open-tab  SubagentStop  
+2026-08-19T21:33:18Z  open-tab  SubagentStop  
+2026-08-19T21:33:21Z  open-tab  SubagentStop  
+2026-08-19T21:33:21Z  open-tab  SubagentStop  
+2026-08-19T21:33:21Z  open-tab  SubagentStop  
+2026-08-19T21:33:21Z  open-tab  SubagentStop  
+2026-08-19T21:33:21Z  open-tab  SubagentStop  
+2026-08-19T21:33:21Z  open-tab  SubagentStop  
+2026-08-19T21:33:22Z  open-tab  SubagentStop  
+2026-08-19T21:33:22Z  open-tab  SubagentStop  
+2026-08-19T21:33:22Z  open-tab  SubagentStop  
+2026-08-19T21:33:22Z  open-tab  SubagentStop  
+2026-08-19T21:33:22Z  open-tab  SubagentStop  
+2026-08-19T21:33:22Z  open-tab  SubagentStop  
 ```
 
 ---
