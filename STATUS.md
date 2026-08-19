@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 13:40 UTC · regenerated on every task completion.
+Updated 2026-08-19 14:23 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $10.23 | $10.00 | ██████████ 102% |
+| open-tab | $0.8 | $20.00 | ░░░░░░░░░░ 4% |
 
 ## Agents
 
@@ -14,8 +14,8 @@ Updated 2026-08-19 13:40 UTC · regenerated on every task completion.
 |---|---|---|---|
 | publisher | open-tab | 2026-08-19T13:06:50Z | 3 |
 | builder-deep | open-tab | 2026-08-19T13:31:48Z | 1 |
-| reviewer | open-tab | 2026-08-19T13:37:07Z | 2 |
 | builder-light | open-tab | 2026-08-19T13:37:16Z | 2 |
+| reviewer | open-tab | 2026-08-19T14:22:48Z | 3 |
 
 ## Tasks
 
@@ -28,7 +28,7 @@ Updated 2026-08-19 13:40 UTC · regenerated on every task completion.
 | `OT-104` | done | Compress receipt photos client-side before upload; cap size and MIME server-side — null | builder |
 | `OT-105` | done | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint — null | builder-deep |
 | `OT-106` | done | Allocate rounding remainders so charges sum to the total — null | builder |
-| `OT-107` | **blocked** | Rate-limit the parse route and share/claim actions — >- | builder-deep |
+| `OT-107` | running | Rate-limit the parse route and share/claim actions — null | builder-deep |
 | `OT-108` | **blocked** | Add indexes on all foreign keys — >- | builder |
 | `OT-109` | **blocked** | "Toast system: share/save errors surface, link-copied confirms" — >- | builder |
 | `OT-110` | **blocked** | Privacy policy page — >- | builder-light |
@@ -40,26 +40,26 @@ Updated 2026-08-19 13:40 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T13:40:18Z  open-tab  SubagentStop  
-2026-08-19T13:40:18Z  open-tab  SubagentStop  
-2026-08-19T13:40:18Z  open-tab  SubagentStop  
-2026-08-19T13:40:18Z  open-tab  SubagentStop  
-2026-08-19T13:40:18Z  open-tab  SubagentStop  
-2026-08-19T13:40:19Z  open-tab  SubagentStop  
-2026-08-19T13:40:19Z  open-tab  SubagentStop  
-2026-08-19T13:40:19Z  open-tab  SubagentStop  
-2026-08-19T13:40:19Z  open-tab  SubagentStop  
-2026-08-19T13:40:19Z  open-tab  SubagentStop  
-2026-08-19T13:40:20Z  open-tab  SubagentStop  
-2026-08-19T13:40:20Z  open-tab  SubagentStop  
-2026-08-19T13:40:20Z  open-tab  SubagentStop  
-2026-08-19T13:40:20Z  open-tab  SubagentStop  
-2026-08-19T13:40:20Z  open-tab  SubagentStop  
 2026-08-19T13:40:52Z  open-tab  SubagentStop  
 2026-08-19T13:40:52Z  open-tab  SubagentStop  
-2026-08-19T13:40:52Z  open-tab  SubagentStop  
-2026-08-19T13:40:52Z  open-tab  SubagentStop  
-2026-08-19T13:40:52Z  open-tab  SubagentStop  
+2026-08-19T13:40:55Z  open-tab  SubagentStop  
+2026-08-19T13:40:55Z  open-tab  SubagentStop  
+2026-08-19T13:40:55Z  open-tab  SubagentStop  
+2026-08-19T13:40:55Z  open-tab  SubagentStop  
+2026-08-19T13:40:55Z  open-tab  SubagentStop  
+2026-08-19T13:41:21Z  open-tab  SubagentStop  reviewer
+2026-08-19T13:41:21Z  open-tab  SubagentStop  
+2026-08-19T13:41:21Z  open-tab  SubagentStop  
+2026-08-19T13:41:21Z  open-tab  SubagentStop  
+2026-08-19T13:41:21Z  open-tab  SubagentStop  
+2026-08-19T13:41:21Z  open-tab  SubagentStop  
+2026-08-19T14:22:48Z  open-tab  SubagentStart  reviewer
+2026-08-19T14:22:48Z  open-tab  SubagentStart  reviewer
+2026-08-19T14:23:21Z  open-tab  SubagentStop  
+2026-08-19T14:23:21Z  open-tab  SubagentStop  
+2026-08-19T14:23:21Z  open-tab  SubagentStop  
+2026-08-19T14:23:21Z  open-tab  SubagentStop  
+2026-08-19T14:23:21Z  open-tab  SubagentStop  
 ```
 
 ---
