@@ -12,6 +12,7 @@ import {
   computeSharedClaimCharges,
 } from "@/lib/utils";
 import { buildTabUrl } from "@/lib/qr/inviteUrl";
+import { isClaimJoinRateLimited } from "@/lib/rateLimit";
 import type { SharedReceipt, EditableItem, FlowParticipant } from "@/types";
 
 // ===========================================================================
@@ -114,6 +115,13 @@ async function claimingLocked(
   return (count ?? 0) > 0;
 }
 
+// `_` and `%` are ILIKE wildcards and `_` is legal in a Venmo username, so an
+// unescaped username can match rows it should not. Backslash is LIKE's default
+// escape character in Postgres.
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
+
 export async function joinReceipt(
   token: string,
   rawUsername: string
@@ -140,7 +148,7 @@ export async function joinReceipt(
     .from("receipt_participants")
     .select("id")
     .eq("receipt_id", receipt.id)
-    .ilike("venmo_username", username)
+    .ilike("venmo_username", escapeLikePattern(username))
     .maybeSingle();
   if (existing) return { participantId: existing.id };
 
@@ -149,8 +157,15 @@ export async function joinReceipt(
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, display_name")
-    .ilike("venmo_username", username)
+    .ilike("venmo_username", escapeLikePattern(username))
     .maybeSingle();
+
+  // Guards the insert, not the resume above: a claimer who already joined must
+  // always get back to their own row, even on a busy receipt. Only genuinely
+  // new participants count against the cap.
+  if (await isClaimJoinRateLimited(supabase, receipt.id)) {
+    return { error: "Too many people joining right now — try again in a bit." };
+  }
 
   const { data: inserted, error } = await supabase
     .from("receipt_participants")
@@ -170,12 +185,17 @@ export async function joinReceipt(
   // (receipt_id, lower(venmo_username)) rejects the loser, who then resumes the
   // row the winner created rather than seeing an error.
   if (error?.code === "23505") {
-    const { data: raced } = await supabase
+    // Escaped ILIKE narrows the read; the exact compare below is what decides,
+    // so a second row can never make this lookup fail the way maybeSingle()
+    // on a wildcard pattern did.
+    const { data: candidates } = await supabase
       .from("receipt_participants")
-      .select("id")
+      .select("id, venmo_username")
       .eq("receipt_id", receipt.id)
-      .ilike("venmo_username", username)
-      .maybeSingle();
+      .ilike("venmo_username", escapeLikePattern(username));
+    const raced = (candidates ?? []).find(
+      (row) => row.venmo_username?.toLowerCase() === username.toLowerCase()
+    );
     if (raced) return { participantId: raced.id };
   }
 
