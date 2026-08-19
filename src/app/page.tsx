@@ -66,6 +66,9 @@ function Landing() {
           Already have an account?{" "}
           <span className="text-brand underline">Sign in</span>
         </Link>
+        <Link href="/privacy" className="text-center text-xs text-secondary/70 underline underline-offset-4">
+          Privacy
+        </Link>
       </div>
     </div>
   );
