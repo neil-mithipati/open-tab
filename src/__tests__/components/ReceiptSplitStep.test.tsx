@@ -160,7 +160,6 @@ function makeDefaultState(overrides: Partial<ReceiptFlowState> = {}): ReceiptFlo
     participants: [ownerParticipant],
     splitMode: "equal",
     assignments: {},
-    charges: [],
     ...overrides,
   };
 }
