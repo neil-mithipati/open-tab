@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 18:28 UTC · regenerated on every task completion.
+Updated 2026-08-19 18:30 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $0.49 | $20.00 | ░░░░░░░░░░ 2% |
+| open-tab | $0.87 | $20.00 | ░░░░░░░░░░ 4% |
 
 ## Agents
 
@@ -36,22 +36,12 @@ Updated 2026-08-19 18:28 UTC · regenerated on every task completion.
 | `OT-111` | **blocked** | Account deletion — user-initiated, complete, confirmed — >- | builder-deep |
 | `OT-112` | **blocked** | Document NEXT_PUBLIC_APP_URL in .env.example — >- | builder-light |
 | `OT-113` | **blocked** | ReceiptEditPage still delete-then-reinserts from the browser — route it through saveReceiptState — >- | builder |
-| `OT-114` | **blocked** | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — >- | builder |
+| `OT-114` | running | Parallel-cap counter drifts +1 per builder — asymmetric log-event hook wiring — null | builder |
 | `OT-115` | **blocked** | Rate-limit hardening — fail-open silence, off-by-one parse ceiling, 429 has no UI — >- | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T18:25:06Z  open-tab  SubagentStop  
-2026-08-19T18:25:06Z  open-tab  SubagentStop  
-2026-08-19T18:25:06Z  open-tab  SubagentStop  
-2026-08-19T18:25:40Z  open-tab  SubagentStop  
-2026-08-19T18:25:40Z  open-tab  SubagentStop  
-2026-08-19T18:25:40Z  open-tab  SubagentStop  
-2026-08-19T18:25:40Z  open-tab  SubagentStop  
-2026-08-19T18:25:40Z  open-tab  SubagentStop  
-2026-08-19T18:26:05Z  open-tab  SubagentStop  
-2026-08-19T18:26:05Z  open-tab  SubagentStop  
 2026-08-19T18:26:05Z  open-tab  SubagentStop  
 2026-08-19T18:26:05Z  open-tab  SubagentStop  
 2026-08-19T18:26:05Z  open-tab  SubagentStop  
@@ -62,6 +52,16 @@ Updated 2026-08-19 18:28 UTC · regenerated on every task completion.
 2026-08-19T18:28:59Z  open-tab  SubagentStop  
 2026-08-19T18:28:59Z  open-tab  SubagentStop  
 2026-08-19T18:28:59Z  open-tab  SubagentStop  
+2026-08-19T18:29:30Z  open-tab  SubagentStop  
+2026-08-19T18:29:30Z  open-tab  SubagentStop  
+2026-08-19T18:29:30Z  open-tab  SubagentStop  
+2026-08-19T18:29:30Z  open-tab  SubagentStop  
+2026-08-19T18:29:30Z  open-tab  SubagentStop  
+2026-08-19T18:30:01Z  open-tab  SubagentStop  
+2026-08-19T18:30:01Z  open-tab  SubagentStop  
+2026-08-19T18:30:01Z  open-tab  SubagentStop  
+2026-08-19T18:30:01Z  open-tab  SubagentStop  
+2026-08-19T18:30:01Z  open-tab  SubagentStop  
 ```
 
 ---
