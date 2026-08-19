@@ -86,16 +86,32 @@ export async function isParseRateLimited(
 // hour, so a spammer with the (unguessable but leakable) share token can't
 // flood a receipt with fake participants.
 //
-// Only share-link joins count. The owner's own save rewrites every
+// Two filters, both load-bearing, for different reasons.
+//
+// joined_via_share keeps the cap on the traffic it governs. Only joinReceipt
+// sets it, so share-link joins are the only rows counted; participants the
+// owner types in are not the flood this guards against.
+//
+// joined_at, not created_at, is the clock. The owner's own save rewrites every
 // receipt_participants row for the receipt — 0016's save_receipt_state deletes
 // and re-inserts in one transaction, which is the atomicity that save exists to
-// provide — so every row comes back with a fresh created_at. Counting those
-// meant one owner edit on a 20-person dinner hit the cap instantly and locked
-// out genuinely new joiners for an hour, on exactly the receipts this app is
-// for. The re-inserted rows carry joined_via_share at its column default of
-// false; only joinReceipt sets it true, and share joins are the only traffic
-// this cap is meant to govern. If that RPC is ever changed to carry the flag
-// through, this needs a join timestamp the save does not touch instead.
+// provide — so every row comes back with a fresh created_at. Counting by
+// created_at meant one owner edit on a 20-person dinner hit the cap instantly
+// and locked out genuinely new joiners for an hour, on exactly the receipts
+// this app is for. 0021 carries joined_at across that swap untouched, so it
+// still reads as when the person actually joined.
+//
+// The earlier fix for that lockout leaned on the flag instead: re-inserted rows
+// came back with joined_via_share at its column default of false, so they
+// stopped counting. That erasure was itself a bug — it also hid real claimers
+// from ClaimOwnerView, which filters on the same flag — and 0021 ends it. The
+// flag no longer excludes an owner's save, so this must not go back to counting
+// created_at.
+//
+// Rows that predate 0021 have a null joined_at and never match, so they
+// under-count rather than lock a link. If 0021 has not been applied at all the
+// column does not exist, the count query errors, and usableCount fails this
+// limiter open with a log line rather than blocking every join.
 export async function isClaimJoinRateLimited(
   supabase: SupabaseClient,
   receiptId: string,
@@ -106,7 +122,7 @@ export async function isClaimJoinRateLimited(
     .select("id", { count: "exact", head: true })
     .eq("receipt_id", receiptId)
     .eq("joined_via_share", true)
-    .gte("created_at", hourAgo(now));
+    .gte("joined_at", hourAgo(now));
   const usable = usableCount("claim-join", count, error);
   return usable !== null && usable >= CLAIM_JOIN_LIMIT_PER_HOUR;
 }
