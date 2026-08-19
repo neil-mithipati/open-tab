@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 22:14 UTC · regenerated on every task completion.
+Updated 2026-08-19 22:16 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $86.9 | $100.00 | ████████░░ 86% |
+| open-tab | $87.85 | $100.00 | ████████░░ 87% |
 
 ## Agents
 
@@ -15,7 +15,7 @@ Updated 2026-08-19 22:14 UTC · regenerated on every task completion.
 | publisher | open-tab | 2026-08-19T21:43:30Z | 1 |
 | builder-deep | open-tab | 2026-08-19T22:00:51Z | 4 |
 | builder | open-tab | 2026-08-19T22:03:09Z | 2 |
-| reviewer | open-tab | 2026-08-19T22:10:35Z | 6 |
+| reviewer | open-tab | 2026-08-19T22:10:35Z | 5 |
 
 ## Tasks
 
@@ -47,20 +47,14 @@ Updated 2026-08-19 22:14 UTC · regenerated on every task completion.
 | `OT-123` | done | "Parse replay is still open on an empty parse — needs a parsed_at marker written before the model call" — null | builder-deep |
 | `OT-124` | **blocked** | owner save erases joined_via_share, hiding real claimers from the owner's view — >- | builder-deep |
 | `OT-125` | done | the fleet's own agent cards and tooling are untracked or uncommitted in git — null | builder |
-| `OT-126` | running | detect-and-repair can discard a genuine revert; staged blob not captured in the patch — null | builder |
+| `OT-126` | done | detect-and-repair can discard a genuine revert; staged blob not captured in the patch — null | builder |
 | `OT-127` | **blocked** | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it — >- | builder-deep |
 | `OT-128` | **blocked** | review the unreviewed kit install change by change and commit what survives — >- | builder |
+| `OT-129` | todo | backlog from the OT-123, OT-124 and OT-126 reviews — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T22:13:23Z  open-tab  SubagentStop  
-2026-08-19T22:13:23Z  open-tab  SubagentStop  
-2026-08-19T22:13:44Z  open-tab  SubagentStop  
-2026-08-19T22:13:44Z  open-tab  SubagentStop  
-2026-08-19T22:13:44Z  open-tab  SubagentStop  
-2026-08-19T22:13:44Z  open-tab  SubagentStop  
-2026-08-19T22:13:44Z  open-tab  SubagentStop  
 2026-08-19T22:13:44Z  open-tab  SubagentStop  
 2026-08-19T22:14:16Z  open-tab  SubagentStop  
 2026-08-19T22:14:16Z  open-tab  SubagentStop  
@@ -74,6 +68,13 @@ Updated 2026-08-19 22:14 UTC · regenerated on every task completion.
 2026-08-19T22:14:47Z  open-tab  SubagentStop  
 2026-08-19T22:14:47Z  open-tab  SubagentStop  
 2026-08-19T22:14:47Z  open-tab  SubagentStop  
+2026-08-19T22:15:00Z  open-tab  SubagentStop  reviewer
+2026-08-19T22:16:15Z  open-tab  SubagentStop  
+2026-08-19T22:16:15Z  open-tab  SubagentStop  
+2026-08-19T22:16:15Z  open-tab  SubagentStop  
+2026-08-19T22:16:15Z  open-tab  SubagentStop  
+2026-08-19T22:16:15Z  open-tab  SubagentStop  
+2026-08-19T22:16:15Z  open-tab  SubagentStop  
 ```
 
 ---
