@@ -6,10 +6,23 @@
 # $1 (optional) — the agent type name, supplied by the hook matcher.
 #
 # Why the argument exists: SubagentStart and SubagentStop fire in the MAIN session,
-# not inside the subagent. Only events running inside a subagent carry agent_id and
-# agent_type, so both fields arrive null on these two events. The matcher is the
-# only thing that knows which agent stopped, so settings.json registers one group
-# per agent name and passes that name in here.
+# not inside the subagent, so agent_TYPE is unreliable on them. It arrives populated
+# on SubagentStart, but on SubagentStop it is frequently the empty string "". The
+# matcher is the only thing that reliably knows which agent it was, so settings.json
+# registers one group per agent name and passes that name in here as $1.
+#
+# agent_ID, by contrast, DOES arrive populated on both events — an older version of
+# this comment claimed it "arrives null", which is false. Do not "clean up" the
+# agent_id field on the strength of that: parallel-cap.sh pairs SubagentStart to
+# SubagentStop *by agent_id* to decide how many subagents are live, precisely
+# because agent_type cannot be trusted on a stop record. Dropping or blanking
+# agent_id silently breaks the parallel cap — starts would never be cancelled and
+# the count would rise forever, wedging all dispatch.
+#
+# Note also that jq's `//` treats "" as truthy, so a payload agent_type of ""
+# short-circuits and $1 is NOT substituted. That is why some stop records land with
+# agent_type "". parallel-cap.sh treats "" as unreadable and never reads a type off
+# a stop record at all, so this does not affect the cap.
 
 LOG="${CLAUDE_PROJECT_DIR}/.claude/state/events.jsonl"
 input=$(cat)
