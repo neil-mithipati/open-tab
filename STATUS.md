@@ -1,20 +1,20 @@
 # Agent status
 
-Updated 2026-08-19 19:02 UTC · regenerated on every task completion.
+Updated 2026-08-19 19:03 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $1.2 | $20.00 | ░░░░░░░░░░ 5% |
+| open-tab | $2.18 | $20.00 | █░░░░░░░░░ 10% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-light | open-tab | 2026-08-19T19:01:30Z | 2 |
-| reviewer | open-tab | 2026-08-19T19:01:48Z | 2 |
 | builder | open-tab | 2026-08-19T19:02:26Z | 2 |
+| reviewer | open-tab | 2026-08-19T19:03:15Z | 6 |
 
 ## Tasks
 
@@ -41,26 +41,26 @@ Updated 2026-08-19 19:02 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T19:01:26Z  open-tab  SubagentStop  
-2026-08-19T19:01:26Z  open-tab  SubagentStop  
-2026-08-19T19:01:30Z  open-tab  SubagentStart  builder-light
-2026-08-19T19:01:30Z  open-tab  SubagentStart  builder-light
-2026-08-19T19:01:48Z  open-tab  SubagentStart  reviewer
-2026-08-19T19:01:48Z  open-tab  SubagentStart  reviewer
-2026-08-19T19:02:04Z  open-tab  SubagentStop  
-2026-08-19T19:02:04Z  open-tab  SubagentStop  
-2026-08-19T19:02:04Z  open-tab  SubagentStop  
-2026-08-19T19:02:04Z  open-tab  SubagentStop  
-2026-08-19T19:02:04Z  open-tab  SubagentStop  
-2026-08-19T19:02:17Z  open-tab  SubagentStop  builder-light
-2026-08-19T19:02:20Z  open-tab  SubagentStop  
-2026-08-19T19:02:20Z  open-tab  SubagentStop  
-2026-08-19T19:02:20Z  open-tab  SubagentStop  
-2026-08-19T19:02:20Z  open-tab  SubagentStop  
-2026-08-19T19:02:20Z  open-tab  SubagentStop  
-2026-08-19T19:02:26Z  open-tab  SubagentStart  builder
-2026-08-19T19:02:26Z  open-tab  SubagentStart  builder
-2026-08-19T19:02:27Z  open-tab  SubagentStop  builder-light
+2026-08-19T19:02:58Z  open-tab  SubagentStop  
+2026-08-19T19:02:58Z  open-tab  SubagentStop  
+2026-08-19T19:02:58Z  open-tab  SubagentStop  
+2026-08-19T19:03:15Z  open-tab  SubagentStart  reviewer
+2026-08-19T19:03:15Z  open-tab  SubagentStart  reviewer
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:23Z  open-tab  SubagentStop  
+2026-08-19T19:03:29Z  open-tab  SubagentStop  
+2026-08-19T19:03:29Z  open-tab  SubagentStop  
+2026-08-19T19:03:29Z  open-tab  SubagentStop  
+2026-08-19T19:03:29Z  open-tab  SubagentStop  
+2026-08-19T19:03:29Z  open-tab  SubagentStop  
 ```
 
 ---
