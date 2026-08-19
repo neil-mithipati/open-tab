@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 13:36 UTC · regenerated on every task completion.
+Updated 2026-08-19 13:37 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $7.25 | $10.00 | ███████░░░ 72% |
+| open-tab | $7.85 | $10.00 | ███████░░░ 78% |
 
 ## Agents
 
@@ -14,6 +14,8 @@ Updated 2026-08-19 13:36 UTC · regenerated on every task completion.
 |---|---|---|---|
 | publisher | open-tab | 2026-08-19T13:06:50Z | 3 |
 | builder-deep | open-tab | 2026-08-19T13:31:48Z | 1 |
+| reviewer | open-tab | 2026-08-19T13:37:07Z | 2 |
+| builder-light | open-tab | 2026-08-19T13:37:16Z | 2 |
 
 ## Tasks
 
@@ -27,7 +29,7 @@ Updated 2026-08-19 13:36 UTC · regenerated on every task completion.
 | `OT-105` | done | Atomic save path — replace browser-side delete-then-reinsert with a server action; unique participant constraint — null | builder-deep |
 | `OT-106` | done | Allocate rounding remainders so charges sum to the total — null | builder |
 | `OT-107` | running | Rate-limit the parse route and share/claim actions — null | builder-deep |
-| `OT-108` | todo | Add indexes on all foreign keys — null | builder-light |
+| `OT-108` | running | Add indexes on all foreign keys — null | builder-light |
 | `OT-109` | todo | "Toast system: share/save errors surface, link-copied confirms" — null | builder |
 | `OT-110` | todo | Privacy policy page — null | builder-light |
 | `OT-111` | todo | Account deletion — user-initiated, complete, confirmed — null | builder-deep |
@@ -38,26 +40,26 @@ Updated 2026-08-19 13:36 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-19T13:35:37Z  open-tab  SubagentStop  
-2026-08-19T13:35:37Z  open-tab  SubagentStop  
-2026-08-19T13:35:37Z  open-tab  SubagentStop  
-2026-08-19T13:35:37Z  open-tab  SubagentStop  
-2026-08-19T13:36:04Z  open-tab  SubagentStop  
-2026-08-19T13:36:04Z  open-tab  SubagentStop  
-2026-08-19T13:36:04Z  open-tab  SubagentStop  
-2026-08-19T13:36:04Z  open-tab  SubagentStop  
-2026-08-19T13:36:04Z  open-tab  SubagentStop  
-2026-08-19T13:36:08Z  open-tab  SubagentStop  
-2026-08-19T13:36:08Z  open-tab  SubagentStop  
-2026-08-19T13:36:08Z  open-tab  SubagentStop  
-2026-08-19T13:36:08Z  open-tab  SubagentStop  
-2026-08-19T13:36:08Z  open-tab  SubagentStop  
 2026-08-19T13:36:23Z  open-tab  SubagentStop  builder-deep
 2026-08-19T13:36:35Z  open-tab  SubagentStop  
 2026-08-19T13:36:35Z  open-tab  SubagentStop  
 2026-08-19T13:36:35Z  open-tab  SubagentStop  
 2026-08-19T13:36:35Z  open-tab  SubagentStop  
 2026-08-19T13:36:35Z  open-tab  SubagentStop  
+2026-08-19T13:36:42Z  open-tab  SubagentStop  
+2026-08-19T13:36:42Z  open-tab  SubagentStop  
+2026-08-19T13:36:42Z  open-tab  SubagentStop  
+2026-08-19T13:36:42Z  open-tab  SubagentStop  
+2026-08-19T13:36:42Z  open-tab  SubagentStop  
+2026-08-19T13:37:07Z  open-tab  SubagentStart  reviewer
+2026-08-19T13:37:07Z  open-tab  SubagentStart  reviewer
+2026-08-19T13:37:16Z  open-tab  SubagentStart  builder-light
+2026-08-19T13:37:16Z  open-tab  SubagentStart  builder-light
+2026-08-19T13:37:39Z  open-tab  SubagentStop  
+2026-08-19T13:37:39Z  open-tab  SubagentStop  
+2026-08-19T13:37:39Z  open-tab  SubagentStop  
+2026-08-19T13:37:39Z  open-tab  SubagentStop  
+2026-08-19T13:37:39Z  open-tab  SubagentStop  
 ```
 
 ---
