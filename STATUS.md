@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-19 20:54 UTC · regenerated on every task completion.
+Updated 2026-08-19 20:55 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $17.88 | $20.00 | ████████░░ 89% |
+| open-tab | $18.43 | $20.00 | █████████░ 92% |
 
 ## Agents
 
@@ -37,31 +37,32 @@ Updated 2026-08-19 20:54 UTC · regenerated on every task completion.
 | `OT-115` | **blocked** | "Rate-limit hardening: parse limiter is bypassable by replay (HIGH), plus fail-open silence, off-by-one ceiling, no 429 UI" — >- | builder-deep |
 | `OT-116` | done | Make main typecheck-clean — two pre-existing errors block the required gate for every task — null | builder |
 | `OT-117` | running | parallel-cap hook fails open on a torn events.jsonl line; stale comment misleads — null | builder-deep |
-| `OT-118` | running | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
+| `OT-118` | done | Save and share failures are still swallowed on three call sites; Done can wedge — null | builder |
+| `OT-119` | todo | new/page.tsx — untracked 1.5s timer hijacks navigation; Done still races Share — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-19T20:53:28Z  open-tab  SubagentStop  
-2026-08-19T20:53:28Z  open-tab  SubagentStop  
-2026-08-19T20:53:28Z  open-tab  SubagentStop  
-2026-08-19T20:53:28Z  open-tab  SubagentStop  
-2026-08-19T20:53:41Z  open-tab  SubagentStop  
-2026-08-19T20:53:41Z  open-tab  SubagentStop  
-2026-08-19T20:53:41Z  open-tab  SubagentStop  
-2026-08-19T20:53:41Z  open-tab  SubagentStop  
-2026-08-19T20:53:41Z  open-tab  SubagentStop  
-2026-08-19T20:53:44Z  open-tab  SubagentStop  
-2026-08-19T20:53:44Z  open-tab  SubagentStop  
-2026-08-19T20:53:44Z  open-tab  SubagentStop  
-2026-08-19T20:53:44Z  open-tab  SubagentStop  
-2026-08-19T20:53:44Z  open-tab  SubagentStop  
-2026-08-19T20:53:50Z  open-tab  SubagentStop  reviewer
 2026-08-19T20:54:13Z  open-tab  SubagentStop  
 2026-08-19T20:54:13Z  open-tab  SubagentStop  
 2026-08-19T20:54:13Z  open-tab  SubagentStop  
 2026-08-19T20:54:13Z  open-tab  SubagentStop  
-2026-08-19T20:54:13Z  open-tab  SubagentStop  
+2026-08-19T20:54:16Z  open-tab  SubagentStop  
+2026-08-19T20:54:16Z  open-tab  SubagentStop  
+2026-08-19T20:54:16Z  open-tab  SubagentStop  
+2026-08-19T20:54:16Z  open-tab  SubagentStop  
+2026-08-19T20:54:16Z  open-tab  SubagentStop  
+2026-08-19T20:54:19Z  open-tab  SubagentStop  builder-deep
+2026-08-19T20:54:45Z  open-tab  SubagentStop  
+2026-08-19T20:54:45Z  open-tab  SubagentStop  
+2026-08-19T20:54:45Z  open-tab  SubagentStop  
+2026-08-19T20:54:45Z  open-tab  SubagentStop  
+2026-08-19T20:54:45Z  open-tab  SubagentStop  
+2026-08-19T20:55:17Z  open-tab  SubagentStop  
+2026-08-19T20:55:17Z  open-tab  SubagentStop  
+2026-08-19T20:55:17Z  open-tab  SubagentStop  
+2026-08-19T20:55:17Z  open-tab  SubagentStop  
+2026-08-19T20:55:17Z  open-tab  SubagentStop  
 ```
 
 ---
