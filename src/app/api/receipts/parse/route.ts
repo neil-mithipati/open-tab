@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
 import { parseReceiptImage } from "@/lib/gemini/parseReceipt";
-import { extractStoragePath, RECEIPT_IMAGE_FETCH_TTL_SECONDS } from "@/lib/storage";
+import { boundStoragePath, RECEIPT_IMAGE_FETCH_TTL_SECONDS } from "@/lib/storage";
 import { isParseRateLimited, PARSE_LIMIT_PER_HOUR } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
@@ -21,6 +21,11 @@ type ServiceClient = Awaited<ReturnType<typeof getSupabaseServiceClient>>;
 // needs to find the image.
 interface StoredReceipt {
   id: string;
+  // Selected only so boundStoragePath has something to bind the stored path
+  // to. The row is already fetched with `created_by = user.id`, so this is the
+  // caller — but the binding reads the column rather than the session, because
+  // that is the value the object name was built from.
+  created_by: string;
   image_url: string | null;
   parsed_at: string | null;
   // 0025. Null on a row created before that migration — see attemptsSpent.
@@ -36,7 +41,7 @@ interface StoredReceipt {
 }
 
 const RECEIPT_COLUMNS =
-  "id, image_url, parsed_at, parse_attempts, last_parse_attempt_at, merchant_name, date_of_receipt, subtotal, tax, tip, total";
+  "id, created_by, image_url, parsed_at, parse_attempts, last_parse_attempt_at, merchant_name, date_of_receipt, subtotal, tax, tip, total";
 
 // How many model attempts this receipt has already spent. A row created before
 // 0025 reads null, and null is read as zero here: nothing could have retried
@@ -48,20 +53,6 @@ function attemptsSpent(receipt: StoredReceipt): number {
 
 function present(value: unknown): boolean {
   return value !== null && value !== undefined;
-}
-
-// Bind the extracted storage path to the caller. Without this, a user could
-// write another user's same-bucket path into their own receipt's image_url and
-// the service client (which bypasses RLS) would revive expired signed URLs for
-// the victim's object.
-// Built from the stored row's id, not the request's receiptId: an alternate
-// uuid text form (uppercase, braces) would still resolve the same row but would
-// not match a pattern built from the raw request value.
-function ownStoragePath(userId: string, receipt: StoredReceipt): string | null {
-  const path = extractStoragePath(receipt.image_url);
-  if (!path) return null;
-  const ownPathPattern = new RegExp(`^${userId}/${receipt.id}\\.[A-Za-z0-9]+$`);
-  return ownPathPattern.test(path) ? path : null;
 }
 
 // Has this receipt's one parse already been spent? Two kinds of evidence.
@@ -346,7 +337,7 @@ async function discardUnparsedReceipt(
   // the winning request's receipt pointing at storage that no longer exists.
   if ((deleted?.length ?? 0) === 0) return;
 
-  const path = ownStoragePath(userId, receipt);
+  const path = boundStoragePath(receipt);
   if (path) {
     await service.storage.from("receipt-images").remove([path]);
   }
@@ -444,7 +435,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const storagePath = ownStoragePath(user.id, receipt);
+  const storagePath = boundStoragePath(receipt);
   if (!storagePath) {
     return NextResponse.json({ error: "no_image" }, { status: 400 });
   }

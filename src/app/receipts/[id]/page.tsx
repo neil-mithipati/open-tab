@@ -5,7 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getReceiptDetail, getReceiptImageUrl } from "@/lib/queries";
 import { getSharedReceipt, getClaimCharges } from "@/app/actions/claim";
 import { buildTabUrl } from "@/lib/qr/inviteUrl";
-import { extractStoragePath } from "@/lib/storage";
+import { boundStoragePath } from "@/lib/storage";
 import type { EditableItem, FlowParticipant } from "@/types";
 import { ReceiptEditPage } from "./ReceiptEditPage";
 import { ClaimOwnerView } from "@/components/receipt/ClaimOwnerView";
@@ -39,7 +39,13 @@ async function ReceiptDetailContent({ params }: Props) {
     participants.some((p: { user_id: string | null }) => p.user_id === user.id);
   if (!isAuthorised) notFound();
 
-  const imageStoragePath = extractStoragePath(receipt.image_url);
+  // Bound to the row's own owner and id before anything signs it.
+  // getReceiptImageUrl signs with the service client, which bypasses RLS, so
+  // 0026's storage policies are not in this path — a user who wrote another
+  // account's object path into their own receipt's image_url would otherwise
+  // have the victim's photograph signed and rendered for them here. Null means
+  // no image rather than a fallback to the raw path.
+  const imageStoragePath = boundStoragePath(receipt);
 
   // Owner view of a shared (crowd-claim) receipt: live claim progress while
   // sharing, then collection once closed. Editing stays in ReceiptEditPage,

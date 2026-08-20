@@ -86,11 +86,15 @@ export function CaptureStep({ flow }: { flow: Flow }) {
     flow.update("signedUrl", signed.signedUrl);
 
     // image_url is a POINTER, not a credential. Every reader of this column —
-    // the parse route, the receipt page, the discard path — runs
-    // extractStoragePath over it and signs a fresh URL from the path it
+    // the parse route, the receipt page, the discard path, the retention job —
+    // runs boundStoragePath over it and signs a fresh URL from the path it
     // recovers; not one of them follows the stored string. So the signature
     // going stale costs nothing, and a row that leaks stops being a way into
     // the bucket a quarter of an hour after it was written.
+    //
+    // It is also not trusted. This column is writable by whoever owns the row,
+    // so boundStoragePath refuses any path that is not this uploader's folder
+    // and this receipt's id — the exact shape written on the line above.
     await supabase.from("receipts").update({ image_url: signed.signedUrl }).eq("id", receipt.id);
 
     await runParse(receipt.id, mimeType, user.id);

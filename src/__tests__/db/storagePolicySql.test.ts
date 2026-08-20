@@ -2,20 +2,26 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-// Migration 0026 puts the receipt-images bucket and its policies into the
-// schema, where until now they existed only in a dashboard console. There is no
-// database in this suite (see chargesRls.test.ts, which makes the same trade),
-// so these tests read the SQL and assert the shape of what it declares.
+// WHAT THIS FILE IS, AND WHAT IT IS NOT.
 //
-// That is weaker than a SELECT against a live server and it is not what proved
-// the policies correct — the policies were run against a real postgres before
-// this file was written, and the observed output is recorded in the task. What
-// these tests are for is the other half: catching the specific later edits that
-// would quietly undo the fix. A bucket flipped back to public, an `anon` grant
-// added to a policy, the participant branch dropped from the read policy so
-// only owners can see a check, the receipt-ownership half dropped from the
-// write policy, or a purge predicate narrowed to parsed_at alone so a receipt
-// escapes retention by having failed to parse.
+// It is a set of assertions about the TEXT of migration 0026. It reads the .sql
+// file off disk and matches strings in it. There is no database in this suite
+// (see chargesRls.test.ts, which makes the same trade), nothing here connects to
+// one, and no statement in 0026 is ever executed by it. So nothing in this file
+// is evidence that the bucket is private, that an anonymous read is refused, or
+// that a non-participant cannot select an object. A green run here means the
+// migration still SAYS what it said, not that postgres DOES what it says — the
+// file was renamed away from `storageRls` and every name below reworded to
+// "declares" because the old wording read like the second claim.
+//
+// Runtime proof of the policies has to come from a real server: apply 0026 to a
+// project and run the selects. The value of the static half is narrower and
+// still worth having — it catches the specific later edits that quietly undo
+// the fix. A bucket flipped back to public, an `anon` grant added to a policy,
+// the participant branch dropped from the read policy so only owners can see a
+// check, the receipt-ownership half dropped from the write policy, or a purge
+// predicate narrowed to parsed_at alone so a receipt escapes retention by
+// having failed to parse.
 
 const migrations = path.join(process.cwd(), "supabase", "migrations");
 const FILE = "0026_receipt_image_storage_lockdown.sql";
@@ -80,7 +86,7 @@ describe("0026 takes the next free migration slot", () => {
   });
 });
 
-describe("the bucket is private", () => {
+describe("0026 declares the bucket private", () => {
   it("declares public = false when it creates the bucket", () => {
     expect(sql).toContain(
       "insert into storage.buckets (id, name, public) values ('receipt-images', 'receipt-images', false)"
@@ -99,8 +105,8 @@ describe("the bucket is private", () => {
   });
 });
 
-describe("storage.objects policies", () => {
-  it("keeps row level security on", () => {
+describe("0026 declares its storage.objects policies", () => {
+  it("declares row level security on", () => {
     expect(sql).toContain("alter table storage.objects enable row level security");
   });
 
@@ -108,7 +114,7 @@ describe("storage.objects policies", () => {
   // denies it by default. An absence is exactly the kind of control a later
   // edit restores without meaning to, which is why it is asserted rather than
   // trusted.
-  it("grants no policy to anon or to public", () => {
+  it("declares no policy for anon or for public", () => {
     for (const p of stmts.filter((s) => s.startsWith("create policy"))) {
       expect(p).toContain("to authenticated");
       expect(p).not.toContain("to anon");
@@ -117,7 +123,7 @@ describe("storage.objects policies", () => {
     }
   });
 
-  it("scopes every policy to the receipt-images bucket", () => {
+  it("declares every policy scoped to the receipt-images bucket", () => {
     const policies = stmts.filter((s) => s.startsWith("create policy"));
     expect(policies.length).toBeGreaterThan(0);
     for (const p of policies) {
@@ -125,10 +131,10 @@ describe("storage.objects policies", () => {
     }
   });
 
-  describe("read", () => {
+  describe("the read policy text", () => {
     const read_ = policy("receipt_images_select_owner_or_participant");
 
-    it("lets the receipt's owner read it", () => {
+    it("names the receipt's owner", () => {
       expect(read_).toContain(
         "public.receipt_creator_id(public.receipt_image_receipt_id(name)) = auth.uid()"
       );
@@ -136,7 +142,7 @@ describe("storage.objects policies", () => {
 
     // Dropping this line would leave the app looking fine to whoever paid and
     // broken for everyone they split with.
-    it("lets the receipt's participants read it", () => {
+    it("names the receipt's participants too", () => {
       expect(read_).toContain(
         "public.is_receipt_participant(public.receipt_image_receipt_id(name))"
       );
@@ -144,22 +150,22 @@ describe("storage.objects policies", () => {
 
     // A prefix test would deny every participant, since the folder is the
     // uploader's id and a participant is not the uploader.
-    it("does not gate reads on the storage path prefix", () => {
+    it("does not mention the storage path prefix", () => {
       expect(read_).not.toContain("storage.foldername");
     });
   });
 
-  describe("write", () => {
+  describe("the write policy text", () => {
     const insert = policy("receipt_images_insert_own");
 
-    it("pins the object to the caller's own folder", () => {
+    it("names the caller's own folder", () => {
       expect(insert).toContain("(storage.foldername(name))[1] = auth.uid()::text");
     });
 
     // Without this, a user could park an object under their own prefix but
     // named with a victim's receipt id — which the read policy resolves BY
     // receipt id, so the victim's participants would be shown it.
-    it("also requires the receipt named in the object to be the caller's", () => {
+    it("also names the receipt the object is for", () => {
       expect(insert).toContain(
         "public.receipt_creator_id(public.receipt_image_receipt_id(name)) = auth.uid()"
       );
@@ -171,10 +177,10 @@ describe("storage.objects policies", () => {
     });
   });
 
-  describe("delete", () => {
+  describe("the delete policy text", () => {
     const del = policy("receipt_images_delete_own");
 
-    it("is owner only, on both tests", () => {
+    it("names both halves of the owner test", () => {
       expect(del).toContain("for delete to authenticated");
       expect(del).toContain("(storage.foldername(name))[1] = auth.uid()::text");
       expect(del).toContain(
@@ -188,7 +194,7 @@ describe("storage.objects policies", () => {
   });
 });
 
-describe("receipt_image_receipt_id", () => {
+describe("receipt_image_receipt_id, as written", () => {
   // A policy that raises takes the whole statement with it, so one oddly named
   // object would break reads for every other object in the same query. The
   // regex guard is what makes the cast total.
@@ -212,9 +218,9 @@ describe("receipt_image_receipt_id", () => {
   });
 });
 
-describe("retention selection", () => {
+describe("the retention selection, as written", () => {
   const fn = stmts.find((s) =>
-    s.includes("create or replace function public.receipt_images_due_for_purge")
+    s.includes("create function public.receipt_images_due_for_purge")
   )!;
 
   it("takes the cutoff as an argument, so N is configured in one place", () => {
@@ -242,9 +248,18 @@ describe("retention selection", () => {
   it("skips rows whose image is already gone", () => {
     expect(fn).toContain("r.image_url is not null");
   });
+
+  // image_url is writable by the row's owner, so the purge job may not remove
+  // whatever it names — it re-derives `<created_by>/<id>.<ext>` through
+  // boundStoragePath and skips anything else. That binding needs the owner,
+  // and this is where the owner comes from.
+  it("returns the owner the job binds the stored pointer to", () => {
+    expect(fn).toContain("returns table (id uuid, created_by uuid, image_url text)");
+    expect(fn).toContain("select r.id, r.created_by, r.image_url");
+  });
 });
 
-describe("0026 is additive", () => {
+describe("0026 is additive, as written", () => {
   it("touches no data and no table structure", () => {
     for (const forbidden of [
       "delete from",
@@ -252,17 +267,17 @@ describe("0026 is additive", () => {
       "alter table public.",
       "drop table",
       "drop column",
-      "drop function",
       "drop index",
     ]) {
       expect(sql).not.toContain(forbidden);
     }
   });
 
-  // The only writes are the bucket row and the only drops are of policies this
-  // same file recreates on the next statement, which is what makes re-running
-  // it safe.
-  it("drops nothing it does not immediately recreate", () => {
+  // The only writes are the bucket row, and everything removed is recreated by
+  // the next statement — which is what makes re-running the file safe. The
+  // function is in that set because a create-or-replace cannot change a
+  // function's OUT columns, and the retention function grew one.
+  it("removes nothing it does not immediately recreate", () => {
     const dropped = stmts
       .filter((s) => s.startsWith("drop policy if exists"))
       .map((s) => s.match(/"([^"]+)"/)![1]);
@@ -272,6 +287,22 @@ describe("0026 is additive", () => {
 
     expect(dropped.length).toBeGreaterThan(0);
     for (const name of dropped) expect(created).toContain(name);
+
+    const functions = stmts
+      .filter((s) => s.startsWith("drop function"))
+      .map((s) => s.replace("drop function if exists ", "").split("(")[0]);
+    expect(functions).toEqual(["public.receipt_images_due_for_purge"]);
+    for (const fn of functions) {
+      expect(stmts.some((s) => s.startsWith(`create function ${fn}(`))).toBe(true);
+    }
+  });
+
+  // Everything removed is removed conditionally, so a first run against a
+  // project that has none of these objects yet does not fail on the way in.
+  it("guards every removal with if exists", () => {
+    for (const s of stmts.filter((x) => x.startsWith("drop "))) {
+      expect(s).toContain("if exists");
+    }
   });
 
   it("writes to exactly one table, and that table is the bucket registry", () => {

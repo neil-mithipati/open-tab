@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
-import { extractStoragePath } from "@/lib/storage";
+import { boundStoragePath } from "@/lib/storage";
 import { receiptImageRetentionDays, retentionCutoff } from "@/lib/retention";
 
 // Deletes receipt photographs N days after their parse. N is
@@ -29,7 +29,9 @@ const MAX_RECEIPTS_PER_RUN = 500;
 // fails a hundred deletions rather than five hundred.
 const REMOVE_BATCH = 100;
 
-type DueRow = { id: string; image_url: string | null };
+// created_by comes back from the RPC (0026) so the stored pointer can be bound
+// to the receipt's own owner before anything is deleted.
+type DueRow = { id: string; created_by: string | null; image_url: string | null };
 
 // Constant-time compare that does not leak the secret's length through an
 // early return. Both sides are hashed to a fixed width first because
@@ -95,20 +97,31 @@ async function run(request: Request) {
   const all = (data ?? []) as DueRow[];
   const batch = all.slice(0, MAX_RECEIPTS_PER_RUN);
 
-  // A stored image_url that yields no storage path names nothing this job can
-  // delete, so its row is left alone and counted. Nulling the column would be
-  // the reflex — it stops the row being reselected — but if the value ever does
-  // name an object in a form this parser does not recognise, that would orphan
-  // the object permanently with no pointer left to find it by. A row that keeps
-  // reappearing in the count is a bug someone can still fix.
+  // A stored image_url that yields no BOUND storage path names nothing this job
+  // is allowed to delete, so its row is left alone and counted. Two different
+  // rows land here and the second is the important one:
+  //
+  //   * a pointer this parser cannot read at all;
+  //   * a pointer that reads fine but names an object outside
+  //     `<created_by>/<id>.<ext>` — i.e. someone else's photograph. image_url is
+  //     writable by the row's owner (receipts_all_creator), so this is a string
+  //     an attacker can choose, and deleting what it names would destroy a
+  //     victim's object on a schedule with no attacker action at the time. The
+  //     service key means storage RLS is not in this path; boundStoragePath is.
+  //
+  // Nulling the column instead would be the reflex — it stops the row being
+  // reselected — but if the value ever does name a legitimate object in a form
+  // this parser does not recognise, that would orphan the object permanently
+  // with no pointer left to find it by. A row that keeps reappearing in the
+  // count is a bug someone can still fix.
   const targets: { id: string; path: string }[] = [];
   let unparseable = 0;
   for (const row of batch) {
-    const path = extractStoragePath(row.image_url);
+    const path = boundStoragePath(row);
     if (!path) {
       unparseable += 1;
       console.error(
-        `[purge-receipt-images] receipt ${row.id} has an image_url with no recoverable storage path — skipping`
+        `[purge-receipt-images] receipt ${row.id} has an image_url that does not resolve to its own storage object — skipping`
       );
       continue;
     }

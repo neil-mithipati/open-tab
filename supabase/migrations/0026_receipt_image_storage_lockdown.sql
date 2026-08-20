@@ -16,8 +16,9 @@
 -- ── the path convention this all rests on ──────────────────────────────────
 --
 -- Objects are stored at `<user id>/<receipt id>.<ext>`, written by
--- CaptureStep.tsx and re-derived by the parse route's ownStoragePath(). Two
--- facts follow from it and both are used below:
+-- CaptureStep.tsx and re-derived by boundStoragePath() in src/lib/storage.ts,
+-- which every server-side reader of image_url goes through. Two facts follow
+-- from it and both are used below:
 --
 --   * the first path segment is the uploader, so a write can be pinned to
 --     auth.uid() without a table lookup;
@@ -31,10 +32,14 @@
 --
 -- ── additive only ─────────────────────────────────────────────────────────
 --
--- No table, column, index, row or function is dropped, and no application data
--- is read or rewritten. The two `drop policy if exists` lines below name
--- policies this migration creates on the very next statement; they exist so
--- re-running the file is safe, which is the same shape 0009 and 0019 used.
+-- No table, column, index or row is dropped, and no application data is read or
+-- rewritten. The three `drop policy if exists` lines below, and the one
+-- `drop function if exists`, name objects this migration recreates on the very
+-- next statement; they exist so re-running the file is safe, which is the same
+-- shape 0009 and 0019 used. (The function drop is not optional dressing: a
+-- `create or replace` cannot change a function's OUT columns, so without it a
+-- second run of this file against a project that already has an older
+-- receipt_images_due_for_purge would fail.)
 -- Turning the bucket private is a configuration change, not a data change, and
 -- it is the whole point of the task.
 --
@@ -126,8 +131,8 @@ create policy "receipt_images_select_owner_or_participant" on storage.objects
 -- WRITE. Both halves are required and they guard different things.
 --
 --   * the prefix check stops a user writing into another user's folder, which
---     is what the parse route's ownStoragePath() regex assumes when it decides
---     a stored path belongs to the caller;
+--     is what boundStoragePath() assumes when it decides a stored path belongs
+--     to the receipt it is recorded on;
 --   * the ownership check stops a user parking an object under their OWN prefix
 --     but named with someone else's receipt id — which the read policy above
 --     resolves by receipt id, so without this half an attacker could plant a
@@ -202,10 +207,19 @@ create policy "receipt_images_delete_own" on storage.objects
 -- and a future non-service caller must not be handed a way to read image_url
 -- across every account — the function returns only what the job needs and takes
 -- no user input beyond a timestamp.
-create or replace function public.receipt_images_due_for_purge(p_before timestamptz)
-returns table (id uuid, image_url text)
+--
+-- created_by is returned alongside the pointer, and it is a security control
+-- rather than a convenience. image_url is a column the row's owner can write
+-- anything into, so the job must not delete whatever object the string happens
+-- to name: it re-derives `<created_by>/<id>.<ext>` through boundStoragePath()
+-- and skips anything that does not match. Without the owner in this result the
+-- job would have nothing to bind against, and a receipt carrying a hand-written
+-- pointer at someone else's object would delete that object on a schedule.
+drop function if exists public.receipt_images_due_for_purge(timestamptz);
+create function public.receipt_images_due_for_purge(p_before timestamptz)
+returns table (id uuid, created_by uuid, image_url text)
 language sql security definer set search_path = public as $$
-  select r.id, r.image_url
+  select r.id, r.created_by, r.image_url
   from public.receipts r
   where r.image_url is not null
     and (
@@ -219,7 +233,7 @@ language sql security definer set search_path = public as $$
 $$;
 
 comment on function public.receipt_images_due_for_purge(timestamptz) is
-  'Receipts whose stored photo is older than the retention cutoff: parsed rows aged on the later of parsed_at and last_parse_attempt_at, never-parsed rows aged on created_at. Returns only rows that still have an image_url, so a purged receipt is not selected twice.';
+  'Receipts whose stored photo is older than the retention cutoff, with the owner the purge job binds the stored path to: parsed rows aged on the later of parsed_at and last_parse_attempt_at, never-parsed rows aged on created_at. Returns only rows that still have an image_url, so a purged receipt is not selected twice.';
 
 -- The purge scans for old rows that still hold an image. Almost every row is
 -- excluded by the partial predicate once the job has run a few times, so the
