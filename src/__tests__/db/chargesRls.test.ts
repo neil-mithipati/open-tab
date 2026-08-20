@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 // Migration 0019 gives `charges` the `with check` it never had. There is no
@@ -77,6 +77,22 @@ function creatorPolicy(file: string): string {
 
 const shipped = creatorPolicy("0008_rls_policies.sql");
 const fixed = creatorPolicy("0019_charges_with_check.sql");
+
+// `create or replace` means a function is whatever the last migration to define
+// it says, and save_receipt_state has been redefined four times since 0016
+// (0021, 0022, 0023, 0024). Naming a file here would leave this checking a
+// definition no database runs, which is what it was doing until 0024. The
+// newest definition is found instead, so the next migration to touch the
+// function is checked the day it lands rather than the day someone notices.
+function newestDefining(fn: string): string {
+  const found = readdirSync(migrations)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()
+    .filter((f) => flatten(read(f)).includes(`create or replace function public.${fn}(`))
+    .pop();
+  if (!found) throw new Error(`no migration defines ${fn}`);
+  return found;
+}
 
 describe("charges insert policy", () => {
   // The defect: 0008 supplied no `with check`, so Postgres reused the `using`
@@ -165,6 +181,9 @@ describe("0019 is additive", () => {
 // the RPC keeps working whichever way it is invoked.
 describe("save_receipt_state still writes rows the policy accepts", () => {
   const rpc = flatten(read("0016_participant_unique_and_save_rpc.sql"));
+  // The definition a deployed database actually runs, which is the one whose
+  // charges insert has to keep satisfying 0019's policy.
+  const live = flatten(read(newestDefining("save_receipt_state")));
 
   it("refuses a caller who does not own the receipt", () => {
     expect(rpc).toContain("select created_by into v_owner from receipts where id = p_receipt_id");
@@ -172,7 +191,7 @@ describe("save_receipt_state still writes rows the policy accepts", () => {
   });
 
   it("stamps the receipt it was given and the owner it looked up", () => {
-    expect(rpc).toMatch(
+    expect(live).toMatch(
       /insert into charges \(receipt_id, from_user_id, to_participant_id, amount, venmo_link, paid_at\) select p_receipt_id, v_owner,/
     );
   });
