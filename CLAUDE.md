@@ -150,6 +150,18 @@ The body holds acceptance criteria and any advice or findings accumulated during
 the task. Notion boards and the dashboard are read-only projections of this
 directory. When they disagree with `ledger/`, `ledger/` is right.
 
+Acceptance criteria are a markdown checklist, one criterion per line:
+
+```
+- [ ] shuffle deals a toast without repeating the last one shown
+- [x] toast fades out after 2s
+```
+
+Unchecked at creation. The orchestrator checks a box only once a reviewer has
+reported that specific criterion passing — never earlier, never on the
+builder's own say-so. This is what a Stop hook or `bin/audit` reads to show
+what's actually still outstanding on a task, rather than just its title.
+
 ### `review: skip` — the fast path
 
 `review: skip` bypasses the reviewer entirely so trivial changes ship at speed.

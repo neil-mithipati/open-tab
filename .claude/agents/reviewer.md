@@ -34,7 +34,9 @@ toward confirming.
 Question: **does this meet the acceptance criteria?**
 
 1. Read the task file, then the diff.
-2. Check each acceptance criterion individually. State pass or fail per criterion.
+2. Check each acceptance criterion individually — quote the checklist line, then
+   state pass or fail against it. The orchestrator checks boxes off from your
+   verdict, not from your prose, so be exact about which lines passed.
 3. Run the gates yourself. Do not take the builder's word for them. A builder
    reporting green gates that are not green is the single most important thing you
    catch.

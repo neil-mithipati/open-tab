@@ -1,8 +1,8 @@
 {
   "_comment": "Publisher destinations. Paste IDs from your Notion URLs. Leave a value null to skip that destination — the publisher writes to docs/ instead. Delete this file entirely to disable Notion and use the markdown fallback for everything.",
   "_how_to_get_ids": "Open the page or database in Notion, copy the URL. The ID is the 32-character hex string before any '?'. For https://notion.so/myspace/Docs-Board-abc123...def, the ID is abc123...def.",
-  "docs_database_id": null,
-  "kanban_database_id": null,
+  "docs_database_id": "3b9563b6a28680779548f4e966a6c82c",
+  "kanban_database_id": "329563b6a286804c9ef6c7d73c5d08bc",
   "scratch_page_id": null,
-  "use_scratch_only": true
+  "use_scratch_only": false
 }

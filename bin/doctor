@@ -47,6 +47,29 @@ else
     say_ok "no duplicate registrations"
   fi
 
+  # A command registered both under a wildcard/unmatched group AND a specific
+  # matcher, for the same event, fires TWICE per real event — once broadly,
+  # once specifically. This is not caught by the identical-object check above,
+  # since the two registrations are genuinely different objects (different
+  # matcher, usually different args). Found this way once already: a leftover
+  # "matcher": "*" group duplicated log-event.sh on every SubagentStart with a
+  # null agent_type, from before the per-role matcher approach was finished.
+  overlap=$(jq -r '
+    .hooks | to_entries[] | .key as $ev
+    | (.value | map(select((.matcher // "") == "" or (.matcher // "") == "*")
+                     | .hooks[].command)) as $broad
+    | (.value | map(select((.matcher // "") != "" and (.matcher // "") != "*")
+                     | .hooks[].command)) as $specific
+    | ($broad - ($broad - $specific)) | unique[]
+    | "\($ev): \(.)"
+  ' "$SETTINGS" 2>/dev/null)
+  if [ -n "$overlap" ]; then
+    say_bad "command registered both broadly and specifically — fires twice per event:"
+    printf '      %s\n' "$overlap"
+  else
+    say_ok "no wildcard/specific overlap"
+  fi
+
   for h in log-event.sh spend-cap.sh gate-tests.sh loop-until-done.sh parallel-cap.sh verify-trivial.sh protect-fleet.sh; do
     if jq -e --arg h "$h" '[.hooks | to_entries[] | .value[].hooks[].command]
         | map(select(test($h))) | length > 0' "$SETTINGS" >/dev/null 2>&1; then

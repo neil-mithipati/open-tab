@@ -14,7 +14,7 @@
 #   STALE       in-progress with no subagent currently running for its tier. The
 #               builder finished or died and the orchestrator never advanced it.
 #   DUPLICATE   two tasks with near-identical titles — decomposition ran twice.
-#   UNTOUCHED   claims files that do not exist, or exist and are unmodified.
+#   UNTOUCHED   a task marked done claims files that do not exist.
 #   NO-CRITERIA the body has no acceptance criteria, so nobody could satisfy it.
 #
 # Read-only. It prints findings and exits 0 — it never edits the ledger, because
@@ -127,12 +127,21 @@ for f in "$LEDGER"/*.md; do
       ;;
   esac
 
-  # claimed files that do not exist
-  awk '/^files:/{flag=1;next}/^[a-z_]+:/{flag=0}flag' "$f" 2>/dev/null \
-  | sed -n 's/^[[:space:]]*-[[:space:]]*//p' | while read -r p; do
-      [ -z "$p" ] && continue
-      [ -e "$ROOT/$p" ] || echo "  UNTOUCHED   $id — claims $p, which does not exist"
-    done >> /tmp/audit-files.$$ 2>/dev/null
+  # Claimed files that don't exist — only meaningful for a task marked done.
+  # A todo or in-progress task naturally hasn't created its files yet; flagging
+  # that was pure noise on every real backlog.
+  if [ "$st" = "done" ]; then
+    awk '
+      /^files:/ { flag=1; next }
+      /^---/    { flag=0 }
+      /^[a-z_]+:/ { flag=0 }
+      flag
+    ' "$f" 2>/dev/null \
+    | sed -n 's/^[[:space:]]*-[[:space:]]*//p' | while read -r p; do
+        [ -z "$p" ] && continue
+        [ -e "$ROOT/$p" ] || echo "  UNTOUCHED   $id — marked done, claims $p, which does not exist"
+      done >> /tmp/audit-files.$$ 2>/dev/null
+  fi
 done
 
 [ -f /tmp/audit-files.$$ ] && findings="$findings

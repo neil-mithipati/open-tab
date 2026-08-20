@@ -42,7 +42,7 @@ render() {
   printf 'refreshing every %ss · ctrl-c to stop\n\n' "$INTERVAL"
 
   # ---------- per-agent status ----------
-  printf '\033[1m%-15s %-9s %-8s\033[0m\n' "ROLE" "STATUS" "LANE"
+  printf '\033[1m%-15s %-9s %-16s %-8s\033[0m\n' "ROLE" "STATUS" "TASK" "LANE"
 
   if [ -s "$EVENTS" ]; then
     running_json=$(jq -rsc '
@@ -80,6 +80,38 @@ render() {
     done
   fi
 
+  # Task ids currently in-progress, keyed by tier. Builder rows match exactly
+  # via the tier field, which is authoritative. reviewer-light/reviewer/
+  # publisher have no such field — nothing in the ledger records which pipeline
+  # stage an in-progress task is at — so those rows fall back to "any
+  # in-progress task" as candidates, not a confirmed 1:1 pairing.
+  inprog_by_tier=""
+  inprog_all=""
+  if [ -d "$LEDGER" ]; then
+    for f in "$LEDGER"/*.md; do
+      [ -e "$f" ] || continue
+      st=$(sed -n 's/^state:[[:space:]]*//p' "$f" | head -1)
+      [ "$st" = "in-progress" ] || continue
+      tid=$(sed -n 's/^id:[[:space:]]*//p'   "$f" | head -1)
+      tr=$(sed -n 's/^tier:[[:space:]]*//p'  "$f" | head -1)
+      tid="${tid:-$(basename "$f" .md)}"
+      inprog_by_tier="$inprog_by_tier|${tr:-?}:$tid"
+      inprog_all="$inprog_all${inprog_all:+,}$tid"
+    done
+  fi
+
+  task_for_role() {
+    local role="$1"
+    case "$role" in
+      builder-light|builder|builder-deep)
+        printf '%s' "$inprog_by_tier" | tr '|' '\n' | awk -F: -v t="$role" '$1==t{print $2}' | paste -sd, -
+        ;;
+      reviewer-light|reviewer|publisher)
+        printf '%s' "$inprog_all"
+        ;;
+    esac
+  }
+
   for role in $ROLES; do
     lane=$(printf '%s' "$running_json" | jq -r --arg r "$role" '.[] | select(.type==$r) | .lane' 2>/dev/null | head -1)
     count=$(printf '%s' "$running_json" | jq -r --arg r "$role" '.[] | select(.type==$r) | .running' 2>/dev/null | head -1)
@@ -87,18 +119,23 @@ render() {
     is_blocked=no
     case " $blocked_tiers " in *" $role "*) is_blocked=yes ;; esac
 
+    task=$(task_for_role "$role")
+    [ -z "$task" ] && task="-"
+    # Truncate so a long comma list doesn't blow out the row width.
+    [ "${#task}" -gt 16 ] && task="${task:0:14}.."
+
     running_label="running"
     [ -n "$count" ] && [ "$count" -gt 1 ] 2>/dev/null && running_label="running ×$count"
 
     if [ "$is_running" = "true" ] && [ "$is_blocked" = "yes" ]; then
-      printf '%-15s \033[32m%-9s\033[0m %-8s\n' "$role" "$running_label" "${lane:--}"
-      printf '%-15s \033[31m%-9s\033[0m %-8s\n' "" "blocked" "(ledger)"
+      printf '%-15s \033[32m%-9s\033[0m %-16s %-8s\n' "$role" "$running_label" "$task" "${lane:--}"
+      printf '%-15s \033[31m%-9s\033[0m %-16s %-8s\n' "" "blocked" "-" "(ledger)"
     elif [ "$is_running" = "true" ]; then
-      printf '%-15s \033[32m%-9s\033[0m %-8s\n' "$role" "$running_label" "${lane:--}"
+      printf '%-15s \033[32m%-9s\033[0m %-16s %-8s\n' "$role" "$running_label" "$task" "${lane:--}"
     elif [ "$is_blocked" = "yes" ]; then
-      printf '%-15s \033[31m%-9s\033[0m %-8s\n' "$role" "blocked" "(ledger)"
+      printf '%-15s \033[31m%-9s\033[0m %-16s %-8s\n' "$role" "blocked" "-" "(ledger)"
     else
-      printf '%-15s \033[90m%-9s\033[0m %-8s\n' "$role" "idle" "-"
+      printf '%-15s \033[90m%-9s\033[0m %-16s %-8s\n' "$role" "idle" "-" "-"
     fi
   done
 

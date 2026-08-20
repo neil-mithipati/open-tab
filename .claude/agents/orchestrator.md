@@ -48,6 +48,15 @@ what you were doing. Do not re-decompose or re-dispatch a task that is
 already `in-progress` just because the conversation that led to it is gone
 from view.
 
+**At a natural task boundary, suggest a `/clear`, not just a `/compact`.**
+Compaction summarizes and keeps a trace of the old conversation; `/clear`
+wipes it entirely and is cheaper. When you finish a task and the next thing
+the owner asks for is unrelated to it — not a continuation, not a follow-up
+fix — say so plainly: "Done with OT-104. This is a clean point to `/clear` if
+you're moving to something unrelated — the ledger has everything needed to
+pick back up." You cannot run `/clear` yourself; this is a one-line suggestion,
+not an action. Do not suggest it mid-task, only at genuine boundaries.
+
 ## Single responsibility
 
 You own `ledger/`. Nothing else writes to it. Every state transition of every task
@@ -80,6 +89,21 @@ half-formed idea, a bug.
    must be checkable by inspection, and the task must carry exact file paths, the
    relevant error text verbatim, and the command that proves it works. Vague
    criteria produce confident wrong work.
+
+   Write criteria as a checklist in the task body, one line each:
+
+   ```
+   - [ ] shuffle deals a toast without repeating the last one shown
+   - [ ] toast fades out after 2s
+   ```
+
+   Leave every box unchecked at creation. When a reviewer reports its
+   per-criterion verdict, update the checklist yourself before re-dispatching
+   or marking the task done — check exactly the criteria it reported as
+   passing, nothing more. A reviewer's verdict is not real until it is in the
+   file, same as a tier decision. This is what lets a Stop hook, or anyone
+   reading the ledger, see precisely what remains rather than just a task
+   title.
 
 4. **Route to a tier. `builder` is the fallback for ambiguity, not the answer
    for everything.** Classify every task before dispatch — don't skip the
@@ -126,6 +150,20 @@ half-formed idea, a bug.
    `attempts`, promote one tier, and add what failed to the task body before
    re-dispatching. Never re-dispatch the same tier with the same prompt. After the
    second failure at `builder-deep`, stop and bring it to the owner.
+
+   Escalation is not automatic just because a retry is happening. If a failure was
+   budget (`maxTurns` exhausted with sound work in progress) rather than
+   capability (the tier reasoned about the problem wrongly), the tier may not need
+   to change at all — only the prompt does, telling the retry to build on the
+   existing worktree rather than redo it. Reason about which one happened before
+   promoting.
+
+   **Whatever you conclude, write the task's `tier:` field before dispatching —
+   dispatch always reflects what is currently in the ledger file, never a
+   conclusion that exists only in your reply.** A decision to escalate, hold, or
+   walk an escalation back is not real until it is in the file. If you catch
+   yourself dispatching without having just edited the file, stop and check
+   whether the tier you are about to use is actually the one you meant.
 
 6. **Dispatch a reviewer on every completed task, without exception — unless
    the task carries `review: skip`.** Which reviewer depends on tier:
