@@ -27,13 +27,104 @@
 | OT-124 | Owner save erases `joined_via_share`, hiding real claimers from the owner's view | Done | — (reviewed MERGE, merged; commit `791d027` line, main 317/317. `joined_via_share` and `joined_at` now survive an owner save) |
 | OT-125 | the fleet's own agent cards and tooling are untracked or uncommitted in git | Done | — (reviewed MERGE, merged; main 304/304. `reviewer-light.md` and `bin/doctor` now tracked, executable bit preserved. Merge itself was blocked by the very problem the task fixed — main's untracked copies had to be reconciled by hand, not discarded) |
 | OT-126 | detect-and-repair can discard a genuine revert; staged blob not captured in the patch | Done | — (reviewed MERGE against 13 fixture repos, merged; main 304/304. A deliberate revert-to-an-earlier-value now refuses instead of being silently discarded; `MM` paths refuse. Tier-routing lesson: `finish-worktree` changes should route `builder-deep`, since the script performs an irreversible action regardless of diff size. Two residual holes routed to OT-129) |
-| OT-127 | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it | Blocked | closed as discarded by the OT-131 owner decision (option 1, kit adopted). its two commits (`0fb3884`, `ca80141`) on `task/OT-127` were built and reviewed by no one — the reviewer died with the session — and the base they were built against no longer exists in the working tree. branch and worktree are deliberately preserved, not cleaned up. see the "Closed" section in `ledger/OT-127.md` |
+| OT-127 | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it | Blocked | upstream kit work, not blocked on any owner decision. the OT-131 decision was made (option 1, keep the kit) and this branch's two commits were built against the local parallel-cap.sh the kit replaced. .claude/hooks/protect-fleet.sh now blocks every agent in this fleet, orchestrator included, from writing .claude/hooks — so no agent here can fix it regardless of tier or prompt. the bug is still live: an agent killed on maxTurns emits no SubagentStop and holds a cap slot until STALE_AFTER_SECONDS=3600. branch task/OT-127 and its worktree are deliberately preserved as the only working fix that exists anywhere. |
 | OT-132 | a parse outage is invisible to the user — no message on any non-429 failure | Done | — (carved out of OT-129 section B, items 1, 3, 5, 6. reviewed clean, merged as `19901ac`, worktree and branch removed) |
 | OT-128 | review the unreviewed kit install change by change and commit what survives | Done | — (reviewed MERGE, merged; main 304/304 across 23 files. `reviewer.md`'s two competing versions reconciled by hand — OT-122's merged mutation-guard paragraph verified byte-identical, the install's separate +6/-1 delta applied on top. Two lows routed to OT-129) |
-| OT-129 | backlog from the OT-123, OT-124 and OT-126 reviews | Blocked | re-scoped after the OT-131 decision (option 1, kit adopted). section A is permanently undispatchable — it targets `bin/finish-worktree`, and the kit's `protect-fleet.sh` now blocks every agent, orchestrator included, from editing `bin/*`. section B items 1, 3, 5, 6 shipped via OT-132 (merged `19901ac`); section B item 2 and section C remain here, still dispatchable |
+| OT-129 | backlog from the OT-123, OT-124 and OT-126 reviews | Todo | — (unblocked: no owner decision remains outstanding. section A is permanently declined — targets `bin/finish-worktree`, blocked by `protect-fleet.sh` for every agent including the orchestrator; that declination satisfies acceptance criterion 1. remaining live work is B4, C1, C2, none blocked on a decision, each waiting on a sequence: C1 and C2 behind OT-133, B4 behind OT-134) |
 | OT-130 | an owner save deletes any claimer who joined since the client loaded the page | Done | — (full reviewer passed all six criteria, no high findings; merged to main as `420a8d3`, worktree and branch removed) |
 | OT-131 | the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log | Done | — (owner chose option 1, kit adopted, committed as `02a0b6e`) |
-| OT-133 | a late claim is destroyed by the item re-mint when the claimer IS in the payload | Todo | — (filed from the OT-130 reviewer's medium finding; reproduced against real Postgres, explicitly disclosed by the OT-130 builder as out of scope. read `ledger/OT-130.md` first, especially the review section and migration 0022) |
+| OT-133 | a late claim is destroyed by the item re-mint when the claimer IS in the payload | In Progress | — (filed from the OT-130 reviewer's medium finding; reproduced against real Postgres, explicitly disclosed by the OT-130 builder as out of scope. attempt 2 built: three commits on `task/OT-133`, gates pass, 364/364 tests, new migration 0023 verified against real Postgres via PGlite. now under full review) |
+| OT-134 | a transient gemini outage permanently burns a receipt's only parse — no retry affordance | In Progress | — (split out of OT-129 section B item 2, dispatched at builder-deep. touches the data model and the replay hole OT-123 closed, so it needed its own file and reasoning rather than a grouped commit. must not reopen the replay hole `parsed_at` closes; do not touch `save_receipt_state`, which OT-133 owns) |
+
+## Sync notes (2026-08-19, cycle 16)
+
+Reconciled against `ledger/OT-129.md`, `ledger/OT-127.md`. Matched on id — no
+cards deleted.
+
+Two changes this batch:
+
+- **OT-129** Blocked → **Todo**, `blocked_reason` cleared to match frontmatter
+  (`null`). Section A was permanently declined — it targets
+  `bin/finish-worktree`, which `protect-fleet.sh` denies to every agent, and
+  that declination satisfies acceptance criterion 1. Remaining live work is
+  B4, C1, C2, none of it blocked on a decision — each is waiting on a
+  sequence: C1 and C2 behind OT-133, B4 behind OT-134.
+- **OT-127** stays **Blocked**, reason rewritten to match the ledger's current
+  wording. Previously cited a pending OT-131 owner decision; that decision was
+  made (option 1, kit adopted). The accurate reason now: this is upstream kit
+  work — `protect-fleet.sh` blocks every agent including the orchestrator from
+  writing `.claude/hooks`, so no agent in this fleet can fix it. The bug is
+  still live.
+
+Left alone, no drift: all other cards checked against the ledger and match
+the board already.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+Notion not reachable this cycle: no `mcp__notion__*` tools present in this
+session's tool list. Falling back to `docs/kanban.md` per the fallback rule —
+this is the expected outcome, not a failure.
+
+## Sync notes (2026-08-19, cycle 15)
+
+Reconciled against `ledger/OT-134.md`, `ledger/OT-133.md`, `ledger/OT-129.md`.
+Matched on id — no cards deleted.
+
+Three changes this batch:
+
+- **OT-134** created, **In Progress**, `builder-deep` per frontmatter. Split out
+  of OT-129 section B item 2 — a transient Gemini outage permanently burns a
+  receipt's only parse, no retry affordance. Needs its own reasoning about the
+  replay hole OT-123 closed, so it got its own file rather than a grouped
+  commit. Explicitly barred from touching `save_receipt_state`, which OT-133
+  owns.
+- **OT-133** stays **In Progress**, note updated. Ledger records attempt 2 as
+  built and gates-green (364/364 tests, migration 0023 verified against real
+  Postgres via PGlite) and now under full review — not yet done, no reviewer
+  verdict recorded.
+- **OT-129** stays **Blocked**, reason rewritten to match current frontmatter
+  and body. Section B item 2 no longer sits here — it moved to OT-134. Blocked
+  reason now names what's actually still held: section A (undispatchable,
+  `protect-fleet.sh` blocks `bin/*`), section B item 4 (low, pre-existing), and
+  section C (C1, C2 — both waiting on OT-133).
+
+Notion not reachable this cycle: no `mcp__notion__*` tools present in this
+session's tool list, despite `.claude/notion.json` now carrying real
+`docs_database_id` and `kanban_database_id` values with
+`use_scratch_only: false`. This is a connection problem, not a configuration
+problem — the config points at real boards, but the MCP server named `notion`
+either isn't attached to this session or its tools aren't granted. Falling
+back to `docs/kanban.md` per the fallback rule. Worth flagging to the owner
+again since the config now looks fully ready and the only missing piece is the
+tool grant.
+
+## Sync notes (2026-08-19, cycle 14)
+
+Reconciled against `ledger/*.md`, all 34 files read. Card-by-card, matched on
+id — no cards deleted.
+
+One transition this batch:
+
+- **OT-133** Todo → **In Progress**. `attempts` moved 0 → 1, `tier:
+  builder-deep`. Branch `task/OT-133`, worktree `../wt-OT-133`. Recorded as
+  `todo` mid-sync last cycle; the ledger now shows it dispatched.
+
+Left alone, no drift: OT-100–OT-132 all checked against the ledger and match
+the board already — OT-127 and OT-129 remain Blocked with reasons unchanged
+from cycle 13's wording; OT-130, OT-131, OT-132 remain Done.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+**Notion attempted this cycle.** `.claude/notion.json` now sets
+`kanban_database_id` and `docs_database_id` and `use_scratch_only: false` —
+this looked like a real target. But no `mcp__notion__*` tools are present
+anywhere in this session's tool list. That is a connection problem, not a
+configuration problem: the config is ready, the MCP server named `notion`
+either isn't attached to this session or its tools aren't granted. Falling
+back to `docs/kanban.md` per the fallback rule, and flagging this explicitly
+so the owner can check the MCP connection rather than the config file.
 
 ## Sync notes (2026-08-19, cycle 13)
 
