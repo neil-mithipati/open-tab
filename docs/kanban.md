@@ -24,12 +24,178 @@
 | OT-121 | parallel-cap third fail-open on an unopenable log; remove the wildcard SubagentStart | Done | — (reviewed MERGE against fixtures with HEAD as control, merged; main 304/304. Unreadable log, directory-at-path, and unsearchable `.claude` all now DENY. Wildcard `SubagentStart` confirmed removed — it only ever existed in main's uncommitted working copy, not in committed HEAD. A fifth fail-open, in `deny()` itself, routed to OT-127) |
 | OT-122 | read-only agents can still mutate a worktree through Bash git commands | Done | — (reviewed MERGE against 12 fixture repos, merged; main 292/292. Detect-and-repair chosen over a PreToolUse hook; all seven refusal shapes hold, all-or-nothing confirmed. Five findings routed to OT-126) |
 | OT-123 | Parse replay is still open on an empty parse — needs a `parsed_at` marker written before the model call | Done | — (reviewed MERGE, merged; main 304/304. HIGH from OT-115 now fully closed — five concurrent requests for one receipt cost one Gemini call. Ships as migration 0020. **Migration 0020 must be applied BEFORE this code deploys** — applied late, every parse errors and scanning is down for every user, since the claim deliberately fails closed. Six findings routed to OT-129) |
-| OT-124 | Owner save erases `joined_via_share`, hiding real claimers from the owner's view | In Progress | — (builder result on commit `791d027`, UNREVIEWED: lint/typecheck clean, 317/317. In review. attempts 1) |
+| OT-124 | Owner save erases `joined_via_share`, hiding real claimers from the owner's view | Done | — (reviewed MERGE, merged; commit `791d027` line, main 317/317. `joined_via_share` and `joined_at` now survive an owner save) |
 | OT-125 | the fleet's own agent cards and tooling are untracked or uncommitted in git | Done | — (reviewed MERGE, merged; main 304/304. `reviewer-light.md` and `bin/doctor` now tracked, executable bit preserved. Merge itself was blocked by the very problem the task fixed — main's untracked copies had to be reconciled by hand, not discarded) |
 | OT-126 | detect-and-repair can discard a genuine revert; staged blob not captured in the patch | Done | — (reviewed MERGE against 13 fixture repos, merged; main 304/304. A deliberate revert-to-an-earlier-value now refuses instead of being silently discarded; `MM` paths refuse. Tier-routing lesson: `finish-worktree` changes should route `builder-deep`, since the script performs an irreversible action regardless of diff size. Two residual holes routed to OT-129) |
-| OT-127 | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it | In Progress | — (builder-deep running, attempts 1. Third live occurrence of a turn-exhausted agent wedging a slot, cleared by hand each time. Also carries the fifth fail-open in `deny()` itself) |
-| OT-128 | review the unreviewed kit install change by change and commit what survives | In Progress | — (builder running, attempts 1. Reconciling two versions of `reviewer.md` — OT-122's merged read-only paragraph plus the install's separate +6/-1 delta) |
-| OT-129 | backlog from the OT-123, OT-124 and OT-126 reviews | Blocked | held at the lane spend cap ($87.57 of $100.00), not by any dependency; filed during wind-down, never dispatched, attempts stays 0. Lowest priority of the four open tasks — nothing here loses data and two of the `finish-worktree` holes are unreachable in this repo's current path set |
+| OT-127 | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it | Blocked | closed as discarded by the OT-131 owner decision (option 1, kit adopted). its two commits (`0fb3884`, `ca80141`) on `task/OT-127` were built and reviewed by no one — the reviewer died with the session — and the base they were built against no longer exists in the working tree. branch and worktree are deliberately preserved, not cleaned up. see the "Closed" section in `ledger/OT-127.md` |
+| OT-132 | a parse outage is invisible to the user — no message on any non-429 failure | Done | — (carved out of OT-129 section B, items 1, 3, 5, 6. reviewed clean, merged as `19901ac`, worktree and branch removed) |
+| OT-128 | review the unreviewed kit install change by change and commit what survives | Done | — (reviewed MERGE, merged; main 304/304 across 23 files. `reviewer.md`'s two competing versions reconciled by hand — OT-122's merged mutation-guard paragraph verified byte-identical, the install's separate +6/-1 delta applied on top. Two lows routed to OT-129) |
+| OT-129 | backlog from the OT-123, OT-124 and OT-126 reviews | Blocked | re-scoped after the OT-131 decision (option 1, kit adopted). section A is permanently undispatchable — it targets `bin/finish-worktree`, and the kit's `protect-fleet.sh` now blocks every agent, orchestrator included, from editing `bin/*`. section B items 1, 3, 5, 6 shipped via OT-132 (merged `19901ac`); section B item 2 and section C remain here, still dispatchable |
+| OT-130 | an owner save deletes any claimer who joined since the client loaded the page | Done | — (full reviewer passed all six criteria, no high findings; merged to main as `420a8d3`, worktree and branch removed) |
+| OT-131 | the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log | Done | — (owner chose option 1, kit adopted, committed as `02a0b6e`) |
+| OT-133 | a late claim is destroyed by the item re-mint when the claimer IS in the payload | Todo | — (filed from the OT-130 reviewer's medium finding; reproduced against real Postgres, explicitly disclosed by the OT-130 builder as out of scope. read `ledger/OT-130.md` first, especially the review section and migration 0022) |
+
+## Sync notes (2026-08-19, cycle 13)
+
+Reconciled against `ledger/*.md`, all 34 files read. Card-by-card, matched on
+id — no cards deleted. This batch was catching up several transitions at once:
+the prior sync attempt was denied by the parallel cap, so the board had gone
+stale across five task changes.
+
+Moves and creates this batch:
+
+- **OT-130** In Progress → **Done**. Full reviewer passed all six criteria, no
+  high findings. Merged to main as `420a8d3`; worktree and branch removed.
+- **OT-132** Todo → **Done**. Reviewed clean, merged as `19901ac`; worktree
+  and branch removed.
+- **OT-131** Blocked → **Done**. Owner answered the decision — option 1, keep
+  the kit — and the local fixes were discarded rather than restored. Committed
+  as `02a0b6e`.
+- **OT-127** stays **Blocked**, reason rewritten. This is now closed as
+  discarded, not merely waiting: the OT-131 decision means its branch
+  (`0fb3884`, `ca80141`) targets a `parallel-cap.sh` that no longer exists and
+  will never merge. Branch and worktree are deliberately preserved per
+  `ledger/OT-127.md`'s "Closed" section — they are the only working fix for
+  the bug anywhere, kept for whenever it's corrected upstream. Duplicate old
+  row for OT-131 (mistakenly left as two rows after cycle 12's edit) removed;
+  one row per id, matching the reconcile-don't-append rule.
+- **OT-129** stays **Blocked**, reason rewritten for the same decision.
+  Section A (`bin/finish-worktree`) is now permanently undispatchable — the
+  kit's `protect-fleet.sh` blocks every agent from editing `bin/*`, so no
+  builder can pick this up regardless of priority. Section B items 1, 3, 5, 6
+  are done via OT-132. Section B item 2 and section C are still open and still
+  dispatchable.
+- **OT-133** created, **Todo**, `builder-deep` per frontmatter. Filed from the
+  OT-130 reviewer's medium finding — a late claim destroyed by the item
+  re-mint when the claimer is already in the payload. Reproduced against real
+  Postgres; explicitly out of OT-130's own scope.
+
+Left alone, no drift: OT-100–OT-126, OT-128 all checked against the ledger and
+match the board already.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools are present in
+this session, and `.claude/notion.json` has `use_scratch_only: true` with
+`kanban_database_id: null`. Per the fallback rule this is expected, not an
+error — writing to `docs/kanban.md` is the correct outcome, not a degraded
+one.
+
+## Sync notes (2026-08-19, cycle 12)
+
+Reconciled against `ledger/*.md`, all 33 files read. Card-by-card, matched on
+id — no cards deleted.
+
+The dispatch that triggered this sync described OT-132 as moving to
+`in-progress`. By the time the ledger was read, it had already moved again —
+`ledger/OT-132.md` changed on disk mid-sync, after this reconciliation had
+started. The ledger's current state, not the dispatch note, is what the board
+reflects below; that is the whole point of "the ledger wins."
+
+Moves and confirmed transitions this batch:
+
+- **OT-130** — stays **In Progress**. `attempts` moved 0 → 1. The ledger
+  records that attempt 1 died with its orchestrator session, not on the
+  problem: uncommitted work survived in `../wt-OT-130`
+  (`saveReceipt.ts`, a new test file, migration 0022) and was re-dispatched to
+  builder-deep with instructions to read and judge that work rather than
+  restart, and to commit on `task/OT-130` before running gates this time.
+- **OT-132** In Progress → **Todo**. Attempt 1 (`builder`) exhausted turns
+  with no Result block, nothing committed. Escalated to `builder-deep` for
+  attempt 2, but that dispatch was DENIED by the parallel cap: OT-130's one
+  live `builder-deep` is being counted twice, because the kit re-install's
+  restored wildcard `SubagentStart` matcher double-logs each start and the
+  cap groups by `agent_type` rather than `agent_id` — the same double-count
+  bug OT-114 fixed, now regressed by the kit install and held on OT-131. Four
+  files sit uncommitted in `../wt-OT-132`, unattended. Card moved back to
+  Todo since nothing is currently running against this task.
+
+Left alone, no drift: OT-100–OT-129, OT-131 all checked against the ledger and
+match the board already — OT-127, OT-129, and OT-131 remain Blocked with
+reasons unchanged from cycle 11's wording.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools are present in
+this session, and `.claude/notion.json` has `use_scratch_only: true` with
+`kanban_database_id: null`. Per the fallback rule this is expected, not an
+error — writing to `docs/kanban.md` is the correct outcome, not a degraded
+one.
+
+## Sync notes (2026-08-19, cycle 11)
+
+Reconciled against `ledger/*.md`, all 33 files read. Card-by-card, matched on
+id — no cards deleted.
+
+Moves this batch:
+
+- **OT-127** In Progress → **Blocked**. Was mislabelled last cycle — its
+  frontmatter reads `state: blocked` and has since the "HELD" note was added.
+  The work is built and committed (`0fb3884`, `ca80141`) but unreviewed (its
+  reviewer session died mid-review) and now additionally held on the OT-131
+  owner decision, since the kit re-install replaced all three of this task's
+  files. Blocked reason rewritten to match the ledger's current wording.
+- **OT-129** left at Blocked, note updated. `blocked_reason` now records the
+  split into OT-132 — section B items 1, 3, 5, 6 carved out and dispatched;
+  section A (held on OT-131) and section B item 2 plus section C remain here.
+- **OT-132** created, `in-progress` per frontmatter. Carved out of OT-129
+  section B, items 1, 3, 5, 6 — unaffected by the OT-131 hold since it touches
+  `src/` only. Dispatched to a builder.
+
+Left alone, no drift: OT-100–OT-126, OT-128, OT-130, OT-131 all checked
+against the ledger and match the board already.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools are present in
+this session, and `.claude/notion.json` has `use_scratch_only: true` with
+`kanban_database_id: null`. Per the fallback rule this is expected, not an
+error — writing to `docs/kanban.md` is the correct outcome, not a degraded
+one.
+
+## Sync notes (2026-08-19, cycle 10)
+
+Reconciled against `ledger/*.md`, all 32 files read in full. Card-by-card,
+matched on id — no cards deleted.
+
+Moves this batch:
+
+- **OT-124** In Progress → **Done**. Board had drifted — the ledger already
+  read `state: done` (reviewed MERGE, main 317/317) while the board still
+  showed the prior cycle's unreviewed In Progress note. Reconciled to match
+  the ledger.
+- **OT-128** In Progress → **Done**. Same drift shape as OT-124 — ledger
+  already `state: done` (reviewed MERGE, main 304/304 across 23 files), board
+  had not been updated. Reconciled.
+- **OT-127** left at In Progress, but its note rewritten. Frontmatter is still
+  `in-progress`; the ledger body records the work as built and committed
+  (`0fb3884`, `ca80141`) but unreviewed — its reviewer session ended before
+  returning findings — and now additionally superseded by the uncommitted kit
+  re-install, held pending the OT-131 owner decision. Card status unchanged,
+  reason text updated to carry both facts.
+- **OT-129** left at Blocked. `blocked_reason` changed in the ledger from a
+  spend-cap figure to the OT-131 owner decision — carried onto the card
+  verbatim in substance.
+- **OT-130** created, `in-progress` per frontmatter. Was `blocked` at the last
+  sync (spend wind-down); the ledger records the wind-down as lifted and the
+  task dispatched to builder-deep with no scope changes.
+- **OT-131** created, `blocked` per frontmatter. New task: the kit re-install
+  regressed five merged fleet fixes and needs an owner decision, not a
+  builder — `protect-fleet.sh` blocks every agent from touching the files in
+  question. Blocked reason carried from the ledger.
+
+Left alone, no drift: OT-100–OT-123, OT-125, OT-126 all checked against the
+ledger and left as Done — no changes.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools are present in
+this session, and `.claude/notion.json` has `use_scratch_only: true` with
+`kanban_database_id: null`. Per the fallback rule this is expected, not an
+error — writing to `docs/kanban.md` is the correct outcome, not a degraded one.
 
 ## Sync notes (2026-08-19, cycle 9)
 
@@ -177,3 +343,25 @@ one.
   `create policy` step failed, the old policy would be left dropped — fails
   closed, and the Supabase CLI wraps migrations in a transaction anyway, so
   this is a documentation note more than a defect (LOW).
+- (from OT-130 review) `reopenEditing` disarms the OT-130 join-delete guard:
+  `v_claiming` is false at `status='open'`, so a join committing in the gap
+  between `joinReceipt` writing `'shared'` and `reopenEditing` writing
+  `'open'` is deletable by the next save (LOW).
+
+## Publisher notes (2026-08-19, document mode)
+
+Documented two merges: OT-132 (`19901ac`) and OT-130 (`420a8d3`). Both moved to
+Done above, matching their ledger `state: done`. README tradeoffs and key
+features updated, one new learning added (id re-minting vs. row survival),
+`docs/features.md` got one row per feature.
+
+OT-130's medium finding was already filed as its own ledger task, OT-133, in
+`todo` — not duplicated here. Its two low findings: one (`reopenEditing`
+disarms the guard) is genuinely unfiled and added to the backlog list above;
+the other (a refused save stranding unsaved edits) is the task's own
+sanctioned trade-off, not a defect, so it is not filed.
+
+Notion was not reachable: no `mcp__notion__*` tools present, and
+`.claude/notion.json` has `use_scratch_only: true` with both database ids
+null. Per the fallback rule this is expected — writing to `docs/` is the
+correct outcome, not a degraded one.
