@@ -119,6 +119,27 @@ role, for any stated reason:
 These are denials, not approval requests. Do not ask for permission to do them;
 find another route or mark the task blocked.
 
+### Fleet-tooling tasks — the maintenance grant
+
+Fleet infrastructure (`.claude/hooks/`, `.claude/agents/`, `settings.json`,
+`gates.json`, `CLAUDE.md`, `bin/`) is not editable by any agent, on any route —
+`protect-fleet.sh` covers Edit/Write, `deny-irreversible.sh` covers Bash. Reads
+always pass; only writes are denied.
+
+The exception is a maintenance grant, set only by the owner. A fleet-tooling
+task (fixing a hook, patching a `bin/` script) becomes dispatchable when the
+owner lists its task id in the **main checkout's** `.claude/gates.json`:
+
+```json
+{ "maintenance": ["OT-129A"] }
+```
+
+The grant applies only inside that task's worktree (`wt-OT-129A`). It never
+extends to `gates.json` itself, `protect-fleet.sh`, or `deny-irreversible.sh` —
+an agent cannot widen its own grant. If a fleet change is needed and no grant
+exists, mark the task blocked and say exactly which file needs the exception;
+do not route around the denial.
+
 ## The ledger
 
 `ledger/` is the source of truth for work state. One file per task,

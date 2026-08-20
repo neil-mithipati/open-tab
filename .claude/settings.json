@@ -292,6 +292,20 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
+            "args": [
+              "--heartbeat"
+            ]
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

@@ -4,7 +4,15 @@
 # inspects the whole command string itself.
 
 input=$(cat)
-cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
+cmd=$(jq -r '.tool_input.command // ""' <<<"$input" 2>/dev/null)
+# If jq is missing or broken, cmd extracts empty and every deny below would
+# silently allow — the input-side twin of the output bug fixed in deny(). Fall
+# back to matching against the raw JSON payload: patterns still hit inside the
+# encoded string, and an occasional false deny in this degraded state is the
+# right failure direction for a deny hook.
+if [ -z "$cmd" ] && [ -n "$input" ]; then
+  cmd="$input"
+fi
 
 # Pure-bash JSON string escape — used by deny() below so a deny decision can
 # still reach stdout even if jq itself fails.
@@ -51,15 +59,69 @@ deny() {
 # here. This does not claim to catch every possible way Bash could mutate a
 # file — that is not a closeable set — but it closes the obvious, common
 # ones rather than leaving Bash as a completely unguarded path.
-case "$cmd" in
-  *".claude/hooks/"*|*".claude/agents/"*|*".claude/settings.json"*|*".claude/gates.json"*|*"CLAUDE.md"*|*" bin/"*|*"./bin/"*)
-    case "$cmd" in
-      *"git checkout"*|*"git restore"*|*"git apply"*|*"git stash pop"*|*"git stash apply"*|*"git cherry-pick"*|*"sed -i"*|*"sed --in-place"*|*"cp "*|*"mv "*|*"tee "*|*">"*|*"perl -i"*)
-        deny "Bash-based writes to fleet infrastructure (hooks, agent cards, settings, CLAUDE.md, bin/) are denied — same boundary as protect-fleet.sh, enforced here because git and shell redirection don't go through the Edit or Write tools. Ask the owner to make this change upstream and re-run add-fleet."
-        ;;
-    esac
-    ;;
-esac
+# MAINTENANCE OVERRIDE. Fleet-tooling tasks (fixing a hook, patching bin/) are
+# by definition writes to the protected surface, which made them undispatchable
+# by any agent. The owner grants an exception per task by listing the task id
+# in the MAIN checkout's .claude/gates.json:
+#
+#   { "maintenance": ["OT-129A"] }
+#
+# The override holds only when this session's project dir is that task's
+# worktree (wt-<ID>). gates.json is read from the main checkout — resolved via
+# git-common-dir — so the flag is set once, uncommitted, and honoured in every
+# worktree, and an agent cannot grant itself the flag by writing a gates.json
+# into its own worktree. gates.json itself and the two guard hooks stay denied
+# even under the override, so a maintenance agent cannot widen its own grant.
+maint_active() {
+  local base id common main gates
+  base=$(basename "${CLAUDE_PROJECT_DIR:-$PWD}")
+  case "$base" in wt-*) id="${base#wt-}" ;; *) return 1 ;; esac
+  common=$(git -C "${CLAUDE_PROJECT_DIR:-$PWD}" rev-parse --git-common-dir 2>/dev/null) || return 1
+  case "$common" in
+    '') return 1 ;;
+    /*) : ;;
+    *) common="${CLAUDE_PROJECT_DIR:-$PWD}/$common" ;;
+  esac
+  main="${common%/.git}"; main="${main%/}"
+  gates="$main/.claude/gates.json"
+  [ -s "$gates" ] || return 1
+  jq -e --arg id "$id" '(.maintenance // []) | index($id) != null' "$gates" >/dev/null 2>&1
+}
+
+# Bash-based mutation of the fleet's control surface. Deny on WRITE INTENT, not
+# mere mention: the previous version denied any command containing a protected
+# path plus any ">", which caught stderr redirects like `2>/dev/null` and made
+# read-only `cat .claude/hooks/x.sh 2>/dev/null` collateral. Reads must pass —
+# agents need to read the hooks to understand the rules that bind them.
+FLEET_PATHS='(\.claude/(hooks|agents)(/|[^a-zA-Z]|$)|\.claude/settings\.json|\.claude/gates\.json|CLAUDE\.md|(^|[[:space:]"'\''=;&|(])(\./)?bin/)'
+if echo "$cmd" | grep -Eq "$FLEET_PATHS"; then
+  fleet_write=""
+  # 1. A redirect whose TARGET is a protected path. `[^0-9&<>]` before the `>`
+  #    exempts fd redirects (2>, &>) unless their target is protected, which
+  #    the target match still catches.
+  if echo "$cmd" | grep -Eq '>>?[[:space:]]*["'\'']?[^[:space:]|;&]*(\.claude/(hooks|agents)/|\.claude/settings\.json|\.claude/gates\.json|CLAUDE\.md|bin/)'; then
+    fleet_write=1
+  # 2. A mutating verb anywhere in a command that mentions a protected path.
+  elif echo "$cmd" | grep -Eq '(^|[;&|[:space:]])(rm|mv|cp|tee|chmod|chown|truncate|ln|rsync|install)[[:space:]]'; then
+    fleet_write=1
+  # 3. In-place editors.
+  elif echo "$cmd" | grep -Eq 'sed[[:space:]]+(-[^-[:space:]]*[[:space:]]+)*(-i|--in-place)|perl[[:space:]]+(-[a-zA-Z]*i[a-zA-Z]*([[:space:]]|$)|.*--in-place)'; then
+    fleet_write=1
+  # 4. Git operations that rewrite working-tree files without Edit/Write.
+  elif echo "$cmd" | grep -Eq 'git[[:space:]]+(checkout|restore|apply|cherry-pick)|git[[:space:]]+stash[[:space:]]+(pop|apply)'; then
+    fleet_write=1
+  fi
+
+  if [ -n "$fleet_write" ]; then
+    # Never overridable: the grant file and the guards that read it.
+    if echo "$cmd" | grep -Eq '\.claude/gates\.json|deny-irreversible\.sh|protect-fleet\.sh'; then
+      deny "Writes to gates.json, deny-irreversible.sh, and protect-fleet.sh are denied unconditionally — the maintenance override does not extend to the grant file or the guards that enforce it."
+    fi
+    if ! maint_active; then
+      deny "Bash-based writes to fleet infrastructure (hooks, agent cards, settings, CLAUDE.md, bin/) are denied — same boundary as protect-fleet.sh, enforced here because git and shell redirection don't go through the Edit or Write tools. For a sanctioned fleet-tooling task, the owner lists the task id under \"maintenance\" in the main checkout's .claude/gates.json; otherwise ask the owner to make this change upstream and re-run add-fleet."
+    fi
+  fi
+fi
 
 # Irreversible git history operations
 case "$cmd" in
