@@ -1,19 +1,19 @@
 # Agent status
 
-Updated 2026-08-20 03:33 UTC · regenerated on every task completion.
+Updated 2026-08-20 03:36 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $29.3 | $125.00 | ██░░░░░░░░ 23% |
+| open-tab | $30.83 | $125.00 | ██░░░░░░░░ 24% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-20T03:12:43Z | 1 |
-| reviewer | open-tab | 2026-08-20T03:28:15Z | 2 |
+| builder-light | open-tab | 2026-08-20T03:36:13Z | 1 |
 
 ## Tasks
 
@@ -54,31 +54,31 @@ Updated 2026-08-20 03:33 UTC · regenerated on every task completion.
 | `OT-132` | done | a parse outage is invisible to the user — no message on any non-429 failure — null | builder |
 | `OT-133` | done | a late claim is destroyed by the item re-mint when the claimer IS in the payload — null | builder-deep |
 | `OT-134` | running | a transient gemini outage permanently burns a receipt's only parse — no retry affordance — null | builder-deep |
-| `OT-137` | running | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
+| `OT-137` | done | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-20T03:33:04Z  open-tab  SubagentStop  
-2026-08-20T03:33:04Z  open-tab  SubagentStop  
-2026-08-20T03:33:28Z  open-tab  SubagentStop  
-2026-08-20T03:33:28Z  open-tab  SubagentStop  
-2026-08-20T03:33:28Z  open-tab  SubagentStop  
-2026-08-20T03:33:28Z  open-tab  SubagentStop  
-2026-08-20T03:33:28Z  open-tab  SubagentStop  
-2026-08-20T03:33:28Z  open-tab  SubagentStop  
-2026-08-20T03:33:35Z  open-tab  SubagentStop  
-2026-08-20T03:33:35Z  open-tab  SubagentStop  
-2026-08-20T03:33:35Z  open-tab  SubagentStop  
-2026-08-20T03:33:35Z  open-tab  SubagentStop  
-2026-08-20T03:33:35Z  open-tab  SubagentStop  
-2026-08-20T03:33:35Z  open-tab  SubagentStop  
-2026-08-20T03:33:59Z  open-tab  SubagentStop  
-2026-08-20T03:33:59Z  open-tab  SubagentStop  
-2026-08-20T03:33:59Z  open-tab  SubagentStop  
-2026-08-20T03:33:59Z  open-tab  SubagentStop  
-2026-08-20T03:33:59Z  open-tab  SubagentStop  
-2026-08-20T03:33:59Z  open-tab  SubagentStop  
+2026-08-20T03:34:07Z  open-tab  SubagentStop  
+2026-08-20T03:34:07Z  open-tab  SubagentStop  
+2026-08-20T03:34:07Z  open-tab  SubagentStop  
+2026-08-20T03:34:07Z  open-tab  SubagentStop  
+2026-08-20T03:34:07Z  open-tab  SubagentStop  
+2026-08-20T03:34:18Z  open-tab  SubagentStop  reviewer
+2026-08-20T03:34:31Z  open-tab  SubagentStop  
+2026-08-20T03:34:31Z  open-tab  SubagentStop  
+2026-08-20T03:34:31Z  open-tab  SubagentStop  
+2026-08-20T03:34:31Z  open-tab  SubagentStop  
+2026-08-20T03:34:31Z  open-tab  SubagentStop  
+2026-08-20T03:34:31Z  open-tab  SubagentStop  
+2026-08-20T03:34:44Z  open-tab  SubagentStop  reviewer
+2026-08-20T03:36:13Z  open-tab  SubagentStart  builder-light
+2026-08-20T03:36:48Z  open-tab  SubagentStop  
+2026-08-20T03:36:48Z  open-tab  SubagentStop  
+2026-08-20T03:36:48Z  open-tab  SubagentStop  
+2026-08-20T03:36:48Z  open-tab  SubagentStop  
+2026-08-20T03:36:48Z  open-tab  SubagentStop  
+2026-08-20T03:36:48Z  open-tab  SubagentStop  
 ```
 
 ---
