@@ -1,21 +1,21 @@
 # Agent status
 
-Updated 2026-08-19 23:59 UTC · regenerated on every task completion.
+Updated 2026-08-20 00:00 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $1.13 | $125.00 | ░░░░░░░░░░ 0% |
+| open-tab | $2.12 | $125.00 | ░░░░░░░░░░ 1% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder | open-tab | 2026-08-19T23:38:19Z | 2 |
-| publisher | open-tab | 2026-08-19T23:38:52Z | 1 |
 | reviewer | open-tab | 2026-08-19T23:52:43Z | 6 |
 | builder-deep | open-tab | 2026-08-19T23:59:16Z | 6 |
+| publisher | open-tab | 2026-08-20T00:00:05Z | 3 |
 
 ## Tasks
 
@@ -48,34 +48,35 @@ Updated 2026-08-19 23:59 UTC · regenerated on every task completion.
 | `OT-124` | done | owner save erases joined_via_share, hiding real claimers from the owner's view — null | builder-deep |
 | `OT-125` | done | the fleet's own agent cards and tooling are untracked or uncommitted in git — null | builder |
 | `OT-126` | done | detect-and-repair can discard a genuine revert; staged blob not captured in the patch — null | builder |
-| `OT-127` | running | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it — null | builder-deep |
+| `OT-127` | **blocked** | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it — >- | builder-deep |
 | `OT-128` | done | review the unreviewed kit install change by change and commit what survives — null | builder |
 | `OT-129` | **blocked** | backlog from the OT-123, OT-124 and OT-126 reviews — >- | builder |
 | `OT-130` | running | an owner save deletes any claimer who joined since the client loaded the page — null | builder-deep |
+| `OT-131` | **blocked** | the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log — >- | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-19T23:53:14Z  open-tab  SubagentStop  
-2026-08-19T23:53:14Z  open-tab  SubagentStop  
-2026-08-19T23:53:14Z  open-tab  SubagentStop  
-2026-08-19T23:53:14Z  open-tab  SubagentStop  
-2026-08-19T23:53:14Z  open-tab  SubagentStop  
-2026-08-19T23:53:14Z  open-tab  SubagentStop  
-2026-08-19T23:53:46Z  open-tab  SubagentStop  
-2026-08-19T23:53:46Z  open-tab  SubagentStop  
-2026-08-19T23:53:46Z  open-tab  SubagentStop  
-2026-08-19T23:53:46Z  open-tab  SubagentStop  
-2026-08-19T23:53:46Z  open-tab  SubagentStop  
-2026-08-19T23:53:46Z  open-tab  SubagentStop  
-2026-08-19T23:59:16Z  open-tab  SubagentStart  builder-deep
-2026-08-19T23:59:16Z  open-tab  SubagentStart  builder-deep
-2026-08-19T23:59:47Z  open-tab  SubagentStop  
-2026-08-19T23:59:47Z  open-tab  SubagentStop  
-2026-08-19T23:59:47Z  open-tab  SubagentStop  
-2026-08-19T23:59:47Z  open-tab  SubagentStop  
-2026-08-19T23:59:47Z  open-tab  SubagentStop  
-2026-08-19T23:59:47Z  open-tab  SubagentStop  
+2026-08-20T00:00:05Z  open-tab  SubagentStart  publisher
+2026-08-20T00:00:05Z  open-tab  SubagentStart  publisher
+2026-08-20T00:00:18Z  open-tab  SubagentStop  
+2026-08-20T00:00:18Z  open-tab  SubagentStop  
+2026-08-20T00:00:18Z  open-tab  SubagentStop  
+2026-08-20T00:00:18Z  open-tab  SubagentStop  
+2026-08-20T00:00:18Z  open-tab  SubagentStop  
+2026-08-20T00:00:18Z  open-tab  SubagentStop  
+2026-08-20T00:00:36Z  open-tab  SubagentStop  
+2026-08-20T00:00:36Z  open-tab  SubagentStop  
+2026-08-20T00:00:36Z  open-tab  SubagentStop  
+2026-08-20T00:00:36Z  open-tab  SubagentStop  
+2026-08-20T00:00:36Z  open-tab  SubagentStop  
+2026-08-20T00:00:36Z  open-tab  SubagentStop  
+2026-08-20T00:00:50Z  open-tab  SubagentStop  
+2026-08-20T00:00:50Z  open-tab  SubagentStop  
+2026-08-20T00:00:50Z  open-tab  SubagentStop  
+2026-08-20T00:00:50Z  open-tab  SubagentStop  
+2026-08-20T00:00:50Z  open-tab  SubagentStop  
+2026-08-20T00:00:50Z  open-tab  SubagentStop  
 ```
 
 ---
