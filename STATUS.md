@@ -1,18 +1,17 @@
 # Agent status
 
-Updated 2026-08-20 03:08 UTC · regenerated on every task completion.
+Updated 2026-08-20 03:11 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $5.08 | $125.00 | ░░░░░░░░░░ 4% |
+| open-tab | $6.26 | $125.00 | ░░░░░░░░░░ 5% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| reviewer | open-tab | 2026-08-20T03:03:56Z | 1 |
 | builder-deep | open-tab | 2026-08-20T03:04:19Z | 1 |
 
 ## Tasks
@@ -52,25 +51,16 @@ Updated 2026-08-20 03:08 UTC · regenerated on every task completion.
 | `OT-130` | done | an owner save deletes any claimer who joined since the client loaded the page — null | builder-deep |
 | `OT-131` | done | the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log — null | builder-deep |
 | `OT-132` | done | a parse outage is invisible to the user — no message on any non-429 failure — null | builder |
-| `OT-133` | running | a late claim is destroyed by the item re-mint when the claimer IS in the payload — null | builder-deep |
+| `OT-133` | done | a late claim is destroyed by the item re-mint when the claimer IS in the payload — null | builder-deep |
 | `OT-134` | running | a transient gemini outage permanently burns a receipt's only parse — no retry affordance — null | builder-deep |
+| `OT-135` | todo | two concurrent owner saves now collide on the receipt_items primary key — null | builder |
+| `OT-136` | todo | receiptShare.ts comment claims the swap clears old charges, which 0023 made false — null | builder-light |
+| `OT-137` | todo | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
+| `OT-138` | todo | chargesRls test asserts against migration 0016 function text, three definitions stale — null | builder-light |
 
 ## Recent activity
 
 ```
-2026-08-20T03:07:36Z  open-tab  SubagentStop  
-2026-08-20T03:07:36Z  open-tab  SubagentStop  
-2026-08-20T03:08:08Z  open-tab  SubagentStop  
-2026-08-20T03:08:08Z  open-tab  SubagentStop  
-2026-08-20T03:08:08Z  open-tab  SubagentStop  
-2026-08-20T03:08:08Z  open-tab  SubagentStop  
-2026-08-20T03:08:08Z  open-tab  SubagentStop  
-2026-08-20T03:08:08Z  open-tab  SubagentStop  
-2026-08-20T03:08:24Z  open-tab  SubagentStop  
-2026-08-20T03:08:24Z  open-tab  SubagentStop  
-2026-08-20T03:08:24Z  open-tab  SubagentStop  
-2026-08-20T03:08:24Z  open-tab  SubagentStop  
-2026-08-20T03:08:24Z  open-tab  SubagentStop  
 2026-08-20T03:08:24Z  open-tab  SubagentStop  
 2026-08-20T03:08:55Z  open-tab  SubagentStop  
 2026-08-20T03:08:55Z  open-tab  SubagentStop  
@@ -78,6 +68,19 @@ Updated 2026-08-20 03:08 UTC · regenerated on every task completion.
 2026-08-20T03:08:55Z  open-tab  SubagentStop  
 2026-08-20T03:08:55Z  open-tab  SubagentStop  
 2026-08-20T03:08:55Z  open-tab  SubagentStop  
+2026-08-20T03:09:09Z  open-tab  SubagentStop  
+2026-08-20T03:09:09Z  open-tab  SubagentStop  
+2026-08-20T03:09:09Z  open-tab  SubagentStop  
+2026-08-20T03:09:09Z  open-tab  SubagentStop  
+2026-08-20T03:09:09Z  open-tab  SubagentStop  
+2026-08-20T03:09:10Z  open-tab  SubagentStop  
+2026-08-20T03:09:15Z  open-tab  SubagentStop  reviewer
+2026-08-20T03:11:27Z  open-tab  SubagentStop  
+2026-08-20T03:11:27Z  open-tab  SubagentStop  
+2026-08-20T03:11:27Z  open-tab  SubagentStop  
+2026-08-20T03:11:27Z  open-tab  SubagentStop  
+2026-08-20T03:11:27Z  open-tab  SubagentStop  
+2026-08-20T03:11:27Z  open-tab  SubagentStop  
 ```
 
 ---
