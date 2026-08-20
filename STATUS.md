@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-20 22:42 UTC · regenerated on every task completion.
+Updated 2026-08-20 22:43 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $103.13 | $125.00 | ████████░░ 82% |
+| open-tab | $104.84 | $125.00 | ████████░░ 83% |
 
 ## Agents
 
@@ -57,33 +57,33 @@ Updated 2026-08-20 22:42 UTC · regenerated on every task completion.
 | `OT-136` | running | arithmetic validation on parsed receipts, money as integer cents end to end — null | builder-deep |
 | `OT-137` | done | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
 | `OT-138` | **blocked** | three live fail-opens in parallel-cap.sh let an uncapped dispatch through — >- | builder-deep |
-| `OT-139` | running | lock down receipt image storage — private bucket, RLS, signed URLs, retention job — null | builder-deep |
+| `OT-139` | running | lock down receipt image storage — private bucket, RLS, signed URLs, retention job — >- | builder-deep |
 | `OT-140` | **blocked** | client-side image downscale and EXIF orientation normalization before upload — >- | builder |
 | `OT-141` | todo | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-20T22:41:00Z  open-tab  SubagentStop  
-2026-08-20T22:41:03Z  open-tab  SubagentStop  
-2026-08-20T22:41:03Z  open-tab  SubagentStop  
-2026-08-20T22:41:03Z  open-tab  SubagentStop  
-2026-08-20T22:41:03Z  open-tab  SubagentStop  
-2026-08-20T22:41:03Z  open-tab  SubagentStop  
-2026-08-20T22:41:03Z  open-tab  SubagentStop  
-2026-08-20T22:41:31Z  open-tab  SubagentStop  
-2026-08-20T22:41:31Z  open-tab  SubagentStop  
-2026-08-20T22:41:31Z  open-tab  SubagentStop  
-2026-08-20T22:41:31Z  open-tab  SubagentStop  
-2026-08-20T22:41:31Z  open-tab  SubagentStop  
-2026-08-20T22:41:31Z  open-tab  SubagentStop  
-2026-08-20T22:41:50Z  open-tab  SubagentStop  reviewer
-2026-08-20T22:42:03Z  open-tab  SubagentStop  
-2026-08-20T22:42:03Z  open-tab  SubagentStop  
-2026-08-20T22:42:03Z  open-tab  SubagentStop  
-2026-08-20T22:42:03Z  open-tab  SubagentStop  
-2026-08-20T22:42:03Z  open-tab  SubagentStop  
-2026-08-20T22:42:03Z  open-tab  SubagentStop  
+2026-08-20T22:42:57Z  open-tab  SubagentStop  
+2026-08-20T22:42:57Z  open-tab  SubagentStop  
+2026-08-20T22:42:57Z  open-tab  SubagentStop  
+2026-08-20T22:42:57Z  open-tab  SubagentStop  
+2026-08-20T22:42:57Z  open-tab  SubagentStop  
+2026-08-20T22:42:57Z  open-tab  SubagentStop  
+2026-08-20T22:42:57Z  open-tab  SubagentStop  
+2026-08-20T22:42:57Z  open-tab  SubagentStop  
+2026-08-20T22:43:01Z  open-tab  SubagentStop  
+2026-08-20T22:43:01Z  open-tab  SubagentStop  
+2026-08-20T22:43:01Z  open-tab  SubagentStop  
+2026-08-20T22:43:01Z  open-tab  SubagentStop  
+2026-08-20T22:43:01Z  open-tab  SubagentStop  
+2026-08-20T22:43:01Z  open-tab  SubagentStop  
+2026-08-20T22:43:07Z  open-tab  SubagentStop  
+2026-08-20T22:43:07Z  open-tab  SubagentStop  
+2026-08-20T22:43:07Z  open-tab  SubagentStop  
+2026-08-20T22:43:07Z  open-tab  SubagentStop  
+2026-08-20T22:43:07Z  open-tab  SubagentStop  
+2026-08-20T22:43:07Z  open-tab  SubagentStop  
 ```
 
 ---
