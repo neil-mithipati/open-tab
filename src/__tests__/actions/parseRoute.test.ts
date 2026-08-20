@@ -9,15 +9,31 @@ const parseReceiptImage = vi.fn();
 // the ownership lookup returns; the update the route makes after a parse writes
 // back into it, so a replayed request sees what the first one stored.
 type Row = Record<string, unknown> | null;
+type DbError = { message: string; code?: string } | null;
 const db: {
   receipt: Row;
   itemCount: number;
+  // Model attempts the caller has spent this hour on OTHER receipts. The
+  // receipt under test adds its own — see attemptedThisHour.
+  otherAttemptsThisHour: number;
   // Set to make the claim's conditional update fail, the way an unapplied
-  // migration 0020 would.
-  claimError: { message: string; code?: string } | null;
+  // migration 0020 or 0024 would.
+  claimError: DbError;
+  // Set to make the release of a claim fail without touching anything else.
+  releaseError: DbError;
   // Set to make the post-parse write-back fail without touching the claim.
-  writeBackError: { message: string; code?: string } | null;
-} = { receipt: null, itemCount: 0, claimError: null, writeBackError: null };
+  writeBackError: DbError;
+  // Set to make the hourly attempt count fail, the way an unapplied 0024 would.
+  attemptCountError: DbError;
+} = {
+  receipt: null,
+  itemCount: 0,
+  otherAttemptsThisHour: 0,
+  claimError: null,
+  releaseError: null,
+  writeBackError: null,
+  attemptCountError: null,
+};
 const spies = {
   receiptUpdate: vi.fn(),
   receiptDelete: vi.fn(),
@@ -63,18 +79,60 @@ vi.mock("@/lib/supabase/server", () => {
     return builder;
   }
 
+  // Every model attempt this caller has made inside the hourly window: the
+  // receipt under test counts its own the moment it has been claimed once
+  // (0024's last_parse_attempt_at survives a release), plus whatever other
+  // receipts the test says the caller spent.
+  const attemptedThisHour = () => {
+    const rows: { parse_attempts: number | null }[] = [];
+    if (db.otherAttemptsThisHour > 0) {
+      rows.push({ parse_attempts: db.otherAttemptsThisHour });
+    }
+    const row = db.receipt;
+    if (row && row.last_parse_attempt_at) {
+      rows.push({ parse_attempts: (row.parse_attempts as number | null) ?? 0 });
+    }
+    return rows;
+  };
+
+  // Two read shapes on `receipts`, so one builder serves both: the ownership
+  // lookup ends in .single(), and the hourly attempt count is awaited straight
+  // off .gte().
+  interface ReadBuilder
+    extends PromiseLike<{ data: { parse_attempts: number | null }[] | null; error: DbError }> {
+    eq(col: string, val: unknown): ReadBuilder;
+    gte(col: string, val: unknown): ReadBuilder;
+    single(): Promise<{ data: Row }>;
+  }
+
+  function readBuilder(): ReadBuilder {
+    const run = () =>
+      db.attemptCountError
+        ? { data: null, error: db.attemptCountError }
+        : { data: attemptedThisHour(), error: null };
+    const builder: ReadBuilder = {
+      eq: () => builder,
+      gte: () => builder,
+      single: async () => ({ data: db.receipt }),
+      then: (onOk, onErr) => Promise.resolve(run()).then(onOk, onErr),
+    };
+    return builder;
+  }
+
   const receipts = () => ({
-    select: () => ({
-      eq: () => ({
-        eq: () => ({ single: async () => ({ data: db.receipt }) }),
-      }),
-    }),
+    select: () => readBuilder(),
     update: (values: Record<string, unknown>) => {
       const filters: Filters = { eq: [], isNull: [] };
       return writeBuilder(filters, () => {
-        const isClaim = filters.isNull.includes("parsed_at");
+        // The claim stamps parsed_at; the release hands it back. Both touch
+        // the same column, so they are told apart by what they write.
+        const isClaim = values.parsed_at != null;
+        const isRelease = "parsed_at" in values && values.parsed_at === null;
         if (isClaim && db.claimError) return { data: null, error: db.claimError };
-        if (!isClaim && db.writeBackError) return { data: null, error: db.writeBackError };
+        if (isRelease && db.releaseError) return { data: null, error: db.releaseError };
+        if (!isClaim && !isRelease && db.writeBackError) {
+          return { data: null, error: db.writeBackError };
+        }
         if (!matchesRow(filters)) return { data: [], error: null };
         const id = filters.eq.find(([col]) => col === "id")?.[1];
         spies.receiptUpdate(values, id);
@@ -155,8 +213,11 @@ const UNPARSED = {
   id: "r1",
   created_by: "u1",
   image_url: "https://x/receipt-images/u1/r1.jpg",
-  // 0020's marker. Null means the receipt's one parse has never been claimed.
+  // 0020's marker. Null means the receipt's parse is not claimed right now.
   parsed_at: null,
+  // 0024's tally and its clock. Zero attempts spent, never attempted.
+  parse_attempts: 0,
+  last_parse_attempt_at: null,
   merchant_name: null,
   date_of_receipt: null,
   subtotal: null,
@@ -197,8 +258,11 @@ beforeEach(() => {
   Object.values(spies).forEach((spy) => spy.mockReset());
   db.receipt = { ...UNPARSED };
   db.itemCount = 0;
+  db.otherAttemptsThisHour = 0;
   db.claimError = null;
+  db.releaseError = null;
   db.writeBackError = null;
+  db.attemptCountError = null;
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     arrayBuffer: async () => new ArrayBuffer(10),
@@ -433,9 +497,15 @@ describe("POST /api/receipts/parse", () => {
     await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
 
     // The claim is the update carrying parsed_at; it is what makes the race
-    // above resolve to one winner rather than five.
+    // above resolve to one winner rather than five. Since 0024 it carries the
+    // tally that bounds the retry and the clock the hourly count bills
+    // against, in the same statement — one write, or the two can disagree.
     expect(spies.receiptUpdate).toHaveBeenCalledWith(
-      { parsed_at: expect.any(String) },
+      {
+        parsed_at: expect.any(String),
+        last_parse_attempt_at: expect.any(String),
+        parse_attempts: 1,
+      },
       "r1"
     );
   });
