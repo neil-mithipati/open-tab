@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-20 03:42 UTC · regenerated on every task completion.
+Updated 2026-08-20 03:43 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $33.91 | $125.00 | ██░░░░░░░░ 27% |
+| open-tab | $34.19 | $125.00 | ██░░░░░░░░ 27% |
 
 ## Agents
 
@@ -58,18 +58,6 @@ Updated 2026-08-20 03:42 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-20T03:36:48Z  open-tab  SubagentStop  
-2026-08-20T03:38:23Z  open-tab  SubagentStop  
-2026-08-20T03:38:23Z  open-tab  SubagentStop  
-2026-08-20T03:39:24Z  open-tab  SubagentStop  builder-deep
-2026-08-20T03:39:24Z  open-tab  SubagentStop  builder-light
-2026-08-20T03:39:41Z  open-tab  SubagentStart  builder-light
-2026-08-20T03:40:14Z  open-tab  SubagentStop  
-2026-08-20T03:40:14Z  open-tab  SubagentStop  
-2026-08-20T03:40:14Z  open-tab  SubagentStop  
-2026-08-20T03:40:14Z  open-tab  SubagentStop  
-2026-08-20T03:40:14Z  open-tab  SubagentStop  
-2026-08-20T03:40:14Z  open-tab  SubagentStop  
 2026-08-20T03:40:42Z  open-tab  SubagentStop  builder-light
 2026-08-20T03:41:58Z  open-tab  SubagentStart  publisher
 2026-08-20T03:42:29Z  open-tab  SubagentStop  
@@ -78,6 +66,18 @@ Updated 2026-08-20 03:42 UTC · regenerated on every task completion.
 2026-08-20T03:42:29Z  open-tab  SubagentStop  
 2026-08-20T03:42:29Z  open-tab  SubagentStop  
 2026-08-20T03:42:29Z  open-tab  SubagentStop  
+2026-08-20T03:43:00Z  open-tab  SubagentStop  
+2026-08-20T03:43:00Z  open-tab  SubagentStop  
+2026-08-20T03:43:00Z  open-tab  SubagentStop  
+2026-08-20T03:43:00Z  open-tab  SubagentStop  
+2026-08-20T03:43:00Z  open-tab  SubagentStop  
+2026-08-20T03:43:00Z  open-tab  SubagentStop  
+2026-08-20T03:43:32Z  open-tab  SubagentStop  
+2026-08-20T03:43:32Z  open-tab  SubagentStop  
+2026-08-20T03:43:32Z  open-tab  SubagentStop  
+2026-08-20T03:43:32Z  open-tab  SubagentStop  
+2026-08-20T03:43:32Z  open-tab  SubagentStop  
+2026-08-20T03:43:32Z  open-tab  SubagentStop  
 ```
 
 ---
