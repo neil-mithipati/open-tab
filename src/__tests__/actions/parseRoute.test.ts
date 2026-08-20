@@ -814,6 +814,45 @@ describe("POST /api/receipts/parse", () => {
     logged.mockRestore();
   });
 
+  it("refuses a claim built on a read that went stale while the claim was released", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    parseReceiptImage.mockRejectedValue(Object.assign(new Error("upstream"), { status: 503 }));
+
+    // Park one request between its ownership read and its claim, holding a
+    // read that says zero attempts spent. The rate-limit check is the last
+    // await before the claim, so stalling it is the window.
+    let resume!: () => void;
+    isParseRateLimited.mockImplementationOnce(
+      () => new Promise<boolean>((ok) => { resume = () => ok(false); })
+    );
+    const stale = POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    // Two full attempts land while it waits, each released after a transient
+    // failure, so the row is unclaimed again — and `parsed_at is null` alone
+    // can no longer tell "never attempted" from "twice attempted".
+    expect((await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))).status).toBe(503);
+    expect((await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))).status).toBe(503);
+    expect(db.receipt?.parse_attempts).toBe(2);
+
+    resume();
+    const res = await stale;
+
+    // The tally in the claim's filter is what refuses this. Without it the
+    // stale request claims the released row and writes the count back to 1 —
+    // a lost update that hands the caller a fourth and fifth model call off
+    // one upload.
+    expect(res.status).toBe(409);
+    expect(db.receipt?.parse_attempts).toBe(2);
+    expect(parseReceiptImage).toHaveBeenCalledTimes(2);
+
+    // Whatever the caller does next, the cap holds.
+    for (let i = 0; i < 5; i++) {
+      await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    }
+    expect(parseReceiptImage).toHaveBeenCalledTimes(3);
+    logged.mockRestore();
+  });
+
   // ── every attempt costs a slot ────────────────────────────────────────────
   it("charges a retry against the hourly limit like any other attempt", async () => {
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
