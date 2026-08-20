@@ -1,18 +1,20 @@
 # Agent status
 
-Updated 2026-08-20 22:35 UTC · regenerated on every task completion.
+Updated 2026-08-20 22:36 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $94.24 | $125.00 | ███████░░░ 75% |
+| open-tab | $95.42 | $125.00 | ███████░░░ 76% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-20T22:35:12Z | 2 |
+| reviewer | open-tab | 2026-08-20T22:36:17Z | 1 |
+| publisher | open-tab | 2026-08-20T22:36:42Z | 1 |
 
 ## Tasks
 
@@ -59,30 +61,31 @@ Updated 2026-08-20 22:35 UTC · regenerated on every task completion.
 | `OT-138` | **blocked** | three live fail-opens in parallel-cap.sh let an uncapped dispatch through — >- | builder-deep |
 | `OT-139` | running | lock down receipt image storage — private bucket, RLS, signed URLs, retention job — null | builder-deep |
 | `OT-140` | **blocked** | client-side image downscale and EXIF orientation normalization before upload — >- | builder |
+| `OT-141` | todo | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-20T22:33:54Z  open-tab  SubagentStop  
-2026-08-20T22:33:54Z  open-tab  SubagentStop  
-2026-08-20T22:33:54Z  open-tab  SubagentStop  
-2026-08-20T22:33:54Z  open-tab  SubagentStop  
-2026-08-20T22:33:54Z  open-tab  SubagentStop  
-2026-08-20T22:33:54Z  open-tab  SubagentStop  
-2026-08-20T22:34:26Z  open-tab  SubagentStop  
-2026-08-20T22:34:26Z  open-tab  SubagentStop  
-2026-08-20T22:34:26Z  open-tab  SubagentStop  
-2026-08-20T22:34:26Z  open-tab  SubagentStop  
-2026-08-20T22:34:26Z  open-tab  SubagentStop  
-2026-08-20T22:34:26Z  open-tab  SubagentStop  
-2026-08-20T22:34:41Z  open-tab  SubagentStop  builder-deep
-2026-08-20T22:35:12Z  open-tab  SubagentStart  builder-deep
-2026-08-20T22:35:43Z  open-tab  SubagentStop  
-2026-08-20T22:35:43Z  open-tab  SubagentStop  
-2026-08-20T22:35:43Z  open-tab  SubagentStop  
-2026-08-20T22:35:43Z  open-tab  SubagentStop  
-2026-08-20T22:35:43Z  open-tab  SubagentStop  
-2026-08-20T22:35:43Z  open-tab  SubagentStop  
+2026-08-20T22:36:14Z  open-tab  SubagentStop  
+2026-08-20T22:36:14Z  open-tab  SubagentStop  
+2026-08-20T22:36:14Z  open-tab  SubagentStop  
+2026-08-20T22:36:14Z  open-tab  SubagentStop  
+2026-08-20T22:36:14Z  open-tab  SubagentStop  
+2026-08-20T22:36:14Z  open-tab  SubagentStop  
+2026-08-20T22:36:17Z  open-tab  SubagentStart  reviewer
+2026-08-20T22:36:29Z  open-tab  SubagentStop  
+2026-08-20T22:36:29Z  open-tab  SubagentStop  
+2026-08-20T22:36:29Z  open-tab  SubagentStop  
+2026-08-20T22:36:29Z  open-tab  SubagentStop  
+2026-08-20T22:36:29Z  open-tab  SubagentStop  
+2026-08-20T22:36:29Z  open-tab  SubagentStop  
+2026-08-20T22:36:42Z  open-tab  SubagentStart  publisher
+2026-08-20T22:36:43Z  open-tab  SubagentStop  
+2026-08-20T22:36:43Z  open-tab  SubagentStop  
+2026-08-20T22:36:43Z  open-tab  SubagentStop  
+2026-08-20T22:36:43Z  open-tab  SubagentStop  
+2026-08-20T22:36:43Z  open-tab  SubagentStop  
+2026-08-20T22:36:43Z  open-tab  SubagentStop  
 ```
 
 ---
