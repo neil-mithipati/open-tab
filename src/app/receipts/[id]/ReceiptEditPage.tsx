@@ -91,6 +91,9 @@ export function ReceiptEditPage({ seed }: Props) {
         receiptId,
         items: items.map((item) => ({
           clientId: item.clientId,
+          // The row this item was loaded from, so the save keeps its id and a
+          // claim made on it since this page rendered survives (0023).
+          dbId: item.dbId,
           name: item.name,
           price: item.price,
           quantity: item.quantity,

@@ -64,6 +64,9 @@ export async function persistAndShare(state: ReceiptFlowState): Promise<ShareRes
     receiptId,
     items: items.map((item) => ({
       clientId: item.clientId,
+      // Keep the row id when this item came from the database, so re-sharing a
+      // tab does not re-mint the ids the claimers' open pages are holding.
+      dbId: item.dbId,
       name: item.name,
       price: item.price,
       quantity: item.quantity,
