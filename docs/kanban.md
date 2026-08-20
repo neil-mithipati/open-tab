@@ -30,11 +30,133 @@
 | OT-127 | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it | Blocked | upstream kit work, not blocked on any owner decision. the OT-131 decision was made (option 1, keep the kit) and this branch's two commits were built against the local parallel-cap.sh the kit replaced. .claude/hooks/protect-fleet.sh now blocks every agent in this fleet, orchestrator included, from writing .claude/hooks — so no agent here can fix it regardless of tier or prompt. the bug is still live: an agent killed on maxTurns emits no SubagentStop and holds a cap slot until STALE_AFTER_SECONDS=3600. branch task/OT-127 and its worktree are deliberately preserved as the only working fix that exists anywhere. |
 | OT-132 | a parse outage is invisible to the user — no message on any non-429 failure | Done | — (carved out of OT-129 section B, items 1, 3, 5, 6. reviewed clean, merged as `19901ac`, worktree and branch removed) |
 | OT-128 | review the unreviewed kit install change by change and commit what survives | Done | — (reviewed MERGE, merged; main 304/304 across 23 files. `reviewer.md`'s two competing versions reconciled by hand — OT-122's merged mutation-guard paragraph verified byte-identical, the install's separate +6/-1 delta applied on top. Two lows routed to OT-129) |
-| OT-129 | backlog from the OT-123, OT-124 and OT-126 reviews | Todo | — (unblocked: no owner decision remains outstanding. section A is permanently declined — targets `bin/finish-worktree`, blocked by `protect-fleet.sh` for every agent including the orchestrator; that declination satisfies acceptance criterion 1. remaining live work is B4, C1, C2, none blocked on a decision, each waiting on a sequence: C1 and C2 behind OT-133, B4 behind OT-134) |
+| OT-129 | backlog from the OT-123, OT-124 and OT-126 reviews | Done | — (closed by decline, not by merge — no commit, no branch. B4, the last live item, was declined by the owner: two tabs on one `receiptId`, the 409 loser can save over the winner's parsed data, low, pre-existing. every other item was shipped elsewhere — B1/B3/B5/B6 in OT-132, B2 in OT-134, C1/C2 in OT-137 — or declined, section A permanently, on `bin/finish-worktree` being closed to every agent) |
 | OT-130 | an owner save deletes any claimer who joined since the client loaded the page | Done | — (full reviewer passed all six criteria, no high findings; merged to main as `420a8d3`, worktree and branch removed) |
 | OT-131 | the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log | Done | — (owner chose option 1, kit adopted, committed as `02a0b6e`) |
-| OT-133 | a late claim is destroyed by the item re-mint when the claimer IS in the payload | In Progress | — (filed from the OT-130 reviewer's medium finding; reproduced against real Postgres, explicitly disclosed by the OT-130 builder as out of scope. attempt 2 built: three commits on `task/OT-133`, gates pass, 364/364 tests, new migration 0023 verified against real Postgres via PGlite. now under full review) |
-| OT-134 | a transient gemini outage permanently burns a receipt's only parse — no retry affordance | In Progress | — (split out of OT-129 section B item 2, dispatched at builder-deep. touches the data model and the replay hole OT-123 closed, so it needed its own file and reasoning rather than a grouped commit. must not reopen the replay hole `parsed_at` closes; do not touch `save_receipt_state`, which OT-133 owns) |
+| OT-133 | a late claim is destroyed by the item re-mint when the claimer IS in the payload | Done | — (third reviewer dispatch delivered a PASS after two turn-exhausted attempts lost their verdicts; all six criteria checked, mutation-checked non-tautological, merged into main as a merge commit on top of `420a8d3`. two medium findings reviewed and deliberately declined on owner instruction, not fixed — reasoning kept in `ledger/OT-133.md`) |
+| OT-134 | a transient gemini outage permanently burns a receipt's only parse — no retry affordance | Done | — (full reviewer passed all nine criteria, no high findings, merged as `5534b5f`. bounded to 3 model attempts per receipt via migration 0025 — renumbered from 0024 after OT-137 took that slot; replay hole confirmed still closed) |
+| OT-137 | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming | Done | — (full reviewer passed all seven criteria, no high findings, merged as `070cb49`. carries claim_done_at across the participant delete/re-insert via migration 0024, keyed on lowercased username; deliberately no backfill, keeping OT-124's now() trap in mind) |
+
+## Sync notes (2026-08-20, cycle 19)
+
+Reconciled against `ledger/OT-129.md`. Matched on id — no card created without a
+matching ledger file.
+
+- **OT-129** Todo → **Done**. Ledger `state: done`. The last live item, section
+  B4 (two tabs on one `receiptId`, the 409 loser can save over the winner's
+  parsed data), was explicitly declined by the owner. The task's own acceptance
+  criterion allows closure by decline as well as by fix, so this is a completed
+  task, not an abandoned one. Nothing merged for OT-129 itself — no commit, no
+  branch — it closes as a backlog container whose items were all dispatched
+  elsewhere and shipped (B1/B3/B5/B6 in OT-132, B2 in OT-134, C1/C2 in OT-137)
+  or declined (section A, permanently; B4, here). The reason column says
+  "closed by decline" rather than implying a merge that never happened.
+
+Left alone, no drift: every other card checked against the ledger and matches
+already. `ledger/` now has no `todo` and no `in-progress` tasks — OT-127 is the
+only open item, and it is `blocked` on fleet infrastructure (`.claude/hooks`)
+that no agent in this repo, orchestrator included, can write. Worth flagging:
+the backlog is otherwise empty.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in this
+session's tool list. Per the fallback rule this is expected, not an error —
+writing to `docs/kanban.md` is the correct outcome.
+
+## Sync notes (2026-08-20, cycle 18)
+
+Reconciled against `ledger/OT-137.md`, `ledger/OT-134.md`, `ledger/OT-129.md`,
+`ledger/OT-127.md`. Matched on id — no card created without a matching ledger
+file.
+
+- **OT-137** In Progress → **Done**. Ledger `state: done`, merged as `070cb49`.
+  Moved to Done because the ledger says done, not because of the merge — the
+  merge happened to land in the same session.
+- **OT-134** In Progress → **Done**. Ledger `state: done`, merged as `5534b5f`.
+- **OT-129** left at **Todo**, no change. Ledger body still lists only section
+  B4 as remaining — matches the existing note.
+- **OT-127** left at **Blocked**, no change. `blocked_reason` in the ledger
+  frontmatter is unchanged from last cycle. Two new entries were added to the
+  ledger body this session — occurrences 4 and 5 (two more agents killed on
+  `maxTurns`, no `SubagentStop`, cleared by hand a third and fourth time) and a
+  second, separate bug found while clearing them: untyped stop records
+  (`agent_type: ""`) land in their own bucket and never cancel a typed start,
+  so the per-type count can ratchet upward with no agent dying at all. Neither
+  changes the `state` or `blocked_reason`, so the card is unchanged. Noted here
+  because a blocked card that hasn't moved in five sync cycles is exactly the
+  kind of thing worth a second look — this one remains blocked for the reason
+  already on the card: `.claude/hooks` is closed to every agent, orchestrator
+  included, on both the Edit/Write and Bash routes.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in this
+session's tool list. Per the fallback rule this is expected, not an error —
+writing to `docs/kanban.md` is the correct outcome.
+
+## Correction (2026-08-20)
+
+OT-135 and OT-136, created below in cycle 17, were cut by the owner on cost
+grounds before either was dispatched. `ledger/OT-135.md` and
+`ledger/OT-136.md` are deleted. Their cards are removed from the table above —
+neither ever ran, so there is no work-in-progress to reconcile.
+
+The two `medium` findings that spawned them are not lost. They are recorded
+in `ledger/OT-133.md` under "Findings DECLINED 2026-08-20 on owner
+instruction": a new but strictly-better concurrency failure introduced by
+`0023` (a whole-transaction rollback with an error toast, replacing a prior
+silent duplicate-row bug), and a stale comment in `src/lib/receiptShare.ts`
+that `0023` made false. Both were judged not to meet the bar of "the app
+fails its one job without it" and were declined rather than filed. The OT-133
+row above is corrected to say so instead of citing OT-135/OT-136 as
+follow-up tasks.
+
+The cycle 17 notes below are left as written — they are the historical record
+of what this board looked like at the time, including the since-corrected
+claim that OT-135 and OT-136 were filed. Read them as history, not as current
+state; the table above is current.
+
+## Sync notes (2026-08-19, cycle 17)
+
+Reconciled against `ledger/OT-133.md`, `ledger/OT-134.md`, `ledger/OT-135.md`,
+`ledger/OT-136.md`, `ledger/OT-137.md`, `ledger/OT-129.md`. Matched on id — no
+cards deleted.
+
+Moves and creates this batch:
+
+- **OT-133** In Progress → **Done**. Third reviewer dispatch delivered a PASS
+  after two prior review attempts died to the turn limit with no verdict
+  recorded. All six criteria checked, criterion 1 mutation-checked against a
+  reverted model and confirmed non-tautological. Merged into main as a merge
+  commit on top of `420a8d3`. Two medium findings from the review carried
+  forward as new tasks rather than fixed here: OT-135, OT-136.
+- **OT-135** created, **Todo**, `builder` per frontmatter. OT-133 reviewer's
+  first medium — two overlapping owner saves can now collide on the
+  `receipt_items` primary key and roll back with a `23505`, where random ids
+  used to produce silent duplicate rows instead. Framed explicitly as a better
+  failure to make tested and distinguishable, not a regression to revert.
+- **OT-136** created, **Todo**, `builder-light` per frontmatter. OT-133
+  reviewer's second medium — a stale comment in `receiptShare.ts` still claims
+  the item swap clears old charges, which `0023` made false. Comment-only fix,
+  one file.
+- **OT-137** created, **In Progress**, `builder-deep` per frontmatter. Split
+  out of OT-129 section C1 now that OT-133 has merged and freed
+  `save_receipt_state` to be amended again. Same defect shape OT-124 fixed for
+  `joined_via_share`, now for `claim_done_at`. Also folds in what was briefly
+  filed as its own task, OT-138 (a stale test assertion in
+  `chargesRls.test.ts`) — done separately it would have gone stale on arrival
+  again, the same moving-target problem that held it inside OT-129 originally.
+  No card exists for OT-138 on this board, so nothing was removed for it.
+- **OT-134** left at **In Progress**, no card change beyond confirming it's on
+  the board — `attempts: 1` per frontmatter, still building.
+- **OT-129** left at **Todo**, note rewritten. Scope shrank to a single
+  remaining item, section B4 (two tabs on one `receiptId`, low, pre-existing) —
+  section A stays permanently declined, and C1/C2 split out into OT-137 above.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as vanished.
+
+Notion not reachable this cycle: no `mcp__notion__*` tools present in this
+session's tool list. Falling back to `docs/kanban.md` per the fallback rule —
+this is the expected outcome, not a failure.
 
 ## Sync notes (2026-08-19, cycle 16)
 
@@ -438,6 +560,50 @@ one.
   `v_claiming` is false at `status='open'`, so a join committing in the gap
   between `joinReceipt` writing `'shared'` and `reopenEditing` writing
   `'open'` is deletable by the next save (LOW).
+
+## Publisher notes (2026-08-20, document mode, cycle 3)
+
+Documented two merges: OT-137 (`070cb49`) and OT-134 (`5534b5f`). Both moved to
+Done above, matching their ledger `state: done`. README got two new key
+features, two new tradeoff rows, and two new learnings (findings carried
+forward on both tasks; two branches independently claiming migration `0024`
+and what renumbering actually costs). `docs/features.md` got one row per
+feature — these are distinct user-facing behaviors, not extensions of an
+existing row, so neither was folded into "Claim-safe owner saves."
+
+Neither task's review findings were filed as new ledger tasks. Both were
+reviewed and explicitly declined at the reviewer/owner level, with reasoning
+kept in `ledger/OT-137.md` and `ledger/OT-134.md` — not restated here per the
+handbook's rule against listing every finding. OT-134's review also confirmed
+OT-129's remaining item (B4, two tabs on one `receiptId`) got strictly better
+as a side effect, not worse; no ledger change made on that basis, it's a
+by-product noted for whoever picks up B4 next.
+
+Notion was not reachable: no `mcp__notion__*` tools present in this session's
+tool list. Per the fallback rule this is expected, not an error — writing to
+`docs/` is the correct outcome.
+
+## Publisher notes (2026-08-19, document mode, cycle 2)
+
+Documented one merge: OT-133 (merge commit on top of `420a8d3`). Moved to Done
+above, matching its ledger `state: done`. README got a new tradeoff row, an
+extended key-features line, and two new learnings (mutation-checking a test by
+reverting its mechanisms; shipping with findings carried forward rather than
+fixed). `docs/features.md`'s existing OT-130 row was extended rather than given
+a new row, since OT-133 closes the other half of the same window.
+
+Both medium findings from the OT-133 review were already filed as their own
+ledger tasks before this run — OT-135 and OT-136 — so nothing new was filed
+here. The two low findings are the task's own documented, non-defect tradeoffs
+(no revoke-while-claiming; `new/page.tsx` sending no item ids is weaker than
+originally feared, since that page's payload can never name a share-link
+joiner) — not filed, per the task's own writeup.
+
+Not documented: OT-134, OT-135, OT-136, OT-137. None has merged.
+
+Notion was not reachable: no `mcp__notion__*` tools present in this session's
+tool list. Per the fallback rule this is expected, not an error — writing to
+`docs/` is the correct outcome.
 
 ## Publisher notes (2026-08-19, document mode)
 
