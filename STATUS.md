@@ -1,18 +1,19 @@
 # Agent status
 
-Updated 2026-08-20 01:39 UTC · regenerated on every task completion.
+Updated 2026-08-20 01:40 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $0.64 | $125.00 | ░░░░░░░░░░ 0% |
+| open-tab | $1.83 | $125.00 | ░░░░░░░░░░ 1% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-20T01:39:12Z | 2 |
+| publisher | open-tab | 2026-08-20T01:39:45Z | 2 |
 
 ## Tasks
 
@@ -50,19 +51,31 @@ Updated 2026-08-20 01:39 UTC · regenerated on every task completion.
 | `OT-129` | **blocked** | backlog from the OT-123, OT-124 and OT-126 reviews — >- | builder |
 | `OT-130` | running | an owner save deletes any claimer who joined since the client loaded the page — null | builder-deep |
 | `OT-131` | **blocked** | the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log — >- | builder-deep |
-| `OT-132` | running | a parse outage is invisible to the user — no message on any non-429 failure — null | builder-deep |
+| `OT-132` | todo | a parse outage is invisible to the user — no message on any non-429 failure — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-20T01:39:12Z  open-tab  SubagentStart  builder-deep
-2026-08-20T01:39:12Z  open-tab  SubagentStart  builder-deep
-2026-08-20T01:39:43Z  open-tab  SubagentStop  
-2026-08-20T01:39:43Z  open-tab  SubagentStop  
-2026-08-20T01:39:43Z  open-tab  SubagentStop  
-2026-08-20T01:39:43Z  open-tab  SubagentStop  
-2026-08-20T01:39:43Z  open-tab  SubagentStop  
-2026-08-20T01:39:43Z  open-tab  SubagentStop  
+2026-08-20T01:40:14Z  open-tab  SubagentStop  
+2026-08-20T01:40:14Z  open-tab  SubagentStop  
+2026-08-20T01:40:16Z  open-tab  SubagentStop  
+2026-08-20T01:40:16Z  open-tab  SubagentStop  
+2026-08-20T01:40:16Z  open-tab  SubagentStop  
+2026-08-20T01:40:16Z  open-tab  SubagentStop  
+2026-08-20T01:40:16Z  open-tab  SubagentStop  
+2026-08-20T01:40:16Z  open-tab  SubagentStop  
+2026-08-20T01:40:24Z  open-tab  SubagentStop  
+2026-08-20T01:40:24Z  open-tab  SubagentStop  
+2026-08-20T01:40:24Z  open-tab  SubagentStop  
+2026-08-20T01:40:24Z  open-tab  SubagentStop  
+2026-08-20T01:40:24Z  open-tab  SubagentStop  
+2026-08-20T01:40:24Z  open-tab  SubagentStop  
+2026-08-20T01:40:46Z  open-tab  SubagentStop  
+2026-08-20T01:40:46Z  open-tab  SubagentStop  
+2026-08-20T01:40:46Z  open-tab  SubagentStop  
+2026-08-20T01:40:46Z  open-tab  SubagentStop  
+2026-08-20T01:40:46Z  open-tab  SubagentStop  
+2026-08-20T01:40:46Z  open-tab  SubagentStop  
 ```
 
 ---
