@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-20 22:30 UTC · regenerated on every task completion.
+Updated 2026-08-20 22:31 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $91.47 | $125.00 | ███████░░░ 73% |
+| open-tab | $91.9 | $125.00 | ███████░░░ 73% |
 
 ## Agents
 
@@ -63,18 +63,6 @@ Updated 2026-08-20 22:30 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-20T22:28:39Z  open-tab  SubagentStop  
-2026-08-20T22:28:39Z  open-tab  SubagentStop  
-2026-08-20T22:29:40Z  open-tab  SubagentStop  
-2026-08-20T22:29:40Z  open-tab  SubagentStop  
-2026-08-20T22:29:40Z  open-tab  SubagentStop  
-2026-08-20T22:29:40Z  open-tab  SubagentStop  
-2026-08-20T22:29:40Z  open-tab  SubagentStop  
-2026-08-20T22:29:40Z  open-tab  SubagentStop  
-2026-08-20T22:30:12Z  open-tab  SubagentStop  
-2026-08-20T22:30:12Z  open-tab  SubagentStop  
-2026-08-20T22:30:12Z  open-tab  SubagentStop  
-2026-08-20T22:30:12Z  open-tab  SubagentStop  
 2026-08-20T22:30:12Z  open-tab  SubagentStop  
 2026-08-20T22:30:12Z  open-tab  SubagentStop  
 2026-08-20T22:30:44Z  open-tab  SubagentStop  
@@ -83,6 +71,18 @@ Updated 2026-08-20 22:30 UTC · regenerated on every task completion.
 2026-08-20T22:30:44Z  open-tab  SubagentStop  
 2026-08-20T22:30:44Z  open-tab  SubagentStop  
 2026-08-20T22:30:44Z  open-tab  SubagentStop  
+2026-08-20T22:31:16Z  open-tab  SubagentStop  
+2026-08-20T22:31:16Z  open-tab  SubagentStop  
+2026-08-20T22:31:16Z  open-tab  SubagentStop  
+2026-08-20T22:31:16Z  open-tab  SubagentStop  
+2026-08-20T22:31:16Z  open-tab  SubagentStop  
+2026-08-20T22:31:16Z  open-tab  SubagentStop  
+2026-08-20T22:31:47Z  open-tab  SubagentStop  
+2026-08-20T22:31:47Z  open-tab  SubagentStop  
+2026-08-20T22:31:47Z  open-tab  SubagentStop  
+2026-08-20T22:31:47Z  open-tab  SubagentStop  
+2026-08-20T22:31:47Z  open-tab  SubagentStop  
+2026-08-20T22:31:47Z  open-tab  SubagentStop  
 ```
 
 ---
