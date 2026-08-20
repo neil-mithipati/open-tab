@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-20 03:11 UTC · regenerated on every task completion.
+Updated 2026-08-20 03:12 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $6.26 | $125.00 | ░░░░░░░░░░ 5% |
+| open-tab | $7.01 | $125.00 | ░░░░░░░░░░ 5% |
 
 ## Agents
 
@@ -55,24 +55,11 @@ Updated 2026-08-20 03:11 UTC · regenerated on every task completion.
 | `OT-134` | running | a transient gemini outage permanently burns a receipt's only parse — no retry affordance — null | builder-deep |
 | `OT-135` | todo | two concurrent owner saves now collide on the receipt_items primary key — null | builder |
 | `OT-136` | todo | receiptShare.ts comment claims the swap clears old charges, which 0023 made false — null | builder-light |
-| `OT-137` | todo | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
-| `OT-138` | todo | chargesRls test asserts against migration 0016 function text, three definitions stale — null | builder-light |
+| `OT-137` | running | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-20T03:08:24Z  open-tab  SubagentStop  
-2026-08-20T03:08:55Z  open-tab  SubagentStop  
-2026-08-20T03:08:55Z  open-tab  SubagentStop  
-2026-08-20T03:08:55Z  open-tab  SubagentStop  
-2026-08-20T03:08:55Z  open-tab  SubagentStop  
-2026-08-20T03:08:55Z  open-tab  SubagentStop  
-2026-08-20T03:08:55Z  open-tab  SubagentStop  
-2026-08-20T03:09:09Z  open-tab  SubagentStop  
-2026-08-20T03:09:09Z  open-tab  SubagentStop  
-2026-08-20T03:09:09Z  open-tab  SubagentStop  
-2026-08-20T03:09:09Z  open-tab  SubagentStop  
-2026-08-20T03:09:09Z  open-tab  SubagentStop  
 2026-08-20T03:09:10Z  open-tab  SubagentStop  
 2026-08-20T03:09:15Z  open-tab  SubagentStop  reviewer
 2026-08-20T03:11:27Z  open-tab  SubagentStop  
@@ -81,6 +68,18 @@ Updated 2026-08-20 03:11 UTC · regenerated on every task completion.
 2026-08-20T03:11:27Z  open-tab  SubagentStop  
 2026-08-20T03:11:27Z  open-tab  SubagentStop  
 2026-08-20T03:11:27Z  open-tab  SubagentStop  
+2026-08-20T03:11:58Z  open-tab  SubagentStop  
+2026-08-20T03:11:58Z  open-tab  SubagentStop  
+2026-08-20T03:11:58Z  open-tab  SubagentStop  
+2026-08-20T03:11:58Z  open-tab  SubagentStop  
+2026-08-20T03:11:58Z  open-tab  SubagentStop  
+2026-08-20T03:11:58Z  open-tab  SubagentStop  
+2026-08-20T03:12:30Z  open-tab  SubagentStop  
+2026-08-20T03:12:30Z  open-tab  SubagentStop  
+2026-08-20T03:12:30Z  open-tab  SubagentStop  
+2026-08-20T03:12:30Z  open-tab  SubagentStop  
+2026-08-20T03:12:30Z  open-tab  SubagentStop  
+2026-08-20T03:12:30Z  open-tab  SubagentStop  
 ```
 
 ---
