@@ -15,7 +15,9 @@ const db: {
   // Set to make the claim's conditional update fail, the way an unapplied
   // migration 0020 would.
   claimError: { message: string; code?: string } | null;
-} = { receipt: null, itemCount: 0, claimError: null };
+  // Set to make the post-parse write-back fail without touching the claim.
+  writeBackError: { message: string; code?: string } | null;
+} = { receipt: null, itemCount: 0, claimError: null, writeBackError: null };
 const spies = {
   receiptUpdate: vi.fn(),
   receiptDelete: vi.fn(),
@@ -72,6 +74,7 @@ vi.mock("@/lib/supabase/server", () => {
       return writeBuilder(filters, () => {
         const isClaim = filters.isNull.includes("parsed_at");
         if (isClaim && db.claimError) return { data: null, error: db.claimError };
+        if (!isClaim && db.writeBackError) return { data: null, error: db.writeBackError };
         if (!matchesRow(filters)) return { data: [], error: null };
         const id = filters.eq.find(([col]) => col === "id")?.[1];
         spies.receiptUpdate(values, id);
@@ -195,6 +198,7 @@ beforeEach(() => {
   db.receipt = { ...UNPARSED };
   db.itemCount = 0;
   db.claimError = null;
+  db.writeBackError = null;
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     arrayBuffer: async () => new ArrayBuffer(10),
@@ -246,6 +250,22 @@ describe("POST /api/receipts/parse", () => {
     expect(res.status).toBe(200);
     expect(json.success).toBe(true);
     expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+  });
+
+  it("logs a failed write-back but still returns the parsed data to the caller", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    db.writeBackError = { message: "connection reset" };
+
+    const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    const json = await res.json();
+
+    // The claim already spent the receipt's one parse and the model already
+    // ran, so a persistence failure here must not cost the caller the result
+    // they already paid for.
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ success: true, data: PARSE_RESULT });
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining("write-back failed"));
+    logged.mockRestore();
   });
 
   it("excludes the receipt being parsed from the hourly count", async () => {
@@ -473,6 +493,27 @@ describe("POST /api/receipts/parse", () => {
 
     expect(spies.storageRemove).not.toHaveBeenCalled();
     expect(spies.receiptDelete).toHaveBeenCalledWith("r1", "u1");
+  });
+
+  // A concurrent request can claim the parse in the gap between the
+  // rate-limit read and this delete. When that happens the row delete's
+  // `parsed_at is null` filter matches nothing, and the image must survive
+  // too — deleting it anyway would leave the winning request's receipt
+  // pointing at storage that no longer exists.
+  it("leaves the stored image alone when the row delete loses the race to a concurrent claim", async () => {
+    // A concurrent request claims the parse during the gap between the
+    // rate-limit check (which already ran the free `alreadyParsed` read) and
+    // the discard's delete — the earliest point this route re-touches the
+    // row.
+    isParseRateLimited.mockImplementation(async () => {
+      if (db.receipt) (db.receipt as Record<string, unknown>).parsed_at = new Date().toISOString();
+      return true;
+    });
+
+    await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(spies.receiptDelete).not.toHaveBeenCalled();
+    expect(spies.storageRemove).not.toHaveBeenCalled();
   });
 
   it("rejects an image path that is not the caller's own", async () => {

@@ -135,16 +135,24 @@ async function discardUnparsedReceipt(
   userId: string,
   receipt: StoredReceipt
 ): Promise<void> {
-  const path = ownStoragePath(userId, receipt);
-  if (path) {
-    await service.storage.from("receipt-images").remove([path]);
-  }
-  await service
+  const { data: deleted } = await service
     .from("receipts")
     .delete()
     .eq("id", receipt.id)
     .eq("created_by", userId)
-    .is("parsed_at", null);
+    .is("parsed_at", null)
+    .select("id");
+
+  // Only remove the stored object once the row is confirmed gone. If a
+  // concurrent request claimed the parse in between the rate-limit check and
+  // here, this filter matches nothing — removing the image anyway would leave
+  // the winning request's receipt pointing at storage that no longer exists.
+  if ((deleted?.length ?? 0) === 0) return;
+
+  const path = ownStoragePath(userId, receipt);
+  if (path) {
+    await service.storage.from("receipt-images").remove([path]);
+  }
 }
 
 export async function POST(request: Request) {
@@ -266,8 +274,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "parse_failed" }, { status: 500 });
   }
 
-  // write parsed data back to db
-  await service
+  // write parsed data back to db. Logged, not surfaced to the caller: the
+  // parsed data returned below is what CaptureStep actually reads to fill the
+  // split step, so a write-back failure here does not stop the user from
+  // seeing their parse — it only means the stored row is stale until someone
+  // notices the log. Failing the response instead would burn the receipt's
+  // one already-claimed parse on a persistence bug the user cannot retry
+  // their way out of.
+  const { error: writeBackError } = await service
     .from("receipts")
     .update({
       merchant_name: parsed.merchant_name,
@@ -279,6 +293,12 @@ export async function POST(request: Request) {
       status: "open",
     })
     .eq("id", receipt.id);
+
+  if (writeBackError) {
+    console.error(
+      `[parse] write-back failed for receipt ${receipt.id}: ${writeBackError.message}`
+    );
+  }
 
   if (parsed.items.length > 0) {
     await service.from("receipt_items").insert(
