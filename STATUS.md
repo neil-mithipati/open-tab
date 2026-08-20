@@ -1,19 +1,18 @@
 # Agent status
 
-Updated 2026-08-20 02:11 UTC · regenerated on every task completion.
+Updated 2026-08-20 02:14 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $25.32 | $125.00 | ██░░░░░░░░ 20% |
+| open-tab | $26.59 | $125.00 | ██░░░░░░░░ 21% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| builder-deep | open-tab | 2026-08-20T02:02:54Z | 2 |
-| publisher | open-tab | 2026-08-20T02:08:57Z | 3 |
+| builder-deep | open-tab | 2026-08-20T02:14:25Z | 2 |
 
 ## Tasks
 
@@ -57,26 +56,14 @@ Updated 2026-08-20 02:11 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-20T02:09:52Z  open-tab  SubagentStop  
-2026-08-20T02:09:52Z  open-tab  SubagentStop  
-2026-08-20T02:09:59Z  open-tab  SubagentStop  
-2026-08-20T02:09:59Z  open-tab  SubagentStop  
-2026-08-20T02:09:59Z  open-tab  SubagentStop  
-2026-08-20T02:09:59Z  open-tab  SubagentStop  
-2026-08-20T02:09:59Z  open-tab  SubagentStop  
-2026-08-20T02:09:59Z  open-tab  SubagentStop  
-2026-08-20T02:10:17Z  open-tab  SubagentStop  
-2026-08-20T02:10:17Z  open-tab  SubagentStop  
-2026-08-20T02:10:17Z  open-tab  SubagentStop  
-2026-08-20T02:10:17Z  open-tab  SubagentStop  
-2026-08-20T02:10:17Z  open-tab  SubagentStop  
-2026-08-20T02:10:17Z  open-tab  SubagentStop  
-2026-08-20T02:11:47Z  open-tab  SubagentStop  
-2026-08-20T02:11:47Z  open-tab  SubagentStop  
-2026-08-20T02:11:47Z  open-tab  SubagentStop  
-2026-08-20T02:11:47Z  open-tab  SubagentStop  
-2026-08-20T02:11:47Z  open-tab  SubagentStop  
-2026-08-20T02:11:47Z  open-tab  SubagentStop  
+2026-08-20T02:14:25Z  open-tab  SubagentStart  builder-deep
+2026-08-20T02:14:25Z  open-tab  SubagentStart  builder-deep
+2026-08-20T02:14:29Z  open-tab  SubagentStop  
+2026-08-20T02:14:29Z  open-tab  SubagentStop  
+2026-08-20T02:14:29Z  open-tab  SubagentStop  
+2026-08-20T02:14:29Z  open-tab  SubagentStop  
+2026-08-20T02:14:29Z  open-tab  SubagentStop  
+2026-08-20T02:14:29Z  open-tab  SubagentStop  
 ```
 
 ---
