@@ -1,18 +1,18 @@
 # Agent status
 
-Updated 2026-08-20 03:40 UTC · regenerated on every task completion.
+Updated 2026-08-20 03:42 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $32.3 | $125.00 | ██░░░░░░░░ 25% |
+| open-tab | $33.91 | $125.00 | ██░░░░░░░░ 27% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| builder-light | open-tab | 2026-08-20T03:39:41Z | 1 |
+| publisher | open-tab | 2026-08-20T03:41:58Z | 1 |
 
 ## Tasks
 
@@ -52,20 +52,12 @@ Updated 2026-08-20 03:40 UTC · regenerated on every task completion.
 | `OT-131` | done | the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log — null | builder-deep |
 | `OT-132` | done | a parse outage is invisible to the user — no message on any non-429 failure — null | builder |
 | `OT-133` | done | a late claim is destroyed by the item re-mint when the claimer IS in the payload — null | builder-deep |
-| `OT-134` | running | a transient gemini outage permanently burns a receipt's only parse — no retry affordance — null | builder-deep |
+| `OT-134` | done | a transient gemini outage permanently burns a receipt's only parse — no retry affordance — null | builder-deep |
 | `OT-137` | done | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-20T03:34:31Z  open-tab  SubagentStop  
-2026-08-20T03:34:44Z  open-tab  SubagentStop  reviewer
-2026-08-20T03:36:13Z  open-tab  SubagentStart  builder-light
-2026-08-20T03:36:48Z  open-tab  SubagentStop  
-2026-08-20T03:36:48Z  open-tab  SubagentStop  
-2026-08-20T03:36:48Z  open-tab  SubagentStop  
-2026-08-20T03:36:48Z  open-tab  SubagentStop  
-2026-08-20T03:36:48Z  open-tab  SubagentStop  
 2026-08-20T03:36:48Z  open-tab  SubagentStop  
 2026-08-20T03:38:23Z  open-tab  SubagentStop  
 2026-08-20T03:38:23Z  open-tab  SubagentStop  
@@ -78,6 +70,14 @@ Updated 2026-08-20 03:40 UTC · regenerated on every task completion.
 2026-08-20T03:40:14Z  open-tab  SubagentStop  
 2026-08-20T03:40:14Z  open-tab  SubagentStop  
 2026-08-20T03:40:14Z  open-tab  SubagentStop  
+2026-08-20T03:40:42Z  open-tab  SubagentStop  builder-light
+2026-08-20T03:41:58Z  open-tab  SubagentStart  publisher
+2026-08-20T03:42:29Z  open-tab  SubagentStop  
+2026-08-20T03:42:29Z  open-tab  SubagentStop  
+2026-08-20T03:42:29Z  open-tab  SubagentStop  
+2026-08-20T03:42:29Z  open-tab  SubagentStop  
+2026-08-20T03:42:29Z  open-tab  SubagentStop  
+2026-08-20T03:42:29Z  open-tab  SubagentStop  
 ```
 
 ---
