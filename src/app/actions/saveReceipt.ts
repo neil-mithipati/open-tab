@@ -14,6 +14,11 @@ import { userReceiptsTag } from "@/lib/cacheTags";
 // clientId-keyed state onto the jsonb payloads the function expects.
 // ===========================================================================
 
+// SQLSTATE save_receipt_state raises when the participant set changed under
+// the client (migration 0022). PostgREST reads a PT-prefixed code as an HTTP
+// status, so this also comes back as a 409 rather than a 500.
+const PARTICIPANTS_CHANGED = "PT409";
+
 export interface SaveReceiptItem {
   clientId: string;
   name: string;
@@ -186,6 +191,14 @@ export async function saveReceiptState(
     "save_receipt_state",
     buildSavePayload(input)
   );
+  // The one refusal the owner can act on: somebody joined through the share
+  // link after this page took its snapshot, so the list being sent predates
+  // them and applying it would delete them along with their claims. 0022
+  // raises PT409 instead and rolls the whole call back, so nothing was
+  // written and the only thing to do is reload.
+  if (error?.code === PARTICIPANTS_CHANGED) {
+    return { error: "Someone just joined this tab. Reload to see them." };
+  }
   if (error) return { error: "Couldn't save. Try again." };
 
   revalidatePath(`/receipts/${input.receiptId}`);
