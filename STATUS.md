@@ -1,19 +1,19 @@
 # Agent status
 
-Updated 2026-08-20 22:03 UTC · regenerated on every task completion.
+Updated 2026-08-20 22:04 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $59.3 | $125.00 | ████░░░░░░ 47% |
+| open-tab | $60.28 | $125.00 | ████░░░░░░ 48% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-20T21:55:30Z | 1 |
-| builder | open-tab | 2026-08-20T21:59:47Z | 1 |
+| reviewer-light | open-tab | 2026-08-20T22:04:45Z | 1 |
 
 ## Tasks
 
@@ -55,7 +55,7 @@ Updated 2026-08-20 22:03 UTC · regenerated on every task completion.
 | `OT-133` | done | a late claim is destroyed by the item re-mint when the claimer IS in the payload — null | builder-deep |
 | `OT-134` | done | a transient gemini outage permanently burns a receipt's only parse — no retry affordance — null | builder-deep |
 | `OT-135` | **blocked** | migrate receipt parser to gemini-2.5-flash-lite with schema enforced as config — >- | builder |
-| `OT-136` | todo | arithmetic validation on parsed receipts, money as integer cents end to end — null | builder-deep |
+| `OT-136` | running | arithmetic validation on parsed receipts, money as integer cents end to end — null | builder-deep |
 | `OT-137` | done | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
 | `OT-138` | **blocked** | three live fail-opens in parallel-cap.sh let an uncapped dispatch through — >- | builder-deep |
 | `OT-139` | running | lock down receipt image storage — private bucket, RLS, signed URLs, retention job — null | builder-deep |
@@ -64,26 +64,26 @@ Updated 2026-08-20 22:03 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-20T22:02:24Z  open-tab  SubagentStop  
-2026-08-20T22:02:24Z  open-tab  SubagentStop  
-2026-08-20T22:02:55Z  open-tab  SubagentStop  
-2026-08-20T22:02:55Z  open-tab  SubagentStop  
-2026-08-20T22:02:55Z  open-tab  SubagentStop  
-2026-08-20T22:02:55Z  open-tab  SubagentStop  
-2026-08-20T22:02:55Z  open-tab  SubagentStop  
-2026-08-20T22:02:55Z  open-tab  SubagentStop  
-2026-08-20T22:03:16Z  open-tab  SubagentStop  
-2026-08-20T22:03:16Z  open-tab  SubagentStop  
-2026-08-20T22:03:16Z  open-tab  SubagentStop  
-2026-08-20T22:03:16Z  open-tab  SubagentStop  
-2026-08-20T22:03:16Z  open-tab  SubagentStop  
-2026-08-20T22:03:16Z  open-tab  SubagentStop  
-2026-08-20T22:03:27Z  open-tab  SubagentStop  
-2026-08-20T22:03:27Z  open-tab  SubagentStop  
-2026-08-20T22:03:27Z  open-tab  SubagentStop  
-2026-08-20T22:03:27Z  open-tab  SubagentStop  
-2026-08-20T22:03:27Z  open-tab  SubagentStop  
-2026-08-20T22:03:27Z  open-tab  SubagentStop  
+2026-08-20T22:03:59Z  open-tab  SubagentStop  
+2026-08-20T22:03:59Z  open-tab  SubagentStop  
+2026-08-20T22:03:59Z  open-tab  SubagentStop  
+2026-08-20T22:03:59Z  open-tab  SubagentStop  
+2026-08-20T22:03:59Z  open-tab  SubagentStop  
+2026-08-20T22:03:59Z  open-tab  SubagentStop  
+2026-08-20T22:04:02Z  open-tab  SubagentStop  builder
+2026-08-20T22:04:20Z  open-tab  SubagentStop  
+2026-08-20T22:04:20Z  open-tab  SubagentStop  
+2026-08-20T22:04:20Z  open-tab  SubagentStop  
+2026-08-20T22:04:20Z  open-tab  SubagentStop  
+2026-08-20T22:04:20Z  open-tab  SubagentStop  
+2026-08-20T22:04:20Z  open-tab  SubagentStop  
+2026-08-20T22:04:45Z  open-tab  SubagentStart  reviewer-light
+2026-08-20T22:04:51Z  open-tab  SubagentStop  
+2026-08-20T22:04:51Z  open-tab  SubagentStop  
+2026-08-20T22:04:51Z  open-tab  SubagentStop  
+2026-08-20T22:04:51Z  open-tab  SubagentStop  
+2026-08-20T22:04:51Z  open-tab  SubagentStop  
+2026-08-20T22:04:51Z  open-tab  SubagentStop  
 ```
 
 ---
