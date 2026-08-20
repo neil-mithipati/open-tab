@@ -1,19 +1,18 @@
 # Agent status
 
-Updated 2026-08-20 03:36 UTC · regenerated on every task completion.
+Updated 2026-08-20 03:40 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $30.83 | $125.00 | ██░░░░░░░░ 24% |
+| open-tab | $32.3 | $125.00 | ██░░░░░░░░ 25% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| builder-deep | open-tab | 2026-08-20T03:12:43Z | 1 |
-| builder-light | open-tab | 2026-08-20T03:36:13Z | 1 |
+| builder-light | open-tab | 2026-08-20T03:39:41Z | 1 |
 
 ## Tasks
 
@@ -59,17 +58,6 @@ Updated 2026-08-20 03:36 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-20T03:34:07Z  open-tab  SubagentStop  
-2026-08-20T03:34:07Z  open-tab  SubagentStop  
-2026-08-20T03:34:07Z  open-tab  SubagentStop  
-2026-08-20T03:34:07Z  open-tab  SubagentStop  
-2026-08-20T03:34:07Z  open-tab  SubagentStop  
-2026-08-20T03:34:18Z  open-tab  SubagentStop  reviewer
-2026-08-20T03:34:31Z  open-tab  SubagentStop  
-2026-08-20T03:34:31Z  open-tab  SubagentStop  
-2026-08-20T03:34:31Z  open-tab  SubagentStop  
-2026-08-20T03:34:31Z  open-tab  SubagentStop  
-2026-08-20T03:34:31Z  open-tab  SubagentStop  
 2026-08-20T03:34:31Z  open-tab  SubagentStop  
 2026-08-20T03:34:44Z  open-tab  SubagentStop  reviewer
 2026-08-20T03:36:13Z  open-tab  SubagentStart  builder-light
@@ -79,6 +67,17 @@ Updated 2026-08-20 03:36 UTC · regenerated on every task completion.
 2026-08-20T03:36:48Z  open-tab  SubagentStop  
 2026-08-20T03:36:48Z  open-tab  SubagentStop  
 2026-08-20T03:36:48Z  open-tab  SubagentStop  
+2026-08-20T03:38:23Z  open-tab  SubagentStop  
+2026-08-20T03:38:23Z  open-tab  SubagentStop  
+2026-08-20T03:39:24Z  open-tab  SubagentStop  builder-deep
+2026-08-20T03:39:24Z  open-tab  SubagentStop  builder-light
+2026-08-20T03:39:41Z  open-tab  SubagentStart  builder-light
+2026-08-20T03:40:14Z  open-tab  SubagentStop  
+2026-08-20T03:40:14Z  open-tab  SubagentStop  
+2026-08-20T03:40:14Z  open-tab  SubagentStop  
+2026-08-20T03:40:14Z  open-tab  SubagentStop  
+2026-08-20T03:40:14Z  open-tab  SubagentStop  
+2026-08-20T03:40:14Z  open-tab  SubagentStop  
 ```
 
 ---
