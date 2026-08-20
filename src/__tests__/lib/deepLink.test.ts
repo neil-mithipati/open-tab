@@ -16,7 +16,8 @@ describe("buildVenmoProfileUrl", () => {
 });
 
 describe("buildVenmoLinks", () => {
-  const base = { recipientUsername: "alice", amount: 12.5, note: "open-tab: Chipotle 2025-05-24" };
+  // amountCents — the link takes the integer the split arithmetic produced.
+  const base = { recipientUsername: "alice", amountCents: 1250, note: "open-tab: Chipotle 2025-05-24" };
 
   it("returns a venmoLink starting with https://venmo.com", () => {
     const { venmoLink } = buildVenmoLinks(base);
@@ -33,9 +34,15 @@ describe("buildVenmoLinks", () => {
     expect(venmoLink).toContain("alice");
   });
 
-  it("includes the amount in the link", () => {
+  it("includes the amount in the link, as dollars with two decimals", () => {
     const { venmoLink } = buildVenmoLinks(base);
-    expect(venmoLink).toContain("12.5");
+    expect(venmoLink).toContain("amount=12.50");
+  });
+
+  it("converts cents to dollars without floating-point drift", () => {
+    // 1 cent short of $100. 9999 / 100 must print as 99.99, not 99.98999….
+    const { venmoLink } = buildVenmoLinks({ ...base, amountCents: 9999 });
+    expect(venmoLink).toContain("amount=99.99");
   });
 
   it("strips a leading @ from the username", () => {

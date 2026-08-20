@@ -9,6 +9,7 @@ import { extractStoragePath } from "@/lib/storage";
 import type { EditableItem, FlowParticipant } from "@/types";
 import { ReceiptEditPage } from "./ReceiptEditPage";
 import { ClaimOwnerView } from "@/components/receipt/ClaimOwnerView";
+import { toCents, toCentsOrNull } from "@/lib/money";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -68,11 +69,13 @@ async function ReceiptDetailContent({ params }: Props) {
 
   const signedUrl = imageStoragePath ? await getReceiptImageUrl(imageStoragePath) : null;
 
+  // The database edge. Columns are numeric(10,2) dollars; the editing flow is
+  // integer cents from here on.
   const flowItems: EditableItem[] = items.map((item: { id: string; name: string; price: number; quantity: number }) => ({
     clientId: `item-${item.id}`,
     dbId: item.id,
     name: item.name,
-    price: item.price,
+    price: toCents(item.price),
     quantity: item.quantity,
   }));
 
@@ -102,10 +105,10 @@ async function ReceiptDetailContent({ params }: Props) {
         mimeType: null,
         merchantName: receipt.merchant_name ?? null,
         dateOfReceipt: receipt.date_of_receipt ?? null,
-        subtotal: receipt.subtotal ?? null,
-        tax: receipt.tax ?? null,
-        tip: receipt.tip ?? null,
-        total: receipt.total ?? null,
+        subtotal: toCentsOrNull(receipt.subtotal),
+        tax: toCentsOrNull(receipt.tax),
+        tip: toCentsOrNull(receipt.tip),
+        total: toCentsOrNull(receipt.total),
         items: flowItems,
         participants: flowParticipants,
         splitMode: (receipt.split_mode as "equal" | "by_item") ?? "equal",

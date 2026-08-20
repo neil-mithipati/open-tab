@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassButton } from "@/components/ui/GlassButton";
 import { Avatar } from "@/components/ui/Avatar";
+import { formatCents, toCents } from "@/lib/money";
 import {
   computeSharedClaimCharges,
   formatCurrency,
@@ -79,7 +80,8 @@ export function ClaimPage({ token, initial }: Props) {
       clientId: it.id,
       dbId: it.id,
       name: it.name,
-      price: it.price,
+      // SharedReceipt is dollars off numeric(10,2); the split is cents.
+      price: toCents(it.price),
       quantity: it.quantity,
     }));
     const participants: FlowParticipant[] = receipt.participants.map((p) => ({
@@ -94,8 +96,8 @@ export function ClaimPage({ token, initial }: Props) {
       items,
       receipt.assignments,
       participants,
-      receipt.tax ?? 0,
-      receipt.tip ?? 0,
+      toCents(receipt.tax ?? 0),
+      toCents(receipt.tip ?? 0),
       receipt.owner.venmo_username ?? "",
       receipt.merchant_name,
       receipt.date_of_receipt
@@ -175,10 +177,10 @@ export function ClaimPage({ token, initial }: Props) {
               {receipt.owner.venmo_username ?? receipt.owner.display_name}.
             </p>
           </div>
-          {myCharge && myCharge.amount > 0 ? (
+          {myCharge && myCharge.amountCents > 0 ? (
             <>
               <p className="text-4xl font-bold text-primary">
-                {formatCurrency(myCharge.amount)}
+                {formatCents(myCharge.amountCents)}
               </p>
               <a
                 href={isMobile ? myCharge.venmoAppLink : myCharge.venmoLink}
@@ -351,7 +353,7 @@ export function ClaimPage({ token, initial }: Props) {
       <div className="mt-5 flex items-center justify-between px-1">
         <span className="text-secondary text-sm">Your estimated total</span>
         <span className="text-xl font-bold text-primary">
-          {formatCurrency(myCharge?.amount ?? 0)}
+          {formatCents(myCharge?.amountCents ?? 0)}
         </span>
       </div>
       <p className="text-[11px] text-tertiary mt-1 px-1">

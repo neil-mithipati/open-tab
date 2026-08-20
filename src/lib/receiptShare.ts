@@ -3,6 +3,7 @@ import { shareReceipt } from "@/app/actions/claim";
 import { saveReceiptState } from "@/app/actions/saveReceipt";
 import type { ReceiptFlowState } from "@/hooks/useReceiptFlow";
 import type { FlowParticipant } from "@/types";
+import { itemsSubtotalCents } from "@/lib/money";
 
 type ShareResult =
   | { url: string }
@@ -54,8 +55,9 @@ export async function persistAndShare(state: ReceiptFlowState): Promise<ShareRes
         ];
   }
 
-  const itemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
-  const totalAmount = total ?? itemSubtotal + (tax ?? 0) + (tip ?? 0);
+  // Integer cents throughout — nothing to round.
+  const itemSubtotalCents = itemsSubtotalCents(items);
+  const totalCents = total ?? itemSubtotalCents + (tax ?? 0) + (tip ?? 0);
 
   // One transaction on the server. Claiming starts from a clean slate, so no
   // assignments or charges are sent; the swap clears any left from an earlier
@@ -68,7 +70,7 @@ export async function persistAndShare(state: ReceiptFlowState): Promise<ShareRes
       // tab does not re-mint the ids the claimers' open pages are holding.
       dbId: item.dbId,
       name: item.name,
-      price: item.price,
+      priceCents: item.price,
       quantity: item.quantity,
     })),
     participants: parts.map((p) => ({
@@ -83,10 +85,10 @@ export async function persistAndShare(state: ReceiptFlowState): Promise<ShareRes
     receipt: {
       splitMode: "by_item",
       merchantName,
-      subtotal: Math.round(itemSubtotal * 100) / 100,
-      tax,
-      tip,
-      total: Math.round(totalAmount * 100) / 100,
+      subtotalCents: itemSubtotalCents,
+      taxCents: tax,
+      tipCents: tip,
+      totalCents,
     },
   });
   if (saved.error) return { error: saved.error };

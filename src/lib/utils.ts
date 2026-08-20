@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import type { EditableItem, FlowParticipant, ComputedCharge } from "@/types";
 import { buildVenmoLinks } from "./venmo/deepLink";
+import { formatCents, itemsSubtotalCents, lineTotalCents, roundCents, toCents } from "./money";
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
@@ -15,11 +16,13 @@ export function animalEmoji(seed: string): string {
   return ANIMALS[Math.abs(hash) % ANIMALS.length];
 }
 
+/**
+ * Formats DOLLARS. Only the surfaces that read money straight off a
+ * numeric(10,2) column still hold dollars — everywhere else is integer cents
+ * and uses formatCents from src/lib/money.ts.
+ */
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+  return formatCents(toCents(amount));
 }
 
 export function formatDate(dateStr: string): string {
@@ -71,6 +74,11 @@ export function buildVenmoNote(
 // sum of every participant's charge — including the owner's implicit,
 // unreturned share — equal to the charged total instead of drifting by a
 // cent or two from independent per-person rounding.
+//
+// This is rule 3 of the rounding rule in src/lib/money.ts: inside the cent
+// domain nothing rounds, it allocates. A per-person Math.round here would be
+// a second rounding and would put the split a cent or two out on receipts
+// that are perfectly correct.
 function allocateCents(totalCents: number, exactCents: number[]): number[] {
   // Round away floating-point noise (e.g. 733.0000000001) before flooring.
   // Four decimal places is far finer than a cent, so it can't mask a real
@@ -90,15 +98,15 @@ function allocateCents(totalCents: number, exactCents: number[]): number[] {
   return result;
 }
 
+/** `totalCents` is integer cents, as is every amount returned. */
 export function computeEqualCharges(
-  total: number,
+  totalCents: number,
   participants: FlowParticipant[],
   merchantName: string | null,
   items: EditableItem[]
 ): ComputedCharge[] {
   const nonOwners = participants.filter((p) => !p.isOwner);
   if (nonOwners.length === 0) return [];
-  const totalCents = Math.round(total * 100);
   const exactCents = participants.map(() => totalCents / participants.length);
   const cents = allocateCents(totalCents, exactCents);
   // Even split shares the whole bill, so the note lists every item.
@@ -107,64 +115,65 @@ export function computeEqualCharges(
     items.map((it) => ({ name: it.name, quantity: it.quantity }))
   );
   return nonOwners.map((p) => {
-    const amount = cents[participants.indexOf(p)] / 100;
+    const amountCents = cents[participants.indexOf(p)];
     return {
       participant: p,
-      amount,
+      amountCents,
       // Owner is collecting from friends → request money (charge), not pay.
-      ...buildVenmoLinks({ recipientUsername: p.venmoUsername, amount, note, txn: "charge" }),
+      ...buildVenmoLinks({ recipientUsername: p.venmoUsername, amountCents, note, txn: "charge" }),
     };
   });
 }
 
+/** `subtotal`, `tax` and `tip` are integer cents, as is every amount returned. */
 export function computeItemCharges(
   items: EditableItem[],
   assignments: Record<string, string[]>, // itemClientId → participantClientIds
   participants: FlowParticipant[],
-  subtotal: number,
-  tax: number,
-  tip: number,
+  subtotalCents: number,
+  taxCents: number,
+  tipCents: number,
   merchantName: string | null,
   // Unused here, but kept so call sites can pass the same argument list as
   // computeSharedClaimCharges below.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _date: string | null
 ): ComputedCharge[] {
-  const taxRate = subtotal > 0 ? tax / subtotal : 0;
-  const tipRate = subtotal > 0 ? tip / subtotal : 0;
+  const taxRate = subtotalCents > 0 ? taxCents / subtotalCents : 0;
+  const tipRate = subtotalCents > 0 ? tipCents / subtotalCents : 0;
 
   // Compute every participant's (including the owner's) assigned-item
   // subtotal and ordered-items list first, so the remainder allocation can
   // account for the owner's implicit share of the assigned-items total.
   const perParticipant = participants.map((p) => {
-    let itemSubtotal = 0;
+    let itemSubtotalCents = 0;
     const ordered: { name: string; quantity: number }[] = [];
     for (const item of items) {
       const assignees = assignments[item.clientId] ?? [];
       if (assignees.includes(p.clientId) && assignees.length > 0) {
-        const share = (item.price * item.quantity) / assignees.length;
-        itemSubtotal += share;
+        // Fractional cents on purpose — allocateCents settles them below.
+        itemSubtotalCents += lineTotalCents(item) / assignees.length;
         ordered.push({ name: item.name, quantity: item.quantity });
       }
     }
-    return { itemSubtotal, ordered };
+    return { itemSubtotalCents, ordered };
   });
 
   const exactCents = perParticipant.map(
-    ({ itemSubtotal }) => itemSubtotal * (1 + taxRate + tipRate) * 100
+    ({ itemSubtotalCents }) => itemSubtotalCents * (1 + taxRate + tipRate)
   );
-  const totalCents = Math.round(exactCents.reduce((sum, v) => sum + v, 0));
+  const totalCents = roundCents(exactCents.reduce((sum, v) => sum + v, 0));
   const cents = allocateCents(totalCents, exactCents);
 
   return participants
     .map((p, i) => {
-      const amount = cents[i] / 100;
+      const amountCents = cents[i];
       const note = buildVenmoNote(merchantName, perParticipant[i].ordered);
       return {
         participant: p,
-        amount,
+        amountCents,
         // Owner is collecting from friends → request money (charge), not pay.
-        ...buildVenmoLinks({ recipientUsername: p.venmoUsername, amount, note, txn: "charge" }),
+        ...buildVenmoLinks({ recipientUsername: p.venmoUsername, amountCents, note, txn: "charge" }),
       };
     })
     .filter((c) => !c.participant.isOwner);
@@ -177,12 +186,13 @@ export function computeItemCharges(
 //   2. The stored Venmo link is the friend → owner reimbursement link
 //      (txn=pay, recipient = owner), since that's the link a claimer taps to pay.
 // Tax and tip are pro-rated against each person's pre-tax share, as elsewhere.
+/** `tax` and `tip` are integer cents, as is every amount returned. */
 export function computeSharedClaimCharges(
   items: EditableItem[],
   assignments: Record<string, string[]>, // itemClientId → participantClientIds
   participants: FlowParticipant[],
-  tax: number,
-  tip: number,
+  taxCents: number,
+  tipCents: number,
   ownerVenmoUsername: string,
   merchantName: string | null,
   // Unused here, but kept so call sites can pass the same argument list as
@@ -192,47 +202,47 @@ export function computeSharedClaimCharges(
 ): ComputedCharge[] {
   if (participants.length === 0) return [];
 
-  const subtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
-  const taxRate = subtotal > 0 ? tax / subtotal : 0;
-  const tipRate = subtotal > 0 ? tip / subtotal : 0;
+  const subtotalCents = itemsSubtotalCents(items);
+  const taxRate = subtotalCents > 0 ? taxCents / subtotalCents : 0;
+  const tipRate = subtotalCents > 0 ? tipCents / subtotalCents : 0;
 
-  const unclaimedTotal = items.reduce((s, it) => {
+  const unclaimedCents = items.reduce((s, it) => {
     const assignees = assignments[it.clientId] ?? [];
-    return assignees.length === 0 ? s + it.price * it.quantity : s;
+    return assignees.length === 0 ? s + lineTotalCents(it) : s;
   }, 0);
-  const unclaimedSharePerPerson = unclaimedTotal / participants.length;
+  const unclaimedSharePerPerson = unclaimedCents / participants.length;
 
   // Compute every participant's (including the owner's) pre-tax share first,
   // so the remainder allocation can account for the owner's implicit share
   // of the subtotal (claimed + unclaimed) total.
   const perParticipant = participants.map((p) => {
-    let itemSubtotal = 0;
+    let itemSubtotalCents = 0;
     const ordered: { name: string; quantity: number }[] = [];
     for (const item of items) {
       const assignees = assignments[item.clientId] ?? [];
       if (assignees.includes(p.clientId) && assignees.length > 0) {
-        itemSubtotal += (item.price * item.quantity) / assignees.length;
+        itemSubtotalCents += lineTotalCents(item) / assignees.length;
         ordered.push({ name: item.name, quantity: item.quantity });
       }
     }
-    const preTax = itemSubtotal + unclaimedSharePerPerson;
-    return { preTax, ordered };
+    const preTaxCents = itemSubtotalCents + unclaimedSharePerPerson;
+    return { preTaxCents, ordered };
   });
 
   const exactCents = perParticipant.map(
-    ({ preTax }) => preTax * (1 + taxRate + tipRate) * 100
+    ({ preTaxCents }) => preTaxCents * (1 + taxRate + tipRate)
   );
-  const totalCents = Math.round(exactCents.reduce((sum, v) => sum + v, 0));
+  const totalCents = roundCents(exactCents.reduce((sum, v) => sum + v, 0));
   const cents = allocateCents(totalCents, exactCents);
 
   return participants
     .map((p, i) => {
-      const amount = cents[i] / 100;
+      const amountCents = cents[i];
       const note = buildVenmoNote(merchantName, perParticipant[i].ordered);
       return {
         participant: p,
-        amount,
-        ...buildVenmoLinks({ recipientUsername: ownerVenmoUsername, amount, note, txn: "pay" }),
+        amountCents,
+        ...buildVenmoLinks({ recipientUsername: ownerVenmoUsername, amountCents, note, txn: "pay" }),
       };
     })
     .filter((c) => !c.participant.isOwner);

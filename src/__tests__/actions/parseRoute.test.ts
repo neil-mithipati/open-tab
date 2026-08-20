@@ -193,7 +193,11 @@ vi.mock("@/lib/storage", () => ({
   extractStoragePath: (...args: unknown[]) => extractStoragePath(...args),
 }));
 
-vi.mock("@/lib/gemini/parseReceipt", () => ({
+// Only the model call is mocked. parsedReceiptCentsSchema is the real one, so
+// the route's validate-before-write step is genuinely exercised here rather
+// than stubbed into always passing.
+vi.mock("@/lib/gemini/parseReceipt", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/gemini/parseReceipt")>()),
   parseReceiptImage: (...args: unknown[]) => parseReceiptImage(...args),
 }));
 
@@ -231,9 +235,9 @@ const UNPARSED = {
 };
 
 // What Gemini returns for a blank, dark, or unreadable photo: valid JSON, all
-// nulls, no items. Identical in shape to parseReceipt.ts's EMPTY fallback,
-// which is what a reply that fails JSON.parse produces. Neither writes
-// anything a later request could read as evidence of a parse.
+// nulls, no items. The route validates it and refuses to write any of it — no
+// line items and no total means nothing was read off the photo, and persisting
+// it would look exactly like a receipt that parsed cleanly and had no values.
 const EMPTY_RESULT = {
   merchant_name: null,
   date_of_receipt: null,
@@ -244,14 +248,17 @@ const EMPTY_RESULT = {
   items: [],
 };
 
+// Integer cents, which is what parseReceiptImage now returns: $10 subtotal,
+// $1 tax, $2 tip, $13 total, one $5 latte at quantity 2. It reconciles —
+// 500 x 2 = 1000 = subtotal, and 1000 + 100 + 200 = 1300 = total.
 const PARSE_RESULT = {
   merchant_name: "Cafe",
   date_of_receipt: "2026-08-19",
-  subtotal: 10,
-  tax: 1,
-  tip: 2,
-  total: 13,
-  items: [{ name: "Latte", price: 5, quantity: 2 }],
+  subtotal: 1000,
+  tax: 100,
+  tip: 200,
+  total: 1300,
+  items: [{ name: "Latte", price: 500, quantity: 2 }],
 };
 
 beforeEach(() => {
@@ -405,11 +412,17 @@ describe("POST /api/receipts/parse", () => {
   });
 
   it("does not re-parse a receipt whose parse came back all nulls", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     parseReceiptImage.mockResolvedValue(EMPTY_RESULT);
 
+    // 500, not 200: an all-nulls parse fails validation and writes nothing.
+    // The replay guard below is unaffected — parsed_at was stamped before the
+    // model call, which is the whole point of claiming first.
     const first = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
-    expect(first.status).toBe(200);
+    expect(first.status).toBe(500);
+    expect(await first.json()).toEqual({ error: "parse_failed" });
     expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
 
     const replay = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
 
@@ -419,9 +432,11 @@ describe("POST /api/receipts/parse", () => {
   });
 
   it("refuses a whole replay loop after one empty parse", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     parseReceiptImage.mockResolvedValue(EMPTY_RESULT);
 
     await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    logged.mockRestore();
     for (let i = 0; i < 10; i++) {
       expect((await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))).status).toBe(409);
     }
@@ -448,13 +463,26 @@ describe("POST /api/receipts/parse", () => {
   // user's tab away. It must stay: an unparseable receipt is exactly when
   // someone needs to type the items in by hand.
   it("keeps the receipt row after a parse that came back all nulls", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     parseReceiptImage.mockResolvedValue(EMPTY_RESULT);
 
     await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
 
     expect(spies.receiptDelete).not.toHaveBeenCalled();
     expect(spies.storageRemove).not.toHaveBeenCalled();
-    expect(db.receipt).toMatchObject({ id: "r1", created_by: "u1", status: "open" });
+    // The row is still there for the user to fill in by hand, and nothing from
+    // the failed parse reached it — not even the status flip the write-back
+    // used to perform, because the write-back never ran.
+    expect(db.receipt).toMatchObject({
+      id: "r1",
+      created_by: "u1",
+      merchant_name: null,
+      subtotal: null,
+      total: null,
+    });
+    expect(db.receipt).not.toHaveProperty("status");
+    expect(spies.itemsInsert).not.toHaveBeenCalled();
+    logged.mockRestore();
   });
 
   it("keeps the receipt row after a parse that threw", async () => {
@@ -709,18 +737,25 @@ describe("POST /api/receipts/parse", () => {
   // ── the parse that succeeded and returned nothing ─────────────────────────
   // The hole 0020 exists to cover. It is not a transient failure: the model
   // ran, was paid for, and answered. It consumes the parse and gets no retry.
+  //
+  // What it no longer does is come back 200 with an all-nulls body. That
+  // response was indistinguishable from a receipt that parsed cleanly and
+  // happened to have no values, and the route wrote it. It now fails
+  // validation, writes nothing, and returns parse_failed — which CaptureStep
+  // already routes to the manual editor, like every other non-429 failure.
   it.each([
     ["an all-nulls result off a blank photo", EMPTY_RESULT],
-    ["the EMPTY fallback from a reply that failed JSON.parse", { ...EMPTY_RESULT }],
+    ["a reply that failed JSON.parse", { ...EMPTY_RESULT }],
   ])("consumes the parse on %s and offers no retry", async (_label, result) => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     parseReceiptImage.mockResolvedValue(result);
 
     const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
 
-    // 200, not the 503 parse_retryable a transient failure returns — nothing
+    // 500, not the 503 parse_retryable a transient failure returns — nothing
     // in this response tells the client it may try again.
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ success: true, data: result });
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "parse_failed" });
     // The claim stands and the tally moved: the receipt is spent.
     expect(db.receipt?.parsed_at).toEqual(expect.any(String));
     expect(db.receipt?.parse_attempts).toBe(1);
@@ -729,6 +764,7 @@ describe("POST /api/receipts/parse", () => {
     expect(replay.status).toBe(409);
     expect(await replay.json()).toEqual({ error: "already_parsed" });
     expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
   });
 
   // ── the cap ───────────────────────────────────────────────────────────────
