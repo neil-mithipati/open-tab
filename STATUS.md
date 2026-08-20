@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-20 21:59 UTC · regenerated on every task completion.
+Updated 2026-08-20 22:00 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $54.77 | $125.00 | ████░░░░░░ 43% |
+| open-tab | $55.93 | $125.00 | ████░░░░░░ 44% |
 
 ## Agents
 
@@ -14,6 +14,7 @@ Updated 2026-08-20 21:59 UTC · regenerated on every task completion.
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-20T21:55:30Z | 1 |
 | reviewer-light | open-tab | 2026-08-20T21:59:08Z | 1 |
+| builder | open-tab | 2026-08-20T21:59:47Z | 1 |
 
 ## Tasks
 
@@ -59,31 +60,31 @@ Updated 2026-08-20 21:59 UTC · regenerated on every task completion.
 | `OT-137` | done | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
 | `OT-138` | **blocked** | three live fail-opens in parallel-cap.sh let an uncapped dispatch through — >- | builder-deep |
 | `OT-139` | running | lock down receipt image storage — private bucket, RLS, signed URLs, retention job — null | builder-deep |
-| `OT-140` | todo | client-side image downscale and EXIF orientation normalization before upload — null | builder |
+| `OT-140` | running | client-side image downscale and EXIF orientation normalization before upload — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-20T21:57:55Z  open-tab  SubagentStop  
-2026-08-20T21:57:55Z  open-tab  SubagentStop  
-2026-08-20T21:57:55Z  open-tab  SubagentStop  
-2026-08-20T21:57:55Z  open-tab  SubagentStop  
-2026-08-20T21:57:55Z  open-tab  SubagentStop  
-2026-08-20T21:57:55Z  open-tab  SubagentStop  
-2026-08-20T21:58:07Z  open-tab  SubagentStop  
-2026-08-20T21:58:07Z  open-tab  SubagentStop  
-2026-08-20T21:58:07Z  open-tab  SubagentStop  
-2026-08-20T21:58:07Z  open-tab  SubagentStop  
-2026-08-20T21:58:07Z  open-tab  SubagentStop  
-2026-08-20T21:58:07Z  open-tab  SubagentStop  
-2026-08-20T21:58:20Z  open-tab  SubagentStop  builder
-2026-08-20T21:59:08Z  open-tab  SubagentStart  reviewer-light
-2026-08-20T21:59:09Z  open-tab  SubagentStop  
-2026-08-20T21:59:09Z  open-tab  SubagentStop  
-2026-08-20T21:59:09Z  open-tab  SubagentStop  
-2026-08-20T21:59:09Z  open-tab  SubagentStop  
-2026-08-20T21:59:09Z  open-tab  SubagentStop  
-2026-08-20T21:59:09Z  open-tab  SubagentStop  
+2026-08-20T21:59:54Z  open-tab  SubagentStop  
+2026-08-20T21:59:54Z  open-tab  SubagentStop  
+2026-08-20T22:00:03Z  open-tab  SubagentStop  
+2026-08-20T22:00:03Z  open-tab  SubagentStop  
+2026-08-20T22:00:03Z  open-tab  SubagentStop  
+2026-08-20T22:00:03Z  open-tab  SubagentStop  
+2026-08-20T22:00:03Z  open-tab  SubagentStop  
+2026-08-20T22:00:03Z  open-tab  SubagentStop  
+2026-08-20T22:00:07Z  open-tab  SubagentStop  
+2026-08-20T22:00:07Z  open-tab  SubagentStop  
+2026-08-20T22:00:07Z  open-tab  SubagentStop  
+2026-08-20T22:00:07Z  open-tab  SubagentStop  
+2026-08-20T22:00:07Z  open-tab  SubagentStop  
+2026-08-20T22:00:07Z  open-tab  SubagentStop  
+2026-08-20T22:00:11Z  open-tab  SubagentStop  
+2026-08-20T22:00:11Z  open-tab  SubagentStop  
+2026-08-20T22:00:11Z  open-tab  SubagentStop  
+2026-08-20T22:00:11Z  open-tab  SubagentStop  
+2026-08-20T22:00:11Z  open-tab  SubagentStop  
+2026-08-20T22:00:11Z  open-tab  SubagentStop  
 ```
 
 ---
