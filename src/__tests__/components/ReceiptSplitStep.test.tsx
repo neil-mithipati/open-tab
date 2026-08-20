@@ -138,9 +138,11 @@ const ownerParticipant: FlowParticipant = {
   isOwner: true,
 };
 
+// Integer cents — the unit of every money field on the flow state. See the
+// note in src/types and the rounding rule in src/lib/money.ts. $12 and $8.
 const defaultItems: EditableItem[] = [
-  { clientId: "item-1", name: "Burger", price: 12.0, quantity: 1 },
-  { clientId: "item-2", name: "Fries", price: 8.0, quantity: 1 },
+  { clientId: "item-1", name: "Burger", price: 1200, quantity: 1 },
+  { clientId: "item-2", name: "Fries", price: 800, quantity: 1 },
 ];
 
 function makeDefaultState(overrides: Partial<ReceiptFlowState> = {}): ReceiptFlowState {
@@ -152,10 +154,12 @@ function makeDefaultState(overrides: Partial<ReceiptFlowState> = {}): ReceiptFlo
     mimeType: null,
     merchantName: "Test Cafe",
     dateOfReceipt: "2025-05-24",
-    subtotal: 20,
-    tax: 2,
-    tip: 4,
-    total: 26,
+    // $20 + $2 + $4 = $26, and the items sum to the subtotal, so this fixture
+    // reconciles: no field is flagged unless a test makes it disagree.
+    subtotal: 2000,
+    tax: 200,
+    tip: 400,
+    total: 2600,
     items: defaultItems,
     participants: [ownerParticipant],
     splitMode: "equal",
