@@ -189,7 +189,12 @@ vi.mock("@/lib/rateLimit", () => ({
   isParseRateLimited: (...args: unknown[]) => isParseRateLimited(...args),
 }));
 
-vi.mock("@/lib/storage", () => ({
+// Partial: only extractStoragePath is stubbed, so the signed-URL TTL constants
+// stay the real ones. A hand-written object here would silently drop any
+// constant added to that module later, which is exactly how this mock broke
+// when RECEIPT_IMAGE_FETCH_TTL_SECONDS arrived.
+vi.mock("@/lib/storage", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/storage")>()),
   extractStoragePath: (...args: unknown[]) => extractStoragePath(...args),
 }));
 

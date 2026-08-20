@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
 import { parseReceiptImage } from "@/lib/gemini/parseReceipt";
-import { extractStoragePath } from "@/lib/storage";
+import { extractStoragePath, RECEIPT_IMAGE_FETCH_TTL_SECONDS } from "@/lib/storage";
 import { isParseRateLimited, PARSE_LIMIT_PER_HOUR } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
@@ -449,9 +449,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "no_image" }, { status: 400 });
   }
 
+  // Signed and fetched in the next statement, in this process, and never seen
+  // by a browser — so it gets RECEIPT_IMAGE_FETCH_TTL_SECONDS (a minute) rather
+  // than the hour this used to ask for. An hour-long capability handed out for
+  // a download that completes in a second is an hour of exposure bought for
+  // nothing.
   const { data: signed } = await service.storage
     .from("receipt-images")
-    .createSignedUrl(storagePath, 3600);
+    .createSignedUrl(storagePath, RECEIPT_IMAGE_FETCH_TTL_SECONDS);
 
   if (!signed) {
     return NextResponse.json({ error: "no_image" }, { status: 400 });
