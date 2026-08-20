@@ -103,8 +103,11 @@ async function alreadyParsed(
 // Both refuse, with different status codes, so a real outage is not reported
 // back as a duplicate request. "claimed" carries the exact stamp this request
 // wrote, which is what lets it — and only it — release the claim again.
+// "claimed" also carries which attempt this is, straight from the value the
+// statement wrote, so nothing downstream has to re-derive it from a row that
+// has since moved.
 type ParseClaim =
-  | { status: "claimed"; stamp: string }
+  | { status: "claimed"; stamp: string; attempt: number }
   | { status: "taken" }
   | { status: "unavailable" };
 
@@ -168,7 +171,9 @@ async function claimParse(
     );
     return { status: "unavailable" };
   }
-  return (data?.length ?? 0) > 0 ? { status: "claimed", stamp } : { status: "taken" };
+  return (data?.length ?? 0) > 0
+    ? { status: "claimed", stamp, attempt: spent + 1 }
+    : { status: "taken" };
 }
 
 // Hand the claim back after a model failure that had nothing to do with the
@@ -495,7 +500,7 @@ export async function POST(request: Request) {
     // means a retry the server will honour.
     if (
       isTransientModelFailure(err) &&
-      attemptsSpent(receipt) + 1 < MAX_PARSE_ATTEMPTS &&
+      claim.attempt < MAX_PARSE_ATTEMPTS &&
       (await releaseParse(service, user.id, receipt, claim.stamp))
     ) {
       return NextResponse.json({ error: "parse_retryable" }, { status: 503 });
