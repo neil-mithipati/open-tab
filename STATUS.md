@@ -1,16 +1,18 @@
 # Agent status
 
-Updated 2026-08-20 21:03 UTC · regenerated on every task completion.
+Updated 2026-08-20 21:09 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $44.91 | $125.00 | ███░░░░░░░ 35% |
+| open-tab | $44.98 | $125.00 | ███░░░░░░░ 35% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| builder-deep | open-tab | 2026-08-20T21:09:10Z | 1 |
 
 ## Tasks
 
@@ -52,18 +54,11 @@ Idle — no agents currently running.
 | `OT-133` | done | a late claim is destroyed by the item re-mint when the claimer IS in the payload — null | builder-deep |
 | `OT-134` | done | a transient gemini outage permanently burns a receipt's only parse — no retry affordance — null | builder-deep |
 | `OT-137` | done | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
-| `OT-138` | **blocked** | three live fail-opens in parallel-cap.sh let an uncapped dispatch through — >- | builder-deep |
+| `OT-138` | running | three live fail-opens in parallel-cap.sh let an uncapped dispatch through — null | builder-deep |
 
 ## Recent activity
 
 ```
-2026-08-20T14:48:34Z  open-tab  SubagentStop  
-2026-08-20T14:48:34Z  open-tab  SubagentStop  
-2026-08-20T20:27:15Z  open-tab  SubagentStop  
-2026-08-20T20:27:15Z  open-tab  SubagentStop  
-2026-08-20T20:27:15Z  open-tab  SubagentStop  
-2026-08-20T20:27:15Z  open-tab  SubagentStop  
-2026-08-20T20:27:15Z  open-tab  SubagentStop  
 2026-08-20T20:27:15Z  open-tab  SubagentStop  
 2026-08-20T20:27:35Z  open-tab  SubagentStop  
 2026-08-20T20:27:35Z  open-tab  SubagentStop  
@@ -77,6 +72,13 @@ Idle — no agents currently running.
 2026-08-20T21:03:23Z  open-tab  SubagentStop  
 2026-08-20T21:03:23Z  open-tab  SubagentStop  
 2026-08-20T21:03:23Z  open-tab  SubagentStop  
+2026-08-20T21:09:10Z  open-tab  SubagentStart  builder-deep
+2026-08-20T21:09:14Z  open-tab  SubagentStop  
+2026-08-20T21:09:14Z  open-tab  SubagentStop  
+2026-08-20T21:09:14Z  open-tab  SubagentStop  
+2026-08-20T21:09:14Z  open-tab  SubagentStop  
+2026-08-20T21:09:14Z  open-tab  SubagentStop  
+2026-08-20T21:09:14Z  open-tab  SubagentStop  
 ```
 
 ---
