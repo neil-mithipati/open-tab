@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-20 01:56 UTC · regenerated on every task completion.
+Updated 2026-08-20 01:57 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $12.05 | $125.00 | ░░░░░░░░░░ 9% |
+| open-tab | $12.54 | $125.00 | █░░░░░░░░░ 10% |
 
 ## Agents
 
@@ -53,24 +53,12 @@ Updated 2026-08-20 01:56 UTC · regenerated on every task completion.
 | `OT-128` | done | review the unreviewed kit install change by change and commit what survives — null | builder |
 | `OT-129` | **blocked** | backlog from the OT-123, OT-124 and OT-126 reviews — >- | builder |
 | `OT-130` | running | an owner save deletes any claimer who joined since the client loaded the page — null | builder-deep |
-| `OT-131` | **blocked** | the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log — >- | builder-deep |
-| `OT-132` | running | a parse outage is invisible to the user — no message on any non-429 failure — null | builder |
+| `OT-131` | done | the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log — null | builder-deep |
+| `OT-132` | done | a parse outage is invisible to the user — no message on any non-429 failure — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-20T01:55:04Z  open-tab  SubagentStop  
-2026-08-20T01:55:11Z  open-tab  SubagentStop  reviewer-light
-2026-08-20T01:55:24Z  open-tab  SubagentStop  
-2026-08-20T01:55:24Z  open-tab  SubagentStop  
-2026-08-20T01:55:24Z  open-tab  SubagentStop  
-2026-08-20T01:55:24Z  open-tab  SubagentStop  
-2026-08-20T01:55:24Z  open-tab  SubagentStop  
-2026-08-20T01:55:24Z  open-tab  SubagentStop  
-2026-08-20T01:55:55Z  open-tab  SubagentStop  
-2026-08-20T01:55:55Z  open-tab  SubagentStop  
-2026-08-20T01:55:55Z  open-tab  SubagentStop  
-2026-08-20T01:55:55Z  open-tab  SubagentStop  
 2026-08-20T01:55:55Z  open-tab  SubagentStop  
 2026-08-20T01:55:55Z  open-tab  SubagentStop  
 2026-08-20T01:56:27Z  open-tab  SubagentStop  
@@ -79,6 +67,18 @@ Updated 2026-08-20 01:56 UTC · regenerated on every task completion.
 2026-08-20T01:56:27Z  open-tab  SubagentStop  
 2026-08-20T01:56:27Z  open-tab  SubagentStop  
 2026-08-20T01:56:27Z  open-tab  SubagentStop  
+2026-08-20T01:56:58Z  open-tab  SubagentStop  
+2026-08-20T01:56:58Z  open-tab  SubagentStop  
+2026-08-20T01:56:58Z  open-tab  SubagentStop  
+2026-08-20T01:56:58Z  open-tab  SubagentStop  
+2026-08-20T01:56:58Z  open-tab  SubagentStop  
+2026-08-20T01:56:58Z  open-tab  SubagentStop  
+2026-08-20T01:57:31Z  open-tab  SubagentStop  
+2026-08-20T01:57:31Z  open-tab  SubagentStop  
+2026-08-20T01:57:31Z  open-tab  SubagentStop  
+2026-08-20T01:57:31Z  open-tab  SubagentStop  
+2026-08-20T01:57:31Z  open-tab  SubagentStop  
+2026-08-20T01:57:31Z  open-tab  SubagentStop  
 ```
 
 ---
