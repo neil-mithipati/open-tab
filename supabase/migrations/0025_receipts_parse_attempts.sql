@@ -84,8 +84,8 @@
 -- Null therefore means "created before this shipped". Such a row reads as zero
 -- attempts spent to the claim, so it still gets its full three; it can carry no
 -- last_parse_attempt_at, so it never appears in the hourly sum, which
--- under-counts a hypothetical pre-0024 attempt by one and cannot lock anyone
--- out. Its single pre-0024 parse, if it had one, is still refused by parsed_at
+-- under-counts a hypothetical pre-0025 attempt by one and cannot lock anyone
+-- out. Its single pre-0025 parse, if it had one, is still refused by parsed_at
 -- and by the parsed-data evidence 0020 kept.
 --
 -- Additive only. No table, column, index or row is dropped. No existing row is
@@ -123,7 +123,7 @@ exception
 end $$;
 
 comment on column public.receipts.parse_attempts is
-  'How many Gemini parse attempts this receipt has spent. Incremented by the parse route in the same statement that claims parsed_at, never decremented — releasing a claim after a transient provider failure leaves this untouched, which is what bounds the retry at 3. Null means the row predates migration 0024: read as 0 spent attempts.';
+  'How many Gemini parse attempts this receipt has spent. Incremented by the parse route in the same statement that claims parsed_at, never decremented — releasing a claim after a transient provider failure leaves this untouched, which is what bounds the retry at 3. Null means the row predates migration 0025: read as 0 spent attempts.';
 
 comment on column public.receipts.last_parse_attempt_at is
-  'When this receipt''s most recent Gemini parse attempt was claimed. Unlike parsed_at it is never cleared, so it survives the release of a claim after a transient provider failure and gives the parse route an hourly window to charge retries against. Null means the receipt has never been attempted, or predates migration 0024.';
+  'When this receipt''s most recent Gemini parse attempt was claimed. Unlike parsed_at it is never cleared, so it survives the release of a claim after a transient provider failure and gives the parse route an hourly window to charge retries against. Null means the receipt has never been attempted, or predates migration 0025.';

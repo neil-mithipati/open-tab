@@ -10,7 +10,7 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic"]);
 
 // A receipt gets at most this many model attempts, ever, across every request
-// for it. 0024's parse_attempts is the tally and is never decremented, so a
+// for it. 0025's parse_attempts is the tally and is never decremented, so a
 // retry granted after a transient provider failure spends one of these rather
 // than handing back an unbounded replay.
 const MAX_PARSE_ATTEMPTS = 3;
@@ -23,9 +23,9 @@ interface StoredReceipt {
   id: string;
   image_url: string | null;
   parsed_at: string | null;
-  // 0024. Null on a row created before that migration — see attemptsSpent.
+  // 0025. Null on a row created before that migration — see attemptsSpent.
   parse_attempts: number | null;
-  // 0024. Written by the claim and never cleared, so it survives a release.
+  // 0025. Written by the claim and never cleared, so it survives a release.
   last_parse_attempt_at: string | null;
   merchant_name: string | null;
   date_of_receipt: string | null;
@@ -39,7 +39,7 @@ const RECEIPT_COLUMNS =
   "id, image_url, parsed_at, parse_attempts, last_parse_attempt_at, merchant_name, date_of_receipt, subtotal, tax, tip, total";
 
 // How many model attempts this receipt has already spent. A row created before
-// 0024 reads null, and null is read as zero here: nothing could have retried
+// 0025 reads null, and null is read as zero here: nothing could have retried
 // it, and the single parse it may have had is recorded by parsed_at, which
 // still refuses it.
 function attemptsSpent(receipt: StoredReceipt): number {
@@ -118,7 +118,7 @@ type ParseClaim =
 //                            under a row lock, so of N concurrent requests for
 //                            the same receiptId exactly one matches a row and
 //                            the rest match none.
-//   parse_attempts = <n>   — 0024's tally, compared against the value this
+//   parse_attempts = <n>   — 0025's tally, compared against the value this
 //                            request read. A request whose read is stale
 //                            matches nothing rather than overwriting a count
 //                            it never saw, so the attempts can never go
@@ -150,7 +150,7 @@ async function claimParse(
     .eq("created_by", userId)
     .is("parsed_at", null);
 
-  // A pre-0024 row carries null rather than a number, and `= null` matches
+  // A pre-0025 row carries null rather than a number, and `= null` matches
   // nothing in SQL, so the compare-and-set on the tally has to ask the
   // question the row can actually answer.
   const filtered =
@@ -164,10 +164,10 @@ async function claimParse(
     // Fails CLOSED, unlike the rate limiter, which fails open. The limiter
     // going inert costs a caller more scans than intended; this going inert
     // costs unbounded paid inference off a single upload, which is the defect
-    // this gate exists to close. The usual cause is 0020 or 0024 not applied,
+    // this gate exists to close. The usual cause is 0020 or 0025 not applied,
     // and a refusal that says so is fixable in minutes.
     console.error(
-      `[parse] could not claim receipt ${receipt.id} (${error.code ?? "no code"}: ${error.message}) — refusing rather than calling the model unguarded; are migrations 0020 and 0024 applied?`
+      `[parse] could not claim receipt ${receipt.id} (${error.code ?? "no code"}: ${error.message}) — refusing rather than calling the model unguarded; are migrations 0020 and 0025 applied?`
     );
     return { status: "unavailable" };
   }
@@ -232,7 +232,7 @@ const HOUR_MS = 60 * 60 * 1000;
 // over receipts. Folding them into one query belongs in rateLimit.ts.
 //
 // Fails OPEN, matching the limiter it sits beside: a count that cannot be read
-// must not take scanning down. Nothing is lost by that here — if 0024 is
+// must not take scanning down. Nothing is lost by that here — if 0025 is
 // unapplied, this read fails and so does the claim, which fails CLOSED and
 // refuses before the model.
 async function attemptsThisHour(
@@ -248,7 +248,7 @@ async function attemptsThisHour(
 
   if (error) {
     console.error(
-      `[parse] could not count this hour's attempts (${error.code ?? "no code"}: ${error.message}) — failing open; is migration 0024 applied?`
+      `[parse] could not count this hour's attempts (${error.code ?? "no code"}: ${error.message}) — failing open; is migration 0025 applied?`
     );
     return null;
   }
@@ -316,7 +316,7 @@ function isTransientModelFailure(err: unknown): boolean {
 //
 // The caller also only reaches here for a receipt that has never been
 // attempted, and the tally filter enforces THAT rather than trusting it. Since
-// 0024 a transient failure hands the claim back, so `parsed_at is null` no
+// 0025 a transient failure hands the claim back, so `parsed_at is null` no
 // longer means "never attempted" — a receipt waiting on a retry looks exactly
 // like a fresh one to that filter alone, and deleting it would throw away the
 // photo the retry exists to save the user from re-uploading. Comparing the
@@ -405,7 +405,7 @@ export async function POST(request: Request) {
   }
 
   // The cap, enforced here rather than by the client asking nicely. A receipt
-  // only reaches this line unclaimed, which since 0024 also covers a receipt
+  // only reaches this line unclaimed, which since 0025 also covers a receipt
   // whose claim was handed back after a transient provider failure — the tally
   // is the only thing that still remembers those, and it is what bounds them.
   //

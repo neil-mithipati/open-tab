@@ -17,13 +17,13 @@ const db: {
   // receipt under test adds its own — see attemptedThisHour.
   otherAttemptsThisHour: number;
   // Set to make the claim's conditional update fail, the way an unapplied
-  // migration 0020 or 0024 would.
+  // migration 0020 or 0025 would.
   claimError: DbError;
   // Set to make the release of a claim fail without touching anything else.
   releaseError: DbError;
   // Set to make the post-parse write-back fail without touching the claim.
   writeBackError: DbError;
-  // Set to make the hourly attempt count fail, the way an unapplied 0024 would.
+  // Set to make the hourly attempt count fail, the way an unapplied 0025 would.
   attemptCountError: DbError;
 } = {
   receipt: null,
@@ -81,7 +81,7 @@ vi.mock("@/lib/supabase/server", () => {
 
   // Every model attempt this caller has made inside the hourly window: the
   // receipt under test counts its own the moment it has been claimed once
-  // (0024's last_parse_attempt_at survives a release), plus whatever other
+  // (0025's last_parse_attempt_at survives a release), plus whatever other
   // receipts the test says the caller spent.
   const attemptedThisHour = () => {
     const rows: { parse_attempts: number | null }[] = [];
@@ -219,7 +219,7 @@ const UNPARSED = {
   image_url: "https://x/receipt-images/u1/r1.jpg",
   // 0020's marker. Null means the receipt's parse is not claimed right now.
   parsed_at: null,
-  // 0024's tally and its clock. Zero attempts spent, never attempted.
+  // 0025's tally and its clock. Zero attempts spent, never attempted.
   parse_attempts: 0,
   last_parse_attempt_at: null,
   merchant_name: null,
@@ -501,7 +501,7 @@ describe("POST /api/receipts/parse", () => {
     await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
 
     // The claim is the update carrying parsed_at; it is what makes the race
-    // above resolve to one winner rather than five. Since 0024 it carries the
+    // above resolve to one winner rather than five. Since 0025 it carries the
     // tally that bounds the retry and the clock the hourly count bills
     // against, in the same statement — one write, or the two can disagree.
     expect(spies.receiptUpdate).toHaveBeenCalledWith(
@@ -620,7 +620,7 @@ describe("POST /api/receipts/parse", () => {
     ]);
   });
 
-  // ── the bounded retry (0024) ──────────────────────────────────────────────
+  // ── the bounded retry (0025) ──────────────────────────────────────────────
   // A model call that fails for a reason with nothing to do with the receipt
   // used to spend its only parse. It now hands the claim back — but only for
   // that class of failure, and only three times ever.
@@ -766,7 +766,7 @@ describe("POST /api/receipts/parse", () => {
     expect(spies.receiptDelete).not.toHaveBeenCalled();
   });
 
-  it("gives a row that predates 0024 its full three attempts, and no more", async () => {
+  it("gives a row that predates 0025 its full three attempts, and no more", async () => {
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     // Null, not 0: the column was added bare, so every existing row backfills
     // to null and the claim has to filter on `is null` rather than `= 0`.
@@ -892,7 +892,7 @@ describe("POST /api/receipts/parse", () => {
     logged.mockRestore();
   });
 
-  it("fails the hourly attempt count open, and the claim closed, when 0024 is unapplied", async () => {
+  it("fails the hourly attempt count open, and the claim closed, when 0025 is unapplied", async () => {
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     db.attemptCountError = { message: 'column "last_parse_attempt_at" does not exist', code: "42703" };
 
