@@ -7,18 +7,36 @@ import { refreshUserCaches } from "@/app/actions/cache";
 import { compressImage } from "@/lib/image/compressImage";
 import { useToast, ToastViewport } from "@/components/ui/Toast";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
-import { Camera } from "lucide-react";
+import { Camera, RotateCw } from "lucide-react";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
 
+// The one parse the route hands back, waiting to be spent.
+//
+// Module scope rather than component state, and the reason is structural: the
+// page swaps this component out for ScanningStep the moment a scan starts, so
+// by the time the parse answers, this component is unmounted and every
+// setState on it is a no-op. Sending the flow back to "capture" then mounts a
+// FRESH CaptureStep, which is where the offer has to appear. The flow state
+// survives that, but it is typed in useReceiptFlow and not this component's to
+// extend, so the marker lives here and the new instance reads it on mount.
+//
+// It carries the receiptId it belongs to so a stale marker can never offer a
+// retry of somebody else's scan.
+let pendingRetry: { receiptId: string; mimeType: string; userId: string } | null = null;
+
 export function CaptureStep({ flow }: { flow: Flow }) {
   const [error, setError] = useState("");
+  const [retry, setRetry] = useState(() => pendingRetry);
+  const [retrying, setRetrying] = useState(false);
   const { toasts, showToast, dismiss } = useToast();
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
     setError("");
+    setRetry(null);
+    pendingRetry = null;
     flow.update("imageFile", file);
     flow.goTo("scanning");
 
@@ -66,12 +84,23 @@ export function CaptureStep({ flow }: { flow: Flow }) {
     // update receipt with image url
     await supabase.from("receipts").update({ image_url: signed.signedUrl }).eq("id", receipt.id);
 
+    await runParse(receipt.id, mimeType, user.id);
+  }
+
+  // Everything from the parse call onward, so a retry can run it again against
+  // the receipt and the image already uploaded. Nothing here re-uploads.
+  async function runParse(receiptId: string, mimeType: string, userId: string) {
+    const supabase = getSupabaseBrowserClient();
+    setRetry(null);
+    pendingRetry = null;
+    flow.goTo("scanning");
+
     // call Gemini parse API
     const res = await fetch("/api/receipts/parse", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        receiptId: receipt.id,
+        receiptId,
         mimeType,
       }),
     });
@@ -103,6 +132,20 @@ export function CaptureStep({ flow }: { flow: Flow }) {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       console.error("[handleFile] parse API error:", err);
+      if (err?.error === "parse_retryable") {
+        // The model provider failed — a 5xx, a dropped connection, a timeout —
+        // and the route has handed the receipt's claim back rather than
+        // spending it. The photo is still uploaded and the server will honour
+        // another attempt, so offer one instead of dropping the user in a
+        // manual form for an outage that may already be over. Only this one
+        // error gets the offer: a 503 parse_unavailable, a 500 parse_failed
+        // and a 409 all mean the parse is gone, and a button that could only
+        // fail would be a lie.
+        pendingRetry = { receiptId, mimeType, userId };
+        setRetry(pendingRetry);
+        flow.goTo("capture");
+        return;
+      }
       if (err?.error === "parse_unavailable") {
         // A 503 here almost always means an outage on our side (an unapplied
         // migration is the usual cause), not anything the user did — silence
@@ -137,13 +180,13 @@ export function CaptureStep({ flow }: { flow: Flow }) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("venmo_username, display_name")
-        .eq("id", user.id)
+        .eq("id", userId)
         .single();
 
       if (profile?.venmo_username) {
         flow.addParticipant({
           type: "friend",
-          userId: user.id,
+          userId,
           displayName: profile.display_name,
           venmoUsername: profile.venmo_username,
           isOwner: true,
@@ -154,15 +197,41 @@ export function CaptureStep({ flow }: { flow: Flow }) {
     flow.goTo("split");
   }
 
+  async function handleRetry() {
+    if (!retry || retrying) return;
+    setRetrying(true);
+    await runParse(retry.receiptId, retry.mimeType, retry.userId);
+    setRetrying(false);
+  }
+
   return (
     <div className="flex flex-col gap-4 pt-4">
-      <GlassButton
-        size="lg"
-        className="gap-2"
-        onClick={() => cameraRef.current?.click()}
-      >
-        <Camera className="w-5 h-5" /> Take photo
-      </GlassButton>
+      {retry ? (
+        // The hero while it is showing: the photo is already up there and one
+        // tap finishes the job the user started.
+        <>
+          <p className="text-sm text-secondary text-center">
+            Couldn&apos;t reach the scanner. Your photo is saved — try again.
+          </p>
+          <GlassButton size="lg" className="gap-2" onClick={handleRetry} disabled={retrying}>
+            <RotateCw className="w-5 h-5" /> Try again
+          </GlassButton>
+          <button
+            onClick={() => cameraRef.current?.click()}
+            className="text-sm text-secondary hover:text-primary transition-colors text-center"
+          >
+            Take a new photo
+          </button>
+        </>
+      ) : (
+        <GlassButton
+          size="lg"
+          className="gap-2"
+          onClick={() => cameraRef.current?.click()}
+        >
+          <Camera className="w-5 h-5" /> Take photo
+        </GlassButton>
+      )}
 
       <button
         onClick={() => fileRef.current?.click()}

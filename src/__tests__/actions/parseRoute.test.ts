@@ -9,15 +9,31 @@ const parseReceiptImage = vi.fn();
 // the ownership lookup returns; the update the route makes after a parse writes
 // back into it, so a replayed request sees what the first one stored.
 type Row = Record<string, unknown> | null;
+type DbError = { message: string; code?: string } | null;
 const db: {
   receipt: Row;
   itemCount: number;
+  // Model attempts the caller has spent this hour on OTHER receipts. The
+  // receipt under test adds its own — see attemptedThisHour.
+  otherAttemptsThisHour: number;
   // Set to make the claim's conditional update fail, the way an unapplied
-  // migration 0020 would.
-  claimError: { message: string; code?: string } | null;
+  // migration 0020 or 0025 would.
+  claimError: DbError;
+  // Set to make the release of a claim fail without touching anything else.
+  releaseError: DbError;
   // Set to make the post-parse write-back fail without touching the claim.
-  writeBackError: { message: string; code?: string } | null;
-} = { receipt: null, itemCount: 0, claimError: null, writeBackError: null };
+  writeBackError: DbError;
+  // Set to make the hourly attempt count fail, the way an unapplied 0025 would.
+  attemptCountError: DbError;
+} = {
+  receipt: null,
+  itemCount: 0,
+  otherAttemptsThisHour: 0,
+  claimError: null,
+  releaseError: null,
+  writeBackError: null,
+  attemptCountError: null,
+};
 const spies = {
   receiptUpdate: vi.fn(),
   receiptDelete: vi.fn(),
@@ -63,18 +79,64 @@ vi.mock("@/lib/supabase/server", () => {
     return builder;
   }
 
+  // Every model attempt this caller has made inside the hourly window: the
+  // receipt under test counts its own the moment it has been claimed once
+  // (0025's last_parse_attempt_at survives a release), plus whatever other
+  // receipts the test says the caller spent.
+  const attemptedThisHour = () => {
+    const rows: { parse_attempts: number | null }[] = [];
+    if (db.otherAttemptsThisHour > 0) {
+      rows.push({ parse_attempts: db.otherAttemptsThisHour });
+    }
+    const row = db.receipt;
+    if (row && row.last_parse_attempt_at) {
+      rows.push({ parse_attempts: (row.parse_attempts as number | null) ?? 0 });
+    }
+    return rows;
+  };
+
+  // Two read shapes on `receipts`, so one builder serves both: the ownership
+  // lookup ends in .single(), and the hourly attempt count is awaited straight
+  // off .gte().
+  interface ReadBuilder
+    extends PromiseLike<{ data: { parse_attempts: number | null }[] | null; error: DbError }> {
+    eq(col: string, val: unknown): ReadBuilder;
+    gte(col: string, val: unknown): ReadBuilder;
+    single(): Promise<{ data: Row }>;
+  }
+
+  function readBuilder(): ReadBuilder {
+    const run = () =>
+      db.attemptCountError
+        ? { data: null, error: db.attemptCountError }
+        : { data: attemptedThisHour(), error: null };
+    const builder: ReadBuilder = {
+      eq: () => builder,
+      gte: () => builder,
+      // A copy, not the stored row. A real read hands back a snapshot, and
+      // aliasing it would let a request see its own claim land in the row it
+      // read — which is exactly the stale read the tally's compare-and-set
+      // exists to refuse, and would make the concurrency below untestable.
+      single: async () => ({ data: db.receipt ? { ...db.receipt } : null }),
+      then: (onOk, onErr) => Promise.resolve(run()).then(onOk, onErr),
+    };
+    return builder;
+  }
+
   const receipts = () => ({
-    select: () => ({
-      eq: () => ({
-        eq: () => ({ single: async () => ({ data: db.receipt }) }),
-      }),
-    }),
+    select: () => readBuilder(),
     update: (values: Record<string, unknown>) => {
       const filters: Filters = { eq: [], isNull: [] };
       return writeBuilder(filters, () => {
-        const isClaim = filters.isNull.includes("parsed_at");
+        // The claim stamps parsed_at; the release hands it back. Both touch
+        // the same column, so they are told apart by what they write.
+        const isClaim = values.parsed_at != null;
+        const isRelease = "parsed_at" in values && values.parsed_at === null;
         if (isClaim && db.claimError) return { data: null, error: db.claimError };
-        if (!isClaim && db.writeBackError) return { data: null, error: db.writeBackError };
+        if (isRelease && db.releaseError) return { data: null, error: db.releaseError };
+        if (!isClaim && !isRelease && db.writeBackError) {
+          return { data: null, error: db.writeBackError };
+        }
         if (!matchesRow(filters)) return { data: [], error: null };
         const id = filters.eq.find(([col]) => col === "id")?.[1];
         spies.receiptUpdate(values, id);
@@ -155,8 +217,11 @@ const UNPARSED = {
   id: "r1",
   created_by: "u1",
   image_url: "https://x/receipt-images/u1/r1.jpg",
-  // 0020's marker. Null means the receipt's one parse has never been claimed.
+  // 0020's marker. Null means the receipt's parse is not claimed right now.
   parsed_at: null,
+  // 0025's tally and its clock. Zero attempts spent, never attempted.
+  parse_attempts: 0,
+  last_parse_attempt_at: null,
   merchant_name: null,
   date_of_receipt: null,
   subtotal: null,
@@ -197,8 +262,11 @@ beforeEach(() => {
   Object.values(spies).forEach((spy) => spy.mockReset());
   db.receipt = { ...UNPARSED };
   db.itemCount = 0;
+  db.otherAttemptsThisHour = 0;
   db.claimError = null;
+  db.releaseError = null;
   db.writeBackError = null;
+  db.attemptCountError = null;
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     arrayBuffer: async () => new ArrayBuffer(10),
@@ -433,9 +501,15 @@ describe("POST /api/receipts/parse", () => {
     await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
 
     // The claim is the update carrying parsed_at; it is what makes the race
-    // above resolve to one winner rather than five.
+    // above resolve to one winner rather than five. Since 0025 it carries the
+    // tally that bounds the retry and the clock the hourly count bills
+    // against, in the same statement — one write, or the two can disagree.
     expect(spies.receiptUpdate).toHaveBeenCalledWith(
-      { parsed_at: expect.any(String) },
+      {
+        parsed_at: expect.any(String),
+        last_parse_attempt_at: expect.any(String),
+        parse_attempts: 1,
+      },
       "r1"
     );
   });
@@ -544,5 +618,293 @@ describe("POST /api/receipts/parse", () => {
     expect(spies.itemsInsert).toHaveBeenCalledWith([
       { receipt_id: "r1", name: "Latte", price: 5, quantity: 2, sort_order: 0 },
     ]);
+  });
+
+  // ── the bounded retry (0025) ──────────────────────────────────────────────
+  // A model call that fails for a reason with nothing to do with the receipt
+  // used to spend its only parse. It now hands the claim back — but only for
+  // that class of failure, and only three times ever.
+  const transient: [string, () => unknown][] = [
+    ["a provider 5xx", () => Object.assign(new Error("upstream"), { status: 503 })],
+    ["a dropped connection", () => Object.assign(new TypeError("fetch failed"), {
+      cause: { code: "ECONNRESET" },
+    })],
+    ["a timeout", () => Object.assign(new Error("timed out"), { name: "AbortError" })],
+  ];
+
+  it.each(transient)(
+    "leaves the receipt retryable after %s, and says so distinctly",
+    async (_label, makeError) => {
+      const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+      parseReceiptImage.mockRejectedValue(makeError());
+
+      const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+      // Distinct from every other failure the route can return: not the 500
+      // parse_failed of a parse that is spent, not the 503 parse_unavailable
+      // of an unwritable claim, not the 409 of a replay.
+      expect(res.status).toBe(503);
+      expect(await res.json()).toEqual({ error: "parse_retryable" });
+      // The claim is back, so the receipt is retryable — but the attempt it
+      // spent is not, which is what keeps the retry bounded.
+      expect(db.receipt?.parsed_at).toBeNull();
+      expect(db.receipt?.parse_attempts).toBe(1);
+      expect(db.receipt?.last_parse_attempt_at).toEqual(expect.any(String));
+      logged.mockRestore();
+    }
+  );
+
+  it("parses on the retry after a transient failure, without a re-upload", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    parseReceiptImage.mockRejectedValueOnce(
+      Object.assign(new Error("upstream"), { status: 500 })
+    );
+
+    expect((await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))).status).toBe(503);
+
+    // Same receiptId, same row, same stored image.
+    const retry = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(retry.status).toBe(200);
+    expect(await retry.json()).toEqual({ success: true, data: PARSE_RESULT });
+    expect(parseReceiptImage).toHaveBeenCalledTimes(2);
+    expect(db.receipt?.parse_attempts).toBe(2);
+    logged.mockRestore();
+  });
+
+  it("does not hand the claim back for a failure that is not transient", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    // A 4xx, a bad key, anything unrecognised: the default is the strict one,
+    // because misclassifying here hands back a paid model call.
+    parseReceiptImage.mockRejectedValue(
+      Object.assign(new Error("invalid api key"), { status: 401 })
+    );
+
+    const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "parse_failed" });
+    expect(db.receipt?.parsed_at).toEqual(expect.any(String));
+    expect((await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))).status).toBe(409);
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
+  });
+
+  it("reports a transient failure it could not hand the claim back for as spent", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    parseReceiptImage.mockRejectedValue(Object.assign(new Error("upstream"), { status: 502 }));
+    db.releaseError = { message: "connection reset" };
+
+    const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    // The claim is still standing, so telling the client to retry would be a
+    // lie the next request refuses. Spent is the direction that cannot cost
+    // money.
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: "parse_failed" });
+    expect(db.receipt?.parsed_at).toEqual(expect.any(String));
+    logged.mockRestore();
+  });
+
+  // ── the parse that succeeded and returned nothing ─────────────────────────
+  // The hole 0020 exists to cover. It is not a transient failure: the model
+  // ran, was paid for, and answered. It consumes the parse and gets no retry.
+  it.each([
+    ["an all-nulls result off a blank photo", EMPTY_RESULT],
+    ["the EMPTY fallback from a reply that failed JSON.parse", { ...EMPTY_RESULT }],
+  ])("consumes the parse on %s and offers no retry", async (_label, result) => {
+    parseReceiptImage.mockResolvedValue(result);
+
+    const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    // 200, not the 503 parse_retryable a transient failure returns — nothing
+    // in this response tells the client it may try again.
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ success: true, data: result });
+    // The claim stands and the tally moved: the receipt is spent.
+    expect(db.receipt?.parsed_at).toEqual(expect.any(String));
+    expect(db.receipt?.parse_attempts).toBe(1);
+
+    const replay = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    expect(replay.status).toBe(409);
+    expect(await replay.json()).toEqual({ error: "already_parsed" });
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+  });
+
+  // ── the cap ───────────────────────────────────────────────────────────────
+  it("stops at three model calls however many transient failures follow", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    parseReceiptImage.mockRejectedValue(Object.assign(new Error("upstream"), { status: 503 }));
+
+    const statuses: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      statuses.push((await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))).status);
+    }
+
+    // Two retries granted, then the third failure keeps the claim: the
+    // receipt is spent and every later request is refused without a model
+    // call.
+    expect(statuses).toEqual([503, 503, 500, 409, 409, 409, 409, 409, 409, 409]);
+    expect(parseReceiptImage).toHaveBeenCalledTimes(3);
+    expect(db.receipt?.parse_attempts).toBe(3);
+    logged.mockRestore();
+  });
+
+  it("refuses a fourth attempt the client asks for directly", async () => {
+    // A receipt whose three attempts are spent and whose claim is not
+    // standing — the tally is the only thing that still refuses it, and it is
+    // enforced here rather than by the client choosing not to ask.
+    db.receipt = { ...UNPARSED, parse_attempts: 3, last_parse_attempt_at: null };
+
+    const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "parse_exhausted", attempts: 3 });
+    expect(parseReceiptImage).not.toHaveBeenCalled();
+    // and it is not discarded as an unparsed row — the manual editor still
+    // opens on it
+    expect(spies.receiptDelete).not.toHaveBeenCalled();
+  });
+
+  it("gives a row that predates 0025 its full three attempts, and no more", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    // Null, not 0: the column was added bare, so every existing row backfills
+    // to null and the claim has to filter on `is null` rather than `= 0`.
+    db.receipt = { ...UNPARSED, parse_attempts: null };
+    parseReceiptImage.mockRejectedValue(Object.assign(new Error("upstream"), { status: 503 }));
+
+    const first = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(first.status).toBe(503);
+    expect(db.receipt?.parse_attempts).toBe(1);
+
+    for (let i = 0; i < 5; i++) {
+      await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    }
+    expect(parseReceiptImage).toHaveBeenCalledTimes(3);
+    logged.mockRestore();
+  });
+
+  // ── the race, once per attempt ────────────────────────────────────────────
+  it("calls Gemini once per attempt for N concurrent requests, and three times in all", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    parseReceiptImage.mockRejectedValue(Object.assign(new Error("upstream"), { status: 503 }));
+
+    // Three rounds of five simultaneous requests on one receiptId. Each round
+    // resolves to exactly one winner — the claim is a compare-and-set on both
+    // parsed_at and the tally, so a request holding a stale read matches no
+    // row rather than overwriting a count it never saw.
+    for (const expected of [1, 2, 3]) {
+      const results = await Promise.all(
+        Array.from({ length: 5 }, () =>
+          POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))
+        )
+      );
+      expect(results.filter((res) => res.status !== 409)).toHaveLength(1);
+      expect(parseReceiptImage).toHaveBeenCalledTimes(expected);
+    }
+
+    // A fourth round buys nothing.
+    await Promise.all(
+      Array.from({ length: 5 }, () =>
+        POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))
+      )
+    );
+    expect(parseReceiptImage).toHaveBeenCalledTimes(3);
+    logged.mockRestore();
+  });
+
+  it("refuses a claim built on a read that went stale while the claim was released", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    parseReceiptImage.mockRejectedValue(Object.assign(new Error("upstream"), { status: 503 }));
+
+    // Park one request between its ownership read and its claim, holding a
+    // read that says zero attempts spent. The rate-limit check is the last
+    // await before the claim, so stalling it is the window.
+    let resume!: () => void;
+    isParseRateLimited.mockImplementationOnce(
+      () => new Promise<boolean>((ok) => { resume = () => ok(false); })
+    );
+    const stale = POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    // Two full attempts land while it waits, each released after a transient
+    // failure, so the row is unclaimed again — and `parsed_at is null` alone
+    // can no longer tell "never attempted" from "twice attempted".
+    expect((await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))).status).toBe(503);
+    expect((await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))).status).toBe(503);
+    expect(db.receipt?.parse_attempts).toBe(2);
+
+    resume();
+    const res = await stale;
+
+    // The tally in the claim's filter is what refuses this. Without it the
+    // stale request claims the released row and writes the count back to 1 —
+    // a lost update that hands the caller a fourth and fifth model call off
+    // one upload.
+    expect(res.status).toBe(409);
+    expect(db.receipt?.parse_attempts).toBe(2);
+    expect(parseReceiptImage).toHaveBeenCalledTimes(2);
+
+    // Whatever the caller does next, the cap holds.
+    for (let i = 0; i < 5; i++) {
+      await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    }
+    expect(parseReceiptImage).toHaveBeenCalledTimes(3);
+    logged.mockRestore();
+  });
+
+  // ── every attempt costs a slot ────────────────────────────────────────────
+  it("charges a retry against the hourly limit like any other attempt", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    // 14 attempts already spent this hour on other receipts, so this receipt's
+    // first attempt is the fifteenth and last.
+    db.otherAttemptsThisHour = 14;
+    parseReceiptImage.mockRejectedValue(Object.assign(new Error("upstream"), { status: 503 }));
+
+    const first = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    expect(first.status).toBe(503);
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+
+    // The retry is refused: the attempt just spent counted, even though it
+    // added no receipt row for the limiter's own count to see.
+    const retry = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(retry.status).toBe(429);
+    expect(await retry.json()).toEqual({ error: "rate_limited", limit: 15 });
+    expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
+  });
+
+  it("keeps the row and the image when a retry is the thing refused for the hour", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    db.otherAttemptsThisHour = 14;
+    parseReceiptImage.mockRejectedValue(Object.assign(new Error("upstream"), { status: 503 }));
+
+    await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+    await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    // A 429 on a fresh receipt discards the row and its image, because the
+    // parse never happened. This one has an attempt left and a photo the
+    // retry exists to save the user from uploading again.
+    expect(spies.receiptDelete).not.toHaveBeenCalled();
+    expect(spies.storageRemove).not.toHaveBeenCalled();
+    expect(db.receipt).toMatchObject({ id: "r1", parse_attempts: 1 });
+    logged.mockRestore();
+  });
+
+  it("fails the hourly attempt count open, and the claim closed, when 0025 is unapplied", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    db.attemptCountError = { message: 'column "last_parse_attempt_at" does not exist', code: "42703" };
+
+    // Failing this count open costs nothing: the claim reads the same missing
+    // columns a moment later and refuses before the model.
+    db.claimError = { message: 'column "parse_attempts" does not exist', code: "42703" };
+
+    const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "parse_unavailable" });
+    expect(parseReceiptImage).not.toHaveBeenCalled();
+    logged.mockRestore();
   });
 });
