@@ -32,14 +32,31 @@ input=$(cat 2>/dev/null)
 command -v jq >/dev/null 2>&1 || exit 0
 [ -s "$EVENTS" ] || exit 0
 
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"; s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"; s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
 deny() {
-  jq -n --arg msg "$1" '{
+  local reason="$1" out
+  # Captured, not streamed — see deny-irreversible.sh for why this matters.
+  # A broken jq here means this cap silently allows everything instead of
+  # denying, which is the opposite of what a cap is for.
+  out=$(jq -n --arg msg "$reason" '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "deny",
       permissionDecisionReason: $msg
     }
-  }'
+  }' 2>/dev/null)
+  if [ -z "$out" ]; then
+    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"%s"}}\n' \
+      "$(json_escape "$reason")"
+  else
+    printf '%s\n' "$out"
+  fi
   exit 0
 }
 

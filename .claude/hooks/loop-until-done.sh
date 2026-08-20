@@ -93,8 +93,23 @@ for f in "$LEDGER"/*.md; do
   esac
   id=$(sed -n 's/^id:[[:space:]]*//p'    "$f" | head -1)
   ti=$(sed -n 's/^title:[[:space:]]*//p' "$f" | head -1)
+
+  # Unchecked criteria from the body, if the task uses the checklist format.
+  # Body = everything after the second frontmatter delimiter; a naive
+  # sed-range deletes the body along with the frontmatter, so this counts
+  # delimiters explicitly instead — the same fix bin/audit needed for the
+  # same reason.
+  pending=$(awk 'BEGIN{n=0} /^---[[:space:]]*$/{n++; next} n>=2{print}' "$f" \
+    | sed -n 's/^[[:space:]]*-[[:space:]]*\[ \][[:space:]]*//p')
+
   unfinished="$unfinished
-  - ${id:-?} [$st] ${ti:-untitled}"
+  ${id:-?} [$st] ${ti:-untitled}"
+  if [ -n "$pending" ]; then
+    while IFS= read -r line; do
+      [ -n "$line" ] && unfinished="$unfinished
+      - $line"
+    done <<< "$pending"
+  fi
   n=$((n + 1))
 done
 
