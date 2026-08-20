@@ -111,22 +111,8 @@ echo "$count" > "$counter" 2>/dev/null
 remaining=$((LOOP_MAX - count))
 
 cat >&2 <<EOF
-The ledger still has $n unfinished task(s):
+Unfinished in ledger ($n):
 $unfinished
-
-Do not end the turn while work remains. Continue the pipeline:
-
-  - A task in \`todo\` has not been dispatched. Dispatch it to a builder tier.
-  - A task in \`in-progress\` is waiting on you. If its builder finished, dispatch
-    the reviewer. If the reviewer passed and it merged, dispatch the publisher,
-    then set the task to \`done\`.
-  - If a task cannot proceed, set it to \`blocked\` with a \`blocked_reason\` and
-    bring it to the owner. Blocked is a legitimate end state; silently leaving it
-    \`in-progress\` is not.
-
-Do not write the code yourself. Dispatch it.
-
-($remaining forced continuation(s) left this session before this check goes quiet.)
 EOF
 
 exit 2

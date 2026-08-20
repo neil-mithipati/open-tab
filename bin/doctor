@@ -47,7 +47,7 @@ else
     say_ok "no duplicate registrations"
   fi
 
-  for h in log-event.sh spend-cap.sh gate-tests.sh loop-until-done.sh parallel-cap.sh verify-trivial.sh; do
+  for h in log-event.sh spend-cap.sh gate-tests.sh loop-until-done.sh parallel-cap.sh verify-trivial.sh protect-fleet.sh; do
     if jq -e --arg h "$h" '[.hooks | to_entries[] | .value[].hooks[].command]
         | map(select(test($h))) | length > 0' "$SETTINGS" >/dev/null 2>&1; then
       :

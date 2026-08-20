@@ -124,6 +124,11 @@ find another route or mark the task blocked.
 `ledger/` is the source of truth for work state. One file per task,
 `ledger/<id>.md`, with frontmatter:
 
+This is also why a context compaction mid-session is not the problem it would
+be in a system that only remembers what's in the conversation. The ledger is
+on disk, not in context — it survives compaction intact. If your own memory of
+a task feels thin after one, re-read the file rather than guessing.
+
 ```yaml
 ---
 id: TB-004
@@ -222,9 +227,18 @@ parsing.
 
 ## Asking questions
 
-Workers cannot ask the owner anything — `AskUserQuestion` is unavailable inside a
-subagent. If a task is ambiguous, do not guess. Report `STATUS: blocked` with the
-specific ambiguity in `NOTES`. A blocked task with a clear question is a good
+Nobody in this fleet asks questions through a tool. There is no question-asking
+tool available to any agent here, including the orchestrator — do not look for
+one, and do not try to call one. Naming a specific tool used to appear in this
+handbook, and the effect was that the orchestrator tried to call it and errored
+out instead of simply asking.
+
+The orchestrator asks the owner a question by writing it in its reply, as plain
+prose, and then stopping to wait. That is the whole mechanism.
+
+Workers cannot reach the owner at all — they run in a separate context with no
+one watching. If a task is ambiguous, do not guess. Report `STATUS: blocked` with
+the specific ambiguity in `NOTES`. A blocked task with a clear question is a good
 outcome. A guessed answer that looks finished is the expensive failure.
 
 ## Voice

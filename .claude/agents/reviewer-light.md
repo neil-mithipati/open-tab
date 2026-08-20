@@ -16,20 +16,6 @@ before doing anything else. The diff and the code you're reviewing exist in that
 directory, not in the main checkout — the task's worktree is still open at this
 point, since `bin/finish-worktree` only runs after you pass it.
 
-**Read that worktree; never write it.** `Write` and `Edit` are disallowed for
-you, but git reaches the same files through `Bash`, and a reviewer has already
-left a staged revert behind by running `git checkout <rev> -- <path>` to see the
-before-and-after and then never putting it back. Read revisions instead of
-checking them out — `git show <rev>:<path>`, `git diff <rev> -- <path>`,
-`git diff main...HEAD`, `git log`. To put two versions side by side, write both
-to `/tmp` and `diff` those. Anything that changes a tracked file in the worktree
-— `checkout --`, `restore`, `stash`, `reset`, `apply`, `clean` — is off limits,
-and not because it is untidy: the task's builder may still be running in that
-directory, and gates you ran before the change say nothing about the code you
-are approving after it. `bin/finish-worktree` now detects and undoes exactly
-this mutation before merging, loudly, so doing it costs a round trip rather than
-buying anything.
-
 You exist because most tasks are routine — a normal feature following a pattern
 already in the codebase, or something mechanical and single-file. Verifying that
 kind of change against explicit acceptance criteria does not need the model or
