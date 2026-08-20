@@ -19,8 +19,19 @@ import { userReceiptsTag } from "@/lib/cacheTags";
 // status, so this also comes back as a 409 rather than a 500.
 const PARTICIPANTS_CHANGED = "PT409";
 
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export interface SaveReceiptItem {
   clientId: string;
+  /**
+   * The row id this item was read from, when it came out of the database.
+   * Sent so the save keeps it instead of minting a new one: an item's id is
+   * what a claim points at, and re-minting it destroyed any claim made through
+   * the share link since this page loaded (migration 0023). Absent for an item
+   * the owner has just typed in.
+   */
+  dbId?: string | null;
   name: string;
   price: number;
   quantity: number;
@@ -65,6 +76,8 @@ interface RpcPayload {
   p_receipt_id: string;
   p_items: {
     client_id: string;
+    /** Omitted, not null, for a new item — see SaveReceiptItem.dbId. */
+    id?: string;
     name: string;
     price: number;
     quantity: number;
@@ -159,15 +172,29 @@ function buildSavePayload(input: SaveReceiptInput): RpcPayload {
     });
   }
 
-  return {
-    p_receipt_id: input.receiptId,
-    p_items: input.items.map((it, i) => ({
+  // The row id is only worth sending if it is one: the function reads it as a
+  // uuid, so anything else would fail the whole save rather than just being
+  // ignored. A repeated id is dropped after the first — two items cannot be
+  // the same row, and the second would collide on the primary key.
+  const seenDbIds = new Set<string>();
+  const p_items: RpcPayload["p_items"] = input.items.map((it, i) => {
+    const dbId = it.dbId && UUID.test(it.dbId) && !seenDbIds.has(it.dbId)
+      ? it.dbId
+      : undefined;
+    if (dbId) seenDbIds.add(dbId);
+    return {
       client_id: it.clientId,
+      ...(dbId ? { id: dbId } : {}),
       name: it.name,
       price: it.price,
       quantity: it.quantity,
       sort_order: i,
-    })),
+    };
+  });
+
+  return {
+    p_receipt_id: input.receiptId,
+    p_items,
     p_participants,
     p_assignments,
     p_charges,
