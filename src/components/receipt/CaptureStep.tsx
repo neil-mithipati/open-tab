@@ -92,8 +92,10 @@ export function CaptureStep({ flow }: { flow: Flow }) {
       flow.update("receiptId", null);
       flow.update("signedUrl", null);
       // The row created above is gone again, so the cached dashboard list is
-      // out of date a second time.
-      refreshUserCaches();
+      // out of date a second time. Awaited (unlike the fire-and-forget call
+      // above) so a slow cache refresh cannot land after the next scan has
+      // already created a new row.
+      await refreshUserCaches();
       flow.goTo("capture");
       return;
     }
@@ -101,6 +103,14 @@ export function CaptureStep({ flow }: { flow: Flow }) {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       console.error("[handleFile] parse API error:", err);
+      if (err?.error === "parse_unavailable") {
+        // A 503 here almost always means an outage on our side (an unapplied
+        // migration is the usual cause), not anything the user did — silence
+        // makes it look like the manual form below is just how this app
+        // works. Say what happened and that the form in front of them still
+        // works by hand.
+        showToast("Parsing is unavailable right now. Enter the items by hand.", "error");
+      }
       flow.goTo("split");
       return;
     }

@@ -118,4 +118,33 @@ describe("CaptureStep", () => {
       logged.mockRestore();
     }
   );
+
+  it("shows a distinct message when the parse route refuses with a 503 parse_unavailable, and still falls through to manual entry", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => ({ error: "parse_unavailable" }),
+    }) as unknown as typeof fetch;
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { flow, goTo, update } = fakeFlow();
+    const { container } = render(<CaptureStep flow={flow} />);
+
+    await userEvent.upload(
+      pickFile(container),
+      new File(["x"], "receipt.jpg", { type: "image/jpeg" })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/parsing is unavailable/i)).toBeInTheDocument();
+    });
+    // distinct from the 429 message
+    expect(screen.queryByText(/scan limit reached/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/enter the items by hand/i)).toBeInTheDocument();
+    expect(goTo).toHaveBeenLastCalledWith("split");
+    // the row survives — a 503 doesn't discard anything the way a 429 does
+    expect(update).toHaveBeenCalledWith("receiptId", "r1");
+    expect(update).not.toHaveBeenCalledWith("receiptId", null);
+    logged.mockRestore();
+  });
 });
