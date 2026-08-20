@@ -648,6 +648,91 @@ describe("POST /api/receipts/parse", () => {
     ]);
   });
 
+  // ── the receipt that does not add up (OT-136) ─────────────────────────────
+  // A total the model misread is one the split step would turn into a Venmo
+  // charge without anyone having checked it. The numbers still come back so
+  // the user lands on the edit screen looking at them — but nothing is
+  // written, so no later read can mistake them for a clean parse.
+  describe("reconciliation", () => {
+    // Items sum to 1000¢ and the subtotal agrees, but 1000 + 100 + 200 is
+    // 1300¢, not the 1500¢ the total claims.
+    const BAD_TOTAL = { ...PARSE_RESULT, total: 1500 };
+    // Two $5 lattes are 1000¢, whatever the subtotal says.
+    const BAD_ITEM_SUM = { ...PARSE_RESULT, subtotal: 1400, total: 1700 };
+
+    it("persists nothing when subtotal plus tax and tip misses the total", async () => {
+      const warned = vi.spyOn(console, "warn").mockImplementation(() => {});
+      parseReceiptImage.mockResolvedValue(BAD_TOTAL);
+
+      const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+      expect(res.status).toBe(200);
+      expect(spies.receiptUpdate).not.toHaveBeenCalledWith(
+        expect.objectContaining({ merchant_name: "Cafe" }),
+        "r1"
+      );
+      expect(spies.itemsInsert).not.toHaveBeenCalled();
+      expect(db.receipt).toMatchObject({ merchant_name: null, total: null });
+      warned.mockRestore();
+    });
+
+    it("returns the numbers and the fields to flag on the edit screen", async () => {
+      const warned = vi.spyOn(console, "warn").mockImplementation(() => {});
+      parseReceiptImage.mockResolvedValue(BAD_TOTAL);
+
+      const json = await (
+        await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))
+      ).json();
+
+      expect(json.success).toBe(true);
+      expect(json.data).toEqual(BAD_TOTAL);
+      expect(json.reconciliation.ok).toBe(false);
+      expect(json.reconciliation.flagged).toEqual(["subtotal", "total"]);
+      expect(json.reconciliation.issues[0]).toMatchObject({
+        check: "sum_vs_total",
+        expectedCents: 1300,
+        actualCents: 1500,
+      });
+      warned.mockRestore();
+    });
+
+    it("persists nothing when the line items miss the subtotal", async () => {
+      const warned = vi.spyOn(console, "warn").mockImplementation(() => {});
+      parseReceiptImage.mockResolvedValue(BAD_ITEM_SUM);
+
+      const json = await (
+        await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))
+      ).json();
+
+      expect(json.reconciliation.flagged).toEqual(["items", "subtotal"]);
+      expect(spies.itemsInsert).not.toHaveBeenCalled();
+      expect(db.receipt).toMatchObject({ subtotal: null });
+      warned.mockRestore();
+    });
+
+    it("spends the parse and offers no retry — the model ran either way", async () => {
+      const warned = vi.spyOn(console, "warn").mockImplementation(() => {});
+      parseReceiptImage.mockResolvedValue(BAD_TOTAL);
+
+      await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+
+      expect(db.receipt?.parsed_at).toEqual(expect.any(String));
+      expect(db.receipt?.parse_attempts).toBe(1);
+      const replay = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
+      expect(replay.status).toBe(409);
+      expect(parseReceiptImage).toHaveBeenCalledTimes(1);
+      warned.mockRestore();
+    });
+
+    it("says nothing about reconciliation when the receipt adds up", async () => {
+      const json = await (
+        await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }))
+      ).json();
+
+      expect(json).toEqual({ success: true, data: PARSE_RESULT });
+    });
+  });
+
   // ── the bounded retry (0025) ──────────────────────────────────────────────
   // A model call that fails for a reason with nothing to do with the receipt
   // used to spend its only parse. It now hands the claim back — but only for
