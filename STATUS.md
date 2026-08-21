@@ -1,22 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 05:41 UTC · regenerated on every task completion.
+Updated 2026-08-21 05:45 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $31.97 | $200.00 | █░░░░░░░░░ 15% |
+| open-tab | $34.02 | $200.00 | █░░░░░░░░░ 17% |
 
 ## Agents
 
-Idle — no agents currently running.
-
-## Blocked — needs your input
-
-> [!CAUTION]
-> 🔴 **Blocked `OT-147`** — rejected by reviewer-deep. 4 of 6 criteria fail, and the fixes for three of them live in liveness.sh, outside this task's declared file scope. needs the owner to widen the scope, and a maintenance grant, which is unsafe until OT-150/OT-152 land.
-> 🔴 **Blocked `OT-150`** — reviewer-deep rejected the landed fix: two high findings let a grant for one task write the MAIN checkout. needs canonicalization before any further fleet-tooling dispatch, and the change must go back through the kit.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| 🟢 builder-deep | open-tab | 2026-08-21T05:45:01Z | 2 |
 
 ## Tasks
 
@@ -9992,22 +9988,19 @@ but an instruction not to echo a secret did not hold, and that is worth knowing
 before a review ever runs against a real one.
 
 </details>
-<details><summary>🔴 <code>OT-147</code> blocked — four fail-opens remain in parallel-cap.sh after OT-138 · 0/6 criteria — rejected by reviewer-deep. 4 of 6 criteria fail, and the fixes for three of them live in liveness.sh, outside this task's declared file scope. needs the owner to widen the scope, and a maintenance grant, which is unsafe until OT-150/OT-152 land.</summary>
+<details><summary>🟢 <code>OT-147</code> in-progress — four fail-opens remain in parallel-cap.sh after OT-138 · 0/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
 - review: full
-- attempts: 1
+- attempts: 2
 - branch: task/OT-147
 - worktree: ../wt-OT-147
 - files:
 -   - .claude/hooks/parallel-cap.sh
+-   - .claude/hooks/liveness.sh
 -   - .claude/hooks/log-event.sh
-- blocked_reason: >-
--   rejected by reviewer-deep. 4 of 6 criteria fail, and the fixes for three of
--   them live in liveness.sh, outside this task's declared file scope. needs the
--   owner to widen the scope, and a maintenance grant, which is unsafe until
--   OT-150/OT-152 land.
+- blocked_reason: null
 
 
 ## Needs a maintenance grant before dispatch
@@ -10177,6 +10170,18 @@ decision, recorded before any retry is dispatched.
 
 Do not retry until OT-150 and OT-152 land: this needs a maintenance grant, and
 a live grant is what makes those holes exploitable.
+
+
+## Scope widened, attempt 2 dispatched — owner grant, 2026-08-21
+
+The owner granted OT-147, OT-150, OT-151 and OT-152 and asked for all four to be
+finished unattended. `.claude/hooks/liveness.sh` is now in scope: criteria 3 and
+4 and the torn-line regression cannot be reached from `parallel-cap.sh` at all.
+
+Tier held at `builder-deep`. Attempt 1 was not a capability failure — every
+guard it ported holds under 24 fixtures. It was scoped out of the file holding
+the bug. Attempt 2 keeps the existing worktree and the `6dd3061` commit and
+builds on them rather than restarting.
 
 </details>
 <details><summary>✅ <code>OT-148</code> done — robustness gaps in the schema drift check · 7/7 criteria</summary>
@@ -10357,7 +10362,7 @@ one file was correct.
 Gates: typecheck pass, lint pass, tests 653/653. Commit `07ca02c`.
 
 </details>
-<details><summary>🔴 <code>OT-150</code> blocked — maintenance grant never activates for a dispatched subagent · 4/4 criteria — reviewer-deep rejected the landed fix: two high findings let a grant for one task write the MAIN checkout. needs canonicalization before any further fleet-tooling dispatch, and the change must go back through the kit.</summary>
+<details><summary>🟢 <code>OT-150</code> in-progress — maintenance grant never activates for a dispatched subagent · 4/4 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -10367,10 +10372,7 @@ Gates: typecheck pass, lint pass, tests 653/653. Commit `07ca02c`.
 - worktree: null
 - files:
 -   - .claude/hooks/protect-fleet.sh
-- blocked_reason: >-
--   reviewer-deep rejected the landed fix: two high findings let a grant for one
--   task write the MAIN checkout. needs canonicalization before any further
--   fleet-tooling dispatch, and the change must go back through the kit.
+- blocked_reason: null
 
 
 ## The defect
@@ -10472,15 +10474,23 @@ kit edit at 01:13, so `cmp -s` correctly skipped).
 Also low, and worth acting on: the kit's copy of this fix is UNCOMMITTED in the
 `agent-fleet-kit` working tree — one `git checkout` from being lost.
 
+
+## Attempt 1 dispatched with OT-152 folded in — owner grant, 2026-08-21
+
+Both tasks change `maint_active()` and the `hit` matcher in the same file. The
+reviewer's own note says splitting them means writing the same canonicalization
+twice and getting one copy wrong. One worktree, `../wt-OT-150`, satisfies both
+criteria sets; OT-152 is verified and closed from the same diff.
+
 </details>
-<details><summary>⚪ <code>OT-151</code> todo — the stop hook ignores the [awaiting owner] marker and forces continuation anyway · 0/5 criteria</summary>
+<details><summary>🟢 <code>OT-151</code> in-progress — the stop hook ignores the [awaiting owner] marker and forces continuation anyway · 0/5 criteria</summary>
 
 - app: open-tab
 - tier: builder
 - review: full
 - attempts: 0
-- branch: null
-- worktree: null
+- branch: task/OT-151
+- worktree: ../wt-OT-151
 - files:
 -   - .claude/hooks/loop-until-done.sh
 - blocked_reason: null
@@ -10528,15 +10538,21 @@ Needs a maintenance grant (`.claude/hooks/`), and per OT-150 the fix should land
 in the kit at `../agent-fleet-kit` rather than only here, or the next
 `add-fleet` reverts it.
 
+
+## Dispatched — owner grant, 2026-08-21
+
+Grant is live. Independent of OT-147 and OT-150: different file, no shared
+surface, so it runs in parallel with them.
+
 </details>
-<details><summary>⚪ <code>OT-152</code> todo — fleet-path matcher is bypassed by path spelling, no grant needed · 0/7 criteria</summary>
+<details><summary>🟢 <code>OT-152</code> in-progress — fleet-path matcher is bypassed by path spelling, no grant needed · 0/7 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
 - review: full
 - attempts: 0
-- branch: null
-- worktree: null
+- branch: task/OT-150
+- worktree: ../wt-OT-150
 - files:
 -   - .claude/hooks/protect-fleet.sh
 - blocked_reason: null
@@ -10576,31 +10592,38 @@ Fix both in one pass, in the kit, or the next `add-fleet` reverts it.
 Do this together with OT-150's canonicalization fix. Splitting them means
 writing the same `realpath` logic twice and getting one of them wrong.
 
+
+## Being fixed inside OT-150's worktree — 2026-08-21
+
+Same file, same root cause (matching on an uncanonicalized path). Dispatched as
+one builder-deep in `../wt-OT-150`. This task's criteria are reviewed from that
+same diff.
+
 </details>
 
 ## Recent activity
 
 ```
-2026-08-21T05:39:18Z  open-tab  SubagentStop  
-2026-08-21T05:39:23Z  open-tab  SubagentStop  
-2026-08-21T05:39:23Z  open-tab  SubagentStop  
-2026-08-21T05:39:23Z  open-tab  SubagentStop  
-2026-08-21T05:39:23Z  open-tab  SubagentStop  
-2026-08-21T05:39:23Z  open-tab  SubagentStop  
-2026-08-21T05:39:23Z  open-tab  SubagentStop  
-2026-08-21T05:40:18Z  open-tab  SubagentStop  reviewer-deep
-2026-08-21T05:41:11Z  open-tab  SubagentStop  
-2026-08-21T05:41:11Z  open-tab  SubagentStop  
-2026-08-21T05:41:11Z  open-tab  SubagentStop  
-2026-08-21T05:41:11Z  open-tab  SubagentStop  
-2026-08-21T05:41:11Z  open-tab  SubagentStop  
-2026-08-21T05:41:11Z  open-tab  SubagentStop  
-2026-08-21T05:41:45Z  open-tab  SubagentStop  
-2026-08-21T05:41:45Z  open-tab  SubagentStop  
-2026-08-21T05:41:45Z  open-tab  SubagentStop  
-2026-08-21T05:41:45Z  open-tab  SubagentStop  
-2026-08-21T05:41:45Z  open-tab  SubagentStop  
-2026-08-21T05:41:45Z  open-tab  SubagentStop  
+2026-08-21T05:42:24Z  open-tab  SubagentStop  
+2026-08-21T05:42:24Z  open-tab  SubagentStop  
+2026-08-21T05:42:24Z  open-tab  SubagentStop  
+2026-08-21T05:42:24Z  open-tab  SubagentStop  
+2026-08-21T05:42:24Z  open-tab  SubagentStop  
+2026-08-21T05:42:24Z  open-tab  SubagentStop  
+2026-08-21T05:42:26Z  open-tab  SubagentStop  
+2026-08-21T05:42:26Z  open-tab  SubagentStop  
+2026-08-21T05:42:26Z  open-tab  SubagentStop  
+2026-08-21T05:42:26Z  open-tab  SubagentStop  
+2026-08-21T05:42:26Z  open-tab  SubagentStop  
+2026-08-21T05:42:26Z  open-tab  SubagentStop  
+2026-08-21T05:44:33Z  open-tab  SubagentStart  builder-deep
+2026-08-21T05:45:01Z  open-tab  SubagentStart  builder-deep
+2026-08-21T05:45:05Z  open-tab  SubagentStop  
+2026-08-21T05:45:05Z  open-tab  SubagentStop  
+2026-08-21T05:45:05Z  open-tab  SubagentStop  
+2026-08-21T05:45:05Z  open-tab  SubagentStop  
+2026-08-21T05:45:05Z  open-tab  SubagentStop  
+2026-08-21T05:45:05Z  open-tab  SubagentStop  
 ```
 
 ---
