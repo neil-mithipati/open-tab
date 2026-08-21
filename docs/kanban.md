@@ -36,15 +36,64 @@
 | OT-133 | a late claim is destroyed by the item re-mint when the claimer IS in the payload | Done | — (third reviewer dispatch delivered a PASS after two turn-exhausted attempts lost their verdicts; all six criteria checked, mutation-checked non-tautological, merged into main as a merge commit on top of `420a8d3`. two medium findings reviewed and deliberately declined on owner instruction, not fixed — reasoning kept in `ledger/OT-133.md`) |
 | OT-134 | a transient gemini outage permanently burns a receipt's only parse — no retry affordance | Done | — (full reviewer passed all nine criteria, no high findings, merged as `5534b5f`. bounded to 3 model attempts per receipt via migration 0025 — renumbered from 0024 after OT-137 took that slot; replay hole confirmed still closed) |
 | OT-137 | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming | Done | — (full reviewer passed all seven criteria, no high findings, merged as `070cb49`. carries claim_done_at across the participant delete/re-insert via migration 0024, keyed on lowercased username; deliberately no backfill, keeping OT-124's now() trap in mind) |
-| OT-138 | three live fail-opens in parallel-cap.sh let an uncapped dispatch through | Blocked | the maintenance grant cannot activate for a dispatched subagent. `maint_active()` in `protect-fleet.sh` and `deny-irreversible.sh` keys off `basename(CLAUDE_PROJECT_DIR)`, which is the main checkout for a worker, so it returns 1 before ever reading `gates.json`. Verified by probe and by live denial on both the edit and bash routes. Fix is owner-side: either re-run this task from a session rooted in `../wt-OT-138`, or change `maint_active` in both guards to key off the target path. |
+| OT-138 | three live fail-opens in parallel-cap.sh let an uncapped dispatch through | Done | — (all 10 acceptance criteria reviewed and passed; NOT yet merged — `bin/finish-worktree` writes fleet-protected files and the merge guard denies it, so `task/OT-138` is still an open branch awaiting the owner to run the merge by hand) |
 | OT-135 | migrate receipt parser to gemini-2.5-flash-lite with schema enforced as config | Done | — (P0, go-live tomorrow; owner waived the live-parse-quality criterion rather than supply a key and fixtures, recorded as WAIVED not passed; other 5 criteria passed reviewer-light independently. Residual risk noted in the ledger: flash-lite is weaker than flash for OCR and no test catches a regression) |
 | OT-136 | arithmetic validation on parsed receipts, money as integer cents end to end | Done | — (P0, go-live tomorrow; branch `task/OT-136` was deliberately based on `task/OT-135`, not main — both edit `parseReceipt.ts`, merge order held then cleared) |
 | OT-139 | lock down receipt image storage — private bucket, RLS, signed URLs, retention job | Done | — (P0, go-live tomorrow; attempt 2 merged. Deployment note stands: migration 0026 must be re-applied even if already run, and BEFORE the code, since the retention function's OUT columns changed. Owner set `RECEIPT_IMAGE_RETENTION_DAYS=14` and generated `CRON_SECRET` 2026-08-20; bucket `file_size_limit`/`allowed_mime_types` agreed but owner action, not code) |
 | OT-140 | client-side image downscale and EXIF orientation normalization before upload | Done | — (P0, go-live tomorrow; owner waived both open criteria — parse-quality, no fixtures/key, and upload size/time, rejected as proven-by-`sharp`-proxy not the real `canvas.toBlob` path. Measurement stands as strong evidence — 11.0MB to 649KB, 94% reduction — but recorded as WAIVED, not passed) |
 | OT-141 | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor | Done | — (merged to main as `d6c347a` on top of `f9b1910`; `handleDelete` now calls `boundStoragePath`, skips `storage.remove` on a null return, and the OT-139 sweep test gained a class rule catching inline `"/receipt-images/"` parsing anywhere outside `src/lib/storage.ts`) |
-| OT-142 | production database is ~14 migrations behind the repo — merged code reads columns that do not exist live | Blocked | needs the owner to run the schema_migrations query against production and decide the remediation path. no agent can see the live database, so the gap cannot be measured from here. this blocks the go-live, not just this task. Found while applying migration 0026 through the dashboard: `parsed_at` (0020) doesn't exist live, production appears to be at roughly migration 11 of 26. Code merged tonight (OT-135, OT-136, OT-139) assumes the full set. |
+| OT-142 | production database is ~14 migrations behind the repo — merged code reads columns that do not exist live | Blocked | needs the owner to run the schema_migrations query against production and decide the remediation path. no agent can see the live database, so the gap cannot be measured from here. this blocks the go-live, not just this task. Found while applying migration 0026 through the dashboard: `parsed_at` (0020) doesn't exist live, production appears to be at roughly migration 11 of 26. Code merged tonight (OT-135, OT-136, OT-139) assumes the full set. 2 of 6 criteria now checked: live migration state established (case 2 — never tracked, live schema built by hand) and migrations applied up to 0026. Still open: gap enumerated per table, remediation order recorded, dashboard policy steps completed, and a drift check exists (split out as OT-145, done). New P0 found on the live database: the `receipt_images_insert_own` storage policy is missing both its folder and ownership conjuncts — any authenticated user can write into another user's folder — fix is owner-side only. |
 | OT-143 | 0026 cannot be applied by supabase db push — split the storage half out of the migration | Done | — (reviewed MERGE, all five criteria pass; reviewer confirmed `supabase/storage-policies.sql` byte-identical to pre-split `0026`, gates re-run 574/574 tests, typecheck and lint clean. `public.` half stays in `0026` and pushes clean; storage half moved to `supabase/storage-policies.sql` with the apply procedure documented in `docs/deployment.md`. Criterion 1 verified by statement inspection, not a live hosted push — no agent can reach one) |
 | OT-144 | change the receipt image retention default from 7 days to 14 | Done | — (`builder-light`, `review: skip`, attempt 2. Owner decision 2026-08-20 to match `RECEIPT_IMAGE_RETENTION_DAYS=14`, already set live) |
+| OT-145 | nothing detects schema drift between the repo and the live database | Done | — (reviewed MERGE, all 8 criteria pass; `npm run check:drift` compares migrations and storage policies by normalised expression, not by name; on its first live run it found the storage-policy hole recorded on OT-142's row above. 5 findings routed to backlog) |
+| OT-146 | token-shaped test fixture trips github push protection and blocks every push to main | Done | — (reviewed MERGE, all 5 criteria pass; OT-145's fabricated Supabase token literal in a test fixture matched GitHub's secret scanner and blocked every push. Literal now assembled from parts, runtime value unchanged — verified byte-identical by `Buffer.compare`) |
+
+## Backlog — non-blocking findings from reviews, not yet filed as ledger tasks
+
+| id | title | status | blocked reason |
+|---|---|---|---|
+| OT-145-F1 | drift check: `->`/`->>` JSON operators sit in `COMPARISON_OPS`, so `a = b ->> 'c'` parses as `(a = b) ->> 'c'` — false drift on any policy using JSON operators (currently unreachable, no policy uses them) | Todo | — |
+| OT-145-F2 | drift check: `extractQueryRows` takes the first parseable array in CLI output, so a stray `[]` progress line ahead of the real rows reads as an empty result set (always fails safe to exit 1, never a false pass) | Todo | — |
+| OT-145-F3 | drift check: a `{"_tag":"Success","result":null}` envelope is read as one data row instead of zero | Todo | — |
+| OT-145-F4 | drift check: the ENOENT message interpolates `SUPABASE_BIN` unredacted (owner-supplied path, not a credential, but still worth trimming) | Todo | — |
+| OT-145-F5 | drift check: `--help` exits 0 having checked nothing, which a deploy step passing a stray flag would read as a clean run | Todo | — |
+
+## Sync notes (2026-08-20, cycle 31)
+
+Reconciled against every file in `ledger/`, 46 files read. Matched on id —
+OT-145 and OT-146 created, no existing cards for either; OT-138 and OT-142
+updated in place, not appended.
+
+- **OT-138** Blocked → **Done**. Ledger `state: done`. All 10 acceptance
+  criteria reviewed and passed across three review dispatches. Moved to Done
+  because the ledger says done — the kanban tracks the work, not the merge.
+  **Not merged**: `bin/finish-worktree` writes to fleet-protected files and
+  the merge guard denies it, so `task/OT-138` is still an open branch. This is
+  an owner action, not a blocked task — the ledger state is `done`, not
+  `blocked`, so the card follows it.
+- **OT-142** stays **Blocked**, note refreshed. Ledger `state: blocked`,
+  `blocked_reason` unchanged verbatim. Two of six criteria now checked (was
+  none before): live migration state established, and migrations applied up
+  to 0026. A new P0 was found querying the live database directly: the
+  `receipt_images_insert_own` storage policy is missing both its folder and
+  ownership conjuncts, live — any authenticated user can currently write into
+  another user's folder. Owner-side fix only; no agent can alter a policy on
+  `storage.objects`, which is owned by `supabase_storage_admin`.
+- **OT-145** created, **Done**. Ledger `state: done`. Reviewed, all 8 criteria
+  pass. This is the drift-check task OT-142 split out as its last open
+  criterion.
+- **OT-146** created, **Done**. Ledger `state: done`. Reviewed, all 5 criteria
+  pass. Fixes the push-protection block OT-145's own test fixture caused.
+
+Left alone, no drift: every other card checked against its ledger file and
+already matches.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
 
 ## Sync notes (2026-08-20, cycle 30)
 
