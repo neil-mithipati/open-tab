@@ -1,18 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 13:12 UTC · regenerated on every task completion.
+Updated 2026-08-21 13:14 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $96.88 | $200.00 | ████░░░░░░ 48% |
+| open-tab | $97.39 | $200.00 | ████░░░░░░ 48% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer-deep | open-tab | 2026-08-21T13:08:09Z | 2 |
+| 🟢 reviewer-deep | open-tab | 2026-08-21T12:37:46Z | 1 |
 
 ## Blocked — needs your input
 
@@ -11018,7 +11018,7 @@ Expect 95 ok / 0 fail / 1 skip. Then commit the kit copy, or the next
 `add-fleet` reverts it.
 
 </details>
-<details><summary>🟢 <code>OT-153</code> in-progress — remaining cap-counting gaps found in the OT-147 review · 0/6 criteria</summary>
+<details><summary>✅ <code>OT-153</code> done — remaining cap-counting gaps found in the OT-147 review · 6/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -11067,15 +11067,15 @@ it does not cover. All measured, none high.
 
 ## Acceptance criteria
 
-- [ ] the corruption tally and the live count come from ONE read of the log, so
+- [x] the corruption tally and the live count come from ONE read of the log, so
       a rotation between passes cannot produce `ok` with an empty result
-- [ ] `STALE_SECS`, `HB_DEAD_SECS` and `HB_GRACE` are validated as positive
+- [x] `STALE_SECS`, `HB_DEAD_SECS` and `HB_GRACE` are validated as positive
       integers within sane bounds, denying rather than silently undercounting
-- [ ] a `SubagentStop` earlier than its `SubagentStart` does not cancel it
-- [ ] an absent log with no resolvable project root denies rather than allowing
-- [ ] finding 3 is either fixed or recorded in the hook as a known bound, with
+- [x] a `SubagentStop` earlier than its `SubagentStart` does not cancel it
+- [x] an absent log with no resolvable project root denies rather than allowing
+- [x] finding 3 is either fixed or recorded in the hook as a known bound, with
       the reasoning
-- [ ] every fixture in `/tmp/ot147/harness.sh` still passes, plus new ones for
+- [x] every fixture in `/tmp/ot147/harness.sh` still passes, plus new ones for
       each of the above
 
 ## Note
@@ -11144,6 +11144,42 @@ result block. It reported gates passing and had just begun the adversarial pass;
 no per-criterion verdict survived. Budget failure, not capability — same shape as
 OT-155 attempt 1. Retried at the same tier, prompt narrowed and ordered so the
 verdict is emitted before the adversarial pass rather than after it.
+
+## Review verdict (reviewer-deep, attempt 2)
+
+All six criteria pass, each with per-criterion evidence. Gates re-run by the
+reviewer in the worktree: typecheck exit 0, lint exit 0 (one pre-existing warning
+in an untouched test file), 653 tests pass. Fixture suites re-run independently:
+/tmp/ot147/harness.sh PASS=51 FAIL=0, /tmp/ot153/harness.sh PASS=37 FAIL=0.
+Scope clean, only the two declared hooks changed. Pass 2 run, no high findings,
+approved to merge.
+
+Confirmed sound: the liveness coupling fails closed in both half-deploy
+directions (new cap + old liveness denies on the missing `liveness_knob_error`;
+new liveness + old cap denies on `LIVE_STATUS != ok`), both files land in one
+commit (caa98a1). The three new denies all name the offending variable and clear
+without human intervention. The documented two-dispatch bound is defensible — a
+claim record would introduce a stale claim that denies every dispatch until a
+human clears it, which is worse by this repo's own standard.
+
+Findings carried out to OT-157, not blocking this merge:
+
+- medium, a regression against the baseline this was measured on — a log line of
+  only NUL bytes defeats the "any lost line denies" rule. Criterion 1 routed the
+  log through a bash variable instead of letting jq open the file; bash 3.2
+  strips NULs from command substitution, so an all-NUL line collapses to empty
+  and is dropped by the tally's `select(. != "")`. content_lines and
+  parsed_records then agree and the lost-line deny never fires. Measured
+  end-to-end: baseline DENY, new ALLOW. Needs filesystem zero-fill to reach, not
+  concurrent appends.
+- medium, pre-existing — any worktree passes the new root-existence test at
+  parallel-cap.sh:172 while having no .claude/state/events.jsonl, so
+  CLAUDE_PROJECT_DIR pointed at a worktree still turns the cap off via the
+  absent-log allowance.
+- low — the whole log is now buffered in shell memory and piped through jq twice
+  more from the variable; costs time and memory on a large unrotated log.
+- low — the stderr inventory mentions STALE_SECS and HB_DEAD_SECS but not
+  HB_GRACE, which is now validated alongside them.
 
 </details>
 <details><summary>⚪ <code>OT-154</code> todo — leftover edges in the patched fleet guard · 0/6 criteria</summary>
@@ -11403,19 +11439,6 @@ fixtures still exercise the fallback path.
 ## Recent activity
 
 ```
-2026-08-21T13:11:21Z  open-tab  SubagentStop  
-2026-08-21T13:11:21Z  open-tab  SubagentStop  
-2026-08-21T13:11:54Z  open-tab  SubagentStop  
-2026-08-21T13:11:54Z  open-tab  SubagentStop  
-2026-08-21T13:11:54Z  open-tab  SubagentStop  
-2026-08-21T13:11:54Z  open-tab  SubagentStop  
-2026-08-21T13:11:54Z  open-tab  SubagentStop  
-2026-08-21T13:11:54Z  open-tab  SubagentStop  
-2026-08-21T13:12:26Z  open-tab  SubagentStop  
-2026-08-21T13:12:26Z  open-tab  SubagentStop  
-2026-08-21T13:12:26Z  open-tab  SubagentStop  
-2026-08-21T13:12:26Z  open-tab  SubagentStop  
-2026-08-21T13:12:26Z  open-tab  SubagentStop  
 2026-08-21T13:12:26Z  open-tab  SubagentStop  
 2026-08-21T13:12:58Z  open-tab  SubagentStop  
 2026-08-21T13:12:58Z  open-tab  SubagentStop  
@@ -11423,6 +11446,19 @@ fixtures still exercise the fallback path.
 2026-08-21T13:12:58Z  open-tab  SubagentStop  
 2026-08-21T13:12:58Z  open-tab  SubagentStop  
 2026-08-21T13:12:58Z  open-tab  SubagentStop  
+2026-08-21T13:13:30Z  open-tab  SubagentStop  
+2026-08-21T13:13:30Z  open-tab  SubagentStop  
+2026-08-21T13:13:30Z  open-tab  SubagentStop  
+2026-08-21T13:13:30Z  open-tab  SubagentStop  
+2026-08-21T13:13:30Z  open-tab  SubagentStop  
+2026-08-21T13:13:30Z  open-tab  SubagentStop  
+2026-08-21T13:13:35Z  open-tab  SubagentStop  reviewer-deep
+2026-08-21T13:14:14Z  open-tab  SubagentStop  
+2026-08-21T13:14:14Z  open-tab  SubagentStop  
+2026-08-21T13:14:14Z  open-tab  SubagentStop  
+2026-08-21T13:14:14Z  open-tab  SubagentStop  
+2026-08-21T13:14:14Z  open-tab  SubagentStop  
+2026-08-21T13:14:14Z  open-tab  SubagentStop  
 ```
 
 ---
