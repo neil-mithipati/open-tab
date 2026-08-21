@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 06:18 UTC · regenerated on every task completion.
+Updated 2026-08-21 06:19 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $61.62 | $200.00 | ███░░░░░░░ 30% |
+| open-tab | $61.99 | $200.00 | ███░░░░░░░ 30% |
 
 ## Agents
 
@@ -4246,8 +4246,6 @@ Five findings routed to OT-126.
 
 </details>
 <details><summary>✅ <code>OT-123</code> done — "Parse replay is still open on an empty parse — needs a parsed_at marker written before the model call"</summary>
-
- parsed_at marker written before the model call"</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -11016,18 +11014,6 @@ Needs a maintenance grant.
 ## Recent activity
 
 ```
-2026-08-21T06:16:24Z  open-tab  SubagentStop  
-2026-08-21T06:16:56Z  open-tab  SubagentStop  
-2026-08-21T06:16:56Z  open-tab  SubagentStop  
-2026-08-21T06:16:56Z  open-tab  SubagentStop  
-2026-08-21T06:16:56Z  open-tab  SubagentStop  
-2026-08-21T06:16:56Z  open-tab  SubagentStop  
-2026-08-21T06:16:56Z  open-tab  SubagentStop  
-2026-08-21T06:17:28Z  open-tab  SubagentStop  
-2026-08-21T06:17:28Z  open-tab  SubagentStop  
-2026-08-21T06:17:28Z  open-tab  SubagentStop  
-2026-08-21T06:17:28Z  open-tab  SubagentStop  
-2026-08-21T06:17:28Z  open-tab  SubagentStop  
 2026-08-21T06:17:28Z  open-tab  SubagentStop  
 2026-08-21T06:18:01Z  open-tab  SubagentStop  
 2026-08-21T06:18:01Z  open-tab  SubagentStop  
@@ -11036,6 +11022,18 @@ Needs a maintenance grant.
 2026-08-21T06:18:01Z  open-tab  SubagentStop  
 2026-08-21T06:18:01Z  open-tab  SubagentStop  
 2026-08-21T06:18:01Z  open-tab  SubagentStop  builder-deep
+2026-08-21T06:18:33Z  open-tab  SubagentStop  
+2026-08-21T06:18:33Z  open-tab  SubagentStop  
+2026-08-21T06:18:33Z  open-tab  SubagentStop  
+2026-08-21T06:18:33Z  open-tab  SubagentStop  
+2026-08-21T06:18:33Z  open-tab  SubagentStop  
+2026-08-21T06:18:33Z  open-tab  SubagentStop  
+2026-08-21T06:19:06Z  open-tab  SubagentStop  
+2026-08-21T06:19:06Z  open-tab  SubagentStop  
+2026-08-21T06:19:06Z  open-tab  SubagentStop  
+2026-08-21T06:19:06Z  open-tab  SubagentStop  
+2026-08-21T06:19:06Z  open-tab  SubagentStop  
+2026-08-21T06:19:06Z  open-tab  SubagentStop  
 ```
 
 ---
