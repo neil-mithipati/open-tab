@@ -47,6 +47,9 @@
 | OT-144 | change the receipt image retention default from 7 days to 14 | Done | — (`builder-light`, `review: skip`, attempt 2. Owner decision 2026-08-20 to match `RECEIPT_IMAGE_RETENTION_DAYS=14`, already set live) |
 | OT-145 | nothing detects schema drift between the repo and the live database | Done | — (reviewed MERGE, all 8 criteria pass; `npm run check:drift` compares migrations and storage policies by normalised expression, not by name; on its first live run it found the storage-policy hole recorded on OT-142's row above. 5 findings routed to backlog) |
 | OT-146 | token-shaped test fixture trips github push protection and blocks every push to main | Done | — (reviewed MERGE, all 5 criteria pass; OT-145's fabricated Supabase token literal in a test fixture matched GitHub's secret scanner and blocked every push. Literal now assembled from parts, runtime value unchanged — verified byte-identical by `Buffer.compare`) |
+| OT-147 | four fail-opens remain in parallel-cap.sh after OT-138 | Blocked | maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree. |
+| OT-148 | robustness gaps in the schema drift check | In Progress | — (attempt 2) |
+| OT-149 | verify-trivial.sh re-fires forever on a done task whose worktree was removed | Blocked | maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree. |
 
 ## Backlog — non-blocking findings from reviews, not yet filed as ledger tasks
 
@@ -1111,3 +1114,25 @@ Notion was not reachable: no `mcp__notion__*` tools present, and
 `.claude/notion.json` has `use_scratch_only: true` with both database ids
 null. Per the fallback rule this is expected — writing to `docs/` is the
 correct outcome, not a degraded one.
+
+## Sync notes (2026-08-21, cycle 32)
+
+Reconciled against every file in `ledger/`, 49 files read. Three cards
+created — none existed for OT-147, OT-148, OT-149 before this run.
+
+- **OT-148** created as **In Progress**. Ledger `state: in-progress`,
+  attempt 2. Note carries the attempt count.
+- **OT-147** created as **Blocked**. `blocked_reason` carried verbatim: the
+  maintenance grant does not activate for a dispatched subagent —
+  `protect-fleet.sh`'s `maint_active()` keys off the main checkout's
+  basename, not the worktree.
+- **OT-149** created as **Blocked**, same grant caveat as OT-147, reason
+  carried verbatim.
+
+Everything else — OT-100 through OT-146 — left alone; ledger state for all of
+them is unchanged since the last sync.
+
+`.claude/notion.json` now has real database ids and `use_scratch_only: false`,
+but no `mcp__notion__*` tools are present in this session's tool list. Per the
+fallback rule this is expected, not an error — writing to `docs/kanban.md` is
+the correct outcome.

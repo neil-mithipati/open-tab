@@ -53,7 +53,7 @@ owner before assuming a stack for it rather than defaulting to Next.js/Supabase.
 | UI | Tailwind CSS |
 | Data / auth / storage | Supabase |
 | Tests | Vitest |
-| Hosting | not detected |
+| Hosting | Vercel |
 
 ## Definition of done
 
@@ -145,6 +145,22 @@ do not route around the denial.
 `ledger/` is the source of truth for work state. One file per task,
 `ledger/<id>.md`, with frontmatter:
 
+### Reporting ledger writes — one line, always
+
+Every ledger write is reported in chat as exactly one line, in this shape:
+
+```
+ledger: OT-136 → in-progress (2 criteria open)
+ledger: OT-129A → blocked — needs maintenance grant
+ledger: OT-135 → done
+```
+
+Never paste task bodies, criteria checklists, diffs, or full frontmatter into
+chat when creating or updating a task — the detail is already on disk, and the
+owner expands it deliberately with `./bin/task <id>` or the status page. A
+multi-task update is one line per task, nothing between them. This applies to
+every agent, orchestrator included.
+
 This is also why a context compaction mid-session is not the problem it would
 be in a system that only remembers what's in the conversation. The ledger is
 on disk, not in context — it survives compaction intact. If your own memory of
@@ -183,34 +199,35 @@ reported that specific criterion passing — never earlier, never on the
 builder's own say-so. This is what a Stop hook or `bin/audit` reads to show
 what's actually still outstanding on a task, rather than just its title.
 
-### `review: skip` — the fast path
+### Review routing — decided by tier, overridable only by the owner
 
-`review: skip` bypasses the reviewer entirely so trivial changes ship at speed.
-It does **not** bypass the gates: lint, typecheck, and tests still run and still
-block, enforced by a hook rather than by anyone's judgment. What gets skipped is
-the reviewer agent, not correctness.
+Reviews are not a per-task judgment call anymore. The builder tier decides the
+review, mechanically:
 
-Only the orchestrator sets this, only at dispatch, and only when **all** of these
-hold:
+- `builder-light` → **no review.** The skip is automatic and structural. The
+  orchestrator routes cosmetic and minor functional changes here precisely so
+  it never has to decide whether to skip — choosing the tier is the decision.
+- `builder` → `reviewer` (correctness-only pass).
+- `builder-deep` → `reviewer-deep` (full two-pass, adversarial included).
 
-- The change is presentational only — CSS, Tailwind classes, spacing, colour,
-  copy text, a static asset swap
-- It touches no more than three files, all under `src/`
-- No logic changes: no new conditionals, no state, no props added or removed, no
-  data fetching, no new imports beyond a stylesheet or an icon
+No review path bypasses the gates: lint, typecheck, and tests still run and
+still block, enforced by hooks. What varies is the reviewer agent, not
+correctness.
 
-Never `skip`, regardless of how small the diff looks:
+`review: skip` remains as the **owner override only**. When the owner says to
+skip a review — on any task, any tier, any complexity — the orchestrator sets
+`review: skip`, dispatches no reviewer, and does not argue or caveat beyond a
+one-line acknowledgment. The boundary hook steps aside for it too. The risk is
+the owner's, by their explicit decision; honoring it is not optional. No agent
+sets `review: skip` on its own.
 
-- Anything under `supabase/`, or any migration
-- Auth, session, cookies, middleware
-- `package.json`, lockfiles, config, CI, `.env.example`
-- Anything in `.claude/` or the agent cards themselves
-- Anything the handbook's reversibility list touches
-
-A builder that discovers mid-task that the change is not presentational must say
-so and stop rather than proceeding on the fast path. A hook independently checks
-the changed file paths and forces review if the diff escapes this boundary — so
-mislabelling a task does not actually buy speed, it just costs a round trip.
+`builder-light`'s automatic skip is bounded by a hook, not by trust: it checks
+the actual diff and forces a re-route to `builder` plus review if the work
+escaped the light boundary — dangerous paths (`supabase/`, migrations, auth,
+dependencies, config, `.claude/`, anything outside `src/`), more than five
+files, or code touching the data, network, or auth surface. A builder that
+discovers mid-task it has outgrown the boundary says so and stops; mislabelled
+routing does not buy speed, it costs a round trip.
 
 ## Screenshots and images
 
@@ -267,7 +284,26 @@ handbook, and the effect was that the orchestrator tried to call it and errored
 out instead of simply asking.
 
 The orchestrator asks the owner a question by writing it in its reply, as plain
-prose, and then stopping to wait. That is the whole mechanism.
+prose, ending the reply with this exact line:
+
+```
+[awaiting owner]
+```
+
+then stopping. The stop hook honors that marker and will not force a
+continuation, so the wait is real. A forced continuation, when it does happen,
+is silent: a blocked stop with no message means the ledger has unfinished
+granted work — re-read `ledger/` and continue that work. It never authorizes
+new dispatches. Three rules bind it:
+
+- **Asking ends the turn.** Nothing comes after the question — no dispatches,
+  no ledger writes, no "meanwhile I'll get started on." The action you asked
+  about does not happen until the owner answers.
+- **The marker means a question.** Use it only when the reply genuinely needs
+  the owner's answer to proceed. Ending routine updates with it to dodge the
+  loop defeats the loop.
+- **An answer authorizes only what was asked.** "Yes" to "dispatch OT-136?"
+  authorizes OT-136, not everything unfinished in the ledger.
 
 Workers cannot reach the owner at all — they run in a separate context with no
 one watching. If a task is ambiguous, do not guess. Report `STATUS: blocked` with
@@ -279,6 +315,55 @@ outcome. A guessed answer that looks finished is the expensive failure.
 When writing anything a human reads — commit messages, READMEs, Notion docs —
 write plainly. No filler, no hedging, no emoji. Short sentences. Say what
 happened and what it cost.
+
+### Never over-explain
+
+The owner reads every word you produce, and long explanations have been the
+single most consistent complaint. Hard rules for all chat output, task
+descriptions, and reports:
+
+- Lead with the answer or the action. Background comes after, and only if it
+  changes a decision.
+- One idea per sentence. Plain words over technical ones wherever the plain
+  word is accurate: "the count was wrong" beats "the aggregation exhibited
+  divergence."
+- Default lengths: status updates one line (see the ledger rule), answers to
+  questions one to three sentences, task descriptions under five lines, dispatch
+  reports under ten. Going past these needs a reason the owner would agree with.
+- Never restate what the owner just said, never narrate what you are about to
+  do before doing it, never summarize what you just did if the output already
+  shows it.
+- Never explain a concept the owner did not ask about. If context might be
+  missing, offer it in one clause — "(details: bin/task OT-136)" — do not
+  inline it.
+- If a report feels like it needs three paragraphs, that is usually two
+  paragraphs of justification. Cut the justification; keep the finding, the
+  cost, and the ask.
+
+Wrong: "I've gone ahead and carefully analyzed the validation logic and it
+appears that there may be a potential discrepancy in how the subtotal
+aggregation handles certain edge cases involving rounding behavior..."
+Right: "found it: subtotal check drops cents on 3-way splits. fix is one line
+in split.ts. dispatching OT-141."
+
+### Bash calls read as one line
+
+The chat renders every Bash tool call, so the call itself is part of your
+output. Rules for every agent:
+
+- Every Bash call sets a `description` — imperative, six words or fewer
+  ("run gates", "install deps", "check worktree state"). The chat collapses
+  the call to this line; a missing description renders the raw command.
+- Keep commands to a single line. Chain short steps with `&&`. If a command
+  would run past ~120 characters or need multiple lines (heredocs, loops,
+  long jq), write it to a file with the Write tool and run `bash <file>` —
+  one line in chat either way.
+- Never paste a command or its output back into prose. The call and its
+  result are already on screen; report the outcome only ("gates pass",
+  "3 files changed").
+
+Wrong: a 15-line inline heredoc assembling JSON in the middle of chat.
+Right: `description: "seed test events"` → `bash /tmp/seed-events.sh`.
 
 Commit messages are lowercase, full stop — subject and body. This is enforced by
 a `commit-msg` git hook, not just requested here, so do not spend effort trying to

@@ -1,0 +1,70 @@
+#!/bin/bash
+# bin/task — expand a ledger task the one-liners point at.
+#
+#   ./bin/task OT-136
+#
+# Every surface (dashboard, status page, orchestrator chat) reports ledger
+# updates as one line; this is the expansion. Full frontmatter, criteria
+# with check state, and the body, colorized for the terminal.
+
+set -u
+
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+LEDGER="$ROOT/ledger"
+
+G=$'\033[32m'; R=$'\033[31m'; D=$'\033[90m'; B=$'\033[1m'; N=$'\033[0m'
+
+id="${1:-}"
+if [ -z "$id" ]; then
+  echo "usage: ./bin/task <id>" >&2
+  echo "tasks:" >&2
+  for f in "$LEDGER"/*.md; do
+    [ -e "$f" ] || continue
+    printf '  %s  %s\n' \
+      "$(sed -n 's/^id:[[:space:]]*//p' "$f" | head -1)" \
+      "$(sed -n 's/^state:[[:space:]]*//p' "$f" | head -1)" >&2
+  done
+  exit 1
+fi
+
+file=""
+for f in "$LEDGER"/*.md; do
+  [ -e "$f" ] || continue
+  fid=$(sed -n 's/^id:[[:space:]]*//p' "$f" | head -1)
+  if [ "$fid" = "$id" ] || [ "$(basename "$f" .md)" = "$id" ]; then
+    file="$f"; break
+  fi
+done
+[ -n "$file" ] || { echo "no ledger task with id '$id'" >&2; exit 1; }
+
+state=$(sed -n 's/^state:[[:space:]]*//p' "$file" | head -1)
+title=$(sed -n 's/^title:[[:space:]]*//p' "$file" | head -1)
+case "$state" in
+  blocked)     dot="${R}●${N}"; st="${R}${B}Blocked${N}" ;;
+  in-progress) dot="${G}●${N}"; st="${G}running${N}" ;;
+  done)        dot="${G}✓${N}"; st="done" ;;
+  *)           dot="${D}●${N}"; st="${D}${state:-todo}${N}" ;;
+esac
+printf '%s %s%s%s  %s  %s\n' "$dot" "$B" "$id" "$N" "$st" "${title:-untitled}"
+
+# Frontmatter, minus what the header already shows.
+awk 'BEGIN{n=0} /^---[[:space:]]*$/{n++; next} n==1{print}' "$file" \
+  | grep -Ev '^(id|title|state):' \
+  | while IFS= read -r line; do
+      case "$line" in
+        blocked_reason:*) printf '  %s%s%s\n' "$R" "$line" "$N" ;;
+        *)                printf '  %s%s%s\n' "$D" "$line" "$N" ;;
+      esac
+    done
+
+# Body: criteria colorized, everything else as-is.
+echo
+awk 'BEGIN{n=0} /^---[[:space:]]*$/{n++; next} n>=2{print}' "$file" \
+  | while IFS= read -r line; do
+      case "$line" in
+        *"- [x]"*|*"- [X]"*) printf '  %s%s%s\n' "$G" "$line" "$N" ;;
+        *"- [ ]"*)           printf '  %s%s%s\n' "$B" "$line" "$N" ;;
+        *)                   printf '  %s\n' "$line" ;;
+      esac
+    done
+exit 0

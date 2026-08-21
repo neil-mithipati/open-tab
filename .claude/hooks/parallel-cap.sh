@@ -73,70 +73,20 @@ deny() {
 # builder-deep task can legitimately run long; this is a backstop against a
 # permanent leak, not a tight timeout.
 STALE_SECS="${STALE_SECS:-3600}"
-now_epoch=$(date -u +%s)
 
-# HEARTBEAT-BASED DEATH DETECTION. log-event.sh --heartbeat (PostToolUse)
-# refreshes .claude/state/heartbeats/<agent_id> on every tool call. An agent
-# whose last heartbeat is older than HB_DEAD_SECS is treated as dead and its
-# unpaired start is excluded from the count NOW, instead of waiting out the
-# full one-hour stale window above. An agent with NO heartbeat file is left
-# to the old behaviour — missing data must not shrink the count. Default 15
-# minutes: generous for a slow tool call, far tighter than an hour.
-HB_DIR="$ROOT/.claude/state/heartbeats"
-HB_DEAD_SECS="${HB_DEAD_SECS:-900}"
-dead_ids="[]"
-if [ -d "$HB_DIR" ]; then
-  dead_list=""
-  for f in "$HB_DIR"/*; do
-    [ -f "$f" ] || continue
-    id=""; epoch=""
-    read -r id _ epoch <"$f" 2>/dev/null
-    case "$id" in ''|*[!A-Za-z0-9_-]*) continue ;; esac
-    case "$epoch" in ''|*[!0-9]*) continue ;; esac
-    if [ $(( now_epoch - epoch )) -ge "$HB_DEAD_SECS" ]; then
-      dead_list="$dead_list$id
-"
-    fi
-  done
-  if [ -n "$dead_list" ]; then
-    dead_ids=$(printf '%s' "$dead_list" | jq -R . 2>/dev/null | jq -sc 'map(select(length > 0))' 2>/dev/null)
-    case "$dead_ids" in \[*\]) : ;; *) dead_ids="[]" ;; esac
-  fi
-fi
-
-counts=$(jq -rs --arg now "$now_epoch" --arg stale "$STALE_SECS" --argjson dead "$dead_ids" '
-  ($now | tonumber) as $now
-  | ($stale | tonumber) as $stale
-  | def to_epoch: try (strptime("%Y-%m-%dT%H:%M:%SZ") | mktime) catch 0;
-  map(select(.event == "SubagentStart" or .event == "SubagentStop"))
-  # PAIR BY agent_id, NOT BY TYPE BUCKET. agent_id arrives populated on both
-  # start and stop (see log-event.sh); agent_type does not — stop records
-  # frequently land with agent_type "" and used to fall into their own type
-  # group, leaving the start unpaired in its real group. Every such stop
-  # ratcheted that type count up by one with no agent dying at all, wedging
-  # dispatch. A start is live iff no stop shares its agent_id; its type is
-  # read off the start record, where it is reliable.
-  | (map(select(.event == "SubagentStop") | .agent_id)
-     | map(select(. != null and . != "")) | unique) as $stopped
-  | map(select(.event == "SubagentStart"))
-  | map(select((.agent_id // "") as $aid
-      | ($aid == "" or (($stopped | index($aid)) | not))))
-  # A start whose agent_id has a stale heartbeat is positively dead —
-  # excluded outright.
-  | map(select(((.agent_id // "") as $aid | ($dead | index($aid)) | not)))
-  | map(select(
-      # Count unless PROVABLY stale: a parseable timestamp older than the
-      # window. Anything unparseable or missing counts as running rather
-      # than vanishing from the tally — undercounting is the wrong failure
-      # direction for a cap meant to prevent excess parallelism. This is
-      # also the only expiry for a start with no agent_id, which can never
-      # be paired to a stop or a heartbeat.
-      ((.ts // "" | to_epoch) as $e | $e == 0 or ($now - $e) < $stale)
-    ))
-  | group_by(.agent_type // "unknown")
-  | map({ t: (.[0].agent_type // "unknown"), n: length })
-  | map(select(.n > 0))
-' "$EVENTS" 2>/dev/null)
+# LIVENESS IS SHARED. The pairing rule, heartbeat death detection, and stale
+# backstop live in liveness.sh, sourced by this hook and every display
+# surface (dashboard, statusline, status page). When enforcement and display
+# used separate copies of this logic, they drifted: the cap freed a dead
+# agent's slot while the dashboard showed it running for another hour.
+. "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/liveness.sh" 2>/dev/null || {
+  # FAIL CLOSED. Without the shared liveness rule the cap cannot count, and
+  # an uncountable fleet must not become an uncapped one. This fires only on
+  # a broken install — liveness.sh ships in add-fleet's sync list.
+  deny "parallel-cap cannot load .claude/hooks/liveness.sh — the install is incomplete. Re-run add-fleet and ./bin/doctor before dispatching agents."
+}
+fleet_live_json "$EVENTS"
+counts=$(printf '%s' "$LIVE_JSON" | jq -c 'map({ t: .type, n: .running })' 2>/dev/null)
 [ -z "$counts" ] && exit 0
 
 total=$(printf '%s' "$counts" | jq -r 'map(.n) | add // 0')

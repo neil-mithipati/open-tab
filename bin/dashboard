@@ -35,7 +35,7 @@ INTERVAL="${1:-20}"
 
 command -v jq >/dev/null 2>&1 || { echo "jq is required" >&2; exit 1; }
 
-ROLES="orchestrator builder-light builder builder-deep reviewer-light reviewer publisher"
+ROLES="orchestrator builder-light builder builder-deep reviewer reviewer-deep publisher"
 
 render() {
   printf '\033[1magent fleet — %s\033[0m\n' "$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
@@ -44,31 +44,14 @@ render() {
   # ---------- per-agent status ----------
   printf '\033[1m%-15s %-9s %-16s %-8s\033[0m\n' "ROLE" "STATUS" "TASK" "LANE"
 
-  if [ -s "$EVENTS" ]; then
-    running_json=$(jq -rsc '
-      map(select(.event == "SubagentStart" or .event == "SubagentStop")
-          | select(.agent_type != null))
-      | group_by(.agent_type)
-      | map({
-          type: .[0].agent_type,
-          lane: (map(.lane) | last),
-          running: ((map(select(.event == "SubagentStart")) | length)
-                    - (map(select(.event == "SubagentStop")) | length))
-        })
-      | map(select(.running > 0))
-    ' "$EVENTS" 2>/dev/null)
-  else
-    running_json="[]"
+  # Liveness is computed by the same shared rule the cap enforces —
+  # .claude/hooks/liveness.sh. If this dashboard ever disagrees with what
+  # dispatch allows, the bug is there, in one place.
+  running_json="[]"
+  if . "$ROOT/.claude/hooks/liveness.sh" 2>/dev/null; then
+    fleet_live_json "$EVENTS"
+    running_json="$LIVE_JSON"
   fi
-
-  # NOTE ON PARALLEL INSTANCES: this counts how many of a given role are running
-  # at once — starts minus stops, per type — and that count is real. What it
-  # cannot do is tell two concurrent same-type instances apart: SubagentStart and
-  # SubagentStop fire in the MAIN session and share one session_id with no
-  # per-invocation id in the payload, so "builder #1 finished" and "builder #2
-  # finished" look identical on the wire. Tracked upstream, unresolved as of this
-  # writing: github.com/anthropics/claude-code/issues/7881. If three builders are
-  # running, you get "builder ×3," not which task each one is on.
 
   blocked_tiers=""
   if [ -d "$LEDGER" ]; then
@@ -81,7 +64,7 @@ render() {
   fi
 
   # Task ids currently in-progress, keyed by tier. Builder rows match exactly
-  # via the tier field, which is authoritative. reviewer-light/reviewer/
+  # via the tier field, which is authoritative. reviewer/reviewer-deep/
   # publisher have no such field — nothing in the ledger records which pipeline
   # stage an in-progress task is at — so those rows fall back to "any
   # in-progress task" as candidates, not a confirmed 1:1 pairing.
@@ -106,7 +89,7 @@ render() {
       builder-light|builder|builder-deep)
         printf '%s' "$inprog_by_tier" | tr '|' '\n' | awk -F: -v t="$role" '$1==t{print $2}' | paste -sd, -
         ;;
-      reviewer-light|reviewer|publisher)
+      reviewer|reviewer-deep|publisher)
         printf '%s' "$inprog_all"
         ;;
     esac
@@ -128,16 +111,37 @@ render() {
     [ -n "$count" ] && [ "$count" -gt 1 ] 2>/dev/null && running_label="running ×$count"
 
     if [ "$is_running" = "true" ] && [ "$is_blocked" = "yes" ]; then
-      printf '%-15s \033[32m%-9s\033[0m %-16s %-8s\n' "$role" "$running_label" "$task" "${lane:--}"
-      printf '%-15s \033[31m%-9s\033[0m %-16s %-8s\n' "" "blocked" "-" "(ledger)"
+      printf '\033[32m●\033[0m %-13s \033[32m%-9s\033[0m %-16s %-8s\n' "$role" "$running_label" "$task" "${lane:--}"
+      printf '\033[31m●\033[0m %-13s \033[31m\033[1m%-9s\033[0m %-16s %-8s\n' "" "Blocked" "-" "(below)"
     elif [ "$is_running" = "true" ]; then
-      printf '%-15s \033[32m%-9s\033[0m %-16s %-8s\n' "$role" "$running_label" "$task" "${lane:--}"
+      printf '\033[32m●\033[0m %-13s \033[32m%-9s\033[0m %-16s %-8s\n' "$role" "$running_label" "$task" "${lane:--}"
     elif [ "$is_blocked" = "yes" ]; then
-      printf '%-15s \033[31m%-9s\033[0m %-16s %-8s\n' "$role" "blocked" "-" "(ledger)"
+      printf '\033[31m●\033[0m %-13s \033[31m\033[1m%-9s\033[0m %-16s %-8s\n' "$role" "Blocked" "-" "(below)"
     else
-      printf '%-15s \033[90m%-9s\033[0m %-16s %-8s\n' "$role" "idle" "-" "-"
+      printf '\033[90m●\033[0m %-13s \033[90m%-9s\033[0m %-16s %-8s\n' "$role" "idle" "-" "-"
     fi
   done
+
+  # ---------- blocked — needs your input ----------
+  # The one section rendered in red: each blocked task with its ask
+  # (blocked_reason) inline, so what needs the owner is visible without
+  # opening the ledger. Same dot format as the agent rows above.
+  if [ -d "$LEDGER" ]; then
+    b_rows=""
+    for f in "$LEDGER"/*.md; do
+      [ -e "$f" ] || continue
+      st=$(sed -n 's/^state:[[:space:]]*//p' "$f" | head -1)
+      [ "$st" = "blocked" ] || continue
+      bid=$(sed -n 's/^id:[[:space:]]*//p' "$f" | head -1)
+      br=$(yaml_field blocked_reason "$f" 2>/dev/null)
+      b_rows="${b_rows}$(printf '\033[31m●\033[0m \033[1m%-13s\033[0m \033[31m%s\033[0m' "${bid:-?}" "${br:-no blocked_reason recorded — check the task file}")
+"
+    done
+    if [ -n "$b_rows" ]; then
+      printf '\n\033[31m\033[1m● Blocked — needs your input\033[0m\n'
+      printf '%s' "$b_rows"
+    fi
+  fi
 
   # ---------- spend ----------
   printf '\n\033[1m%-10s %10s %10s  %s\033[0m\n' "LANE" "SPENT" "CAP" "USED"
@@ -176,6 +180,26 @@ render() {
     done
     printf '\n\033[1mtasks\033[0m  todo %s · in-progress %s · done %s · \033[31mblocked %s\033[0m\n' \
       "$todo" "$prog" "$done" "$blocked"
+
+    # Recent ledger updates, one line each, newest first. Detail is a
+    # deliberate click away: ./bin/task <id>.
+    recent=$(ls -t "$LEDGER"/*.md 2>/dev/null | head -5)
+    if [ -n "$recent" ]; then
+      printf '\033[1mrecent\033[0m'
+      printf '%s\n' "$recent" | while IFS= read -r f; do
+        rid=$(sed -n 's/^id:[[:space:]]*//p'    "$f" | head -1)
+        rst=$(sed -n 's/^state:[[:space:]]*//p' "$f" | head -1)
+        n_open=$(awk 'BEGIN{n=0} /^---[[:space:]]*$/{n++; next} n>=2{print}' "$f" \
+          | grep -c '^[[:space:]]*- \[ \]' || true)
+        extra=""
+        [ "$n_open" -gt 0 ] 2>/dev/null && extra=" ($n_open open)"
+        case "$rst" in
+          blocked) printf ' \033[31m%s %s%s\033[0m ·' "${rid:-?}" "$rst" "$extra" ;;
+          *)       printf ' %s %s%s ·' "${rid:-?}" "${rst:-todo}" "$extra" ;;
+        esac
+      done
+      printf '\b \033[90m— ./bin/task <id> to expand\033[0m\n'
+    fi
   fi
 }
 

@@ -30,6 +30,10 @@ mkdir -p "$STATE" 2>/dev/null || exit 0
 
 cd "$ROOT" 2>/dev/null || exit 0
 
+# Shared lib: liveness + yaml_field. Sourced up top because the ledger
+# sections need yaml_field even when there are no events yet.
+. "$ROOT/.claude/hooks/liveness.sh" 2>/dev/null || true
+
 now=$(date -u +%s)
 
 # ---------- render ----------
@@ -77,25 +81,16 @@ budget="$ROOT/.claude/budget.json"
   echo "## Agents"
   echo
   if [ -s "$events" ]; then
-    # Pair by agent_type, not agent_id: SubagentStart/Stop fire in the main session
-    # and carry no agent_id, so grouping on it puts every Stop in one null bucket
-    # and nothing ever pairs. Count starts minus stops per type instead.
-    active=$(jq -rs '
-      map(select(.event == "SubagentStart" or .event == "SubagentStop")
-          | select(.agent_type != null))
-      | group_by(.agent_type)
-      | map({
-          type:    .[0].agent_type,
-          lane:    (map(.lane) | last),
-          started: (map(select(.event == "SubagentStart")) | last | .ts),
-          running: ((map(select(.event == "SubagentStart")) | length)
-                    - (map(select(.event == "SubagentStop")) | length))
-        })
-      | map(select(.running > 0))
-      | sort_by(.started)
-      | .[]
-      | "| \(.type) | \(.lane) | \(.started) | \(.running) |"
-    ' "$events" 2>/dev/null)
+    # Live agents come from the shared rule in liveness.sh — the same one
+    # the cap enforces and the dashboard renders.
+    active=""
+    if . "$ROOT/.claude/hooks/liveness.sh" 2>/dev/null; then
+      fleet_live_json "$events"
+      active=$(printf '%s' "$LIVE_JSON" | jq -r '
+        sort_by(.started) | .[]
+        | "| 🟢 \(.type) | \(.lane) | \(.started) | \(.running) |"
+      ' 2>/dev/null)
+    fi
 
     if [ -n "$active" ]; then
       echo "| Role | Lane | Started | Running |"
@@ -109,35 +104,69 @@ budget="$ROOT/.claude/budget.json"
   fi
   echo
 
+  # --- blocked — needs the owner ---
+  # Rendered before the ledger so asks are the first thing after agents.
+  # GitHub renders [!CAUTION] blocks in red, matching the terminal treatment.
+  if [ -d "$ROOT/ledger" ]; then
+    b_lines=""
+    for f in "$ROOT"/ledger/*.md; do
+      [ -e "$f" ] || continue
+      st=$(sed -n 's/^state:[[:space:]]*//p' "$f" | head -1)
+      [ "$st" = "blocked" ] || continue
+      bid=$(sed -n 's/^id:[[:space:]]*//p' "$f" | head -1)
+      br=$(yaml_field blocked_reason "$f" 2>/dev/null)
+      b_lines="${b_lines}> 🔴 **Blocked \`${bid:-?}\`** — ${br:-no blocked_reason recorded}
+"
+    done
+    if [ -n "$b_lines" ]; then
+      echo "## Blocked — needs your input"
+      echo
+      echo "> [!CAUTION]"
+      printf '%s' "$b_lines"
+      echo
+    fi
+  fi
+
   # --- ledger ---
+  # One line per task; everything else collapses behind <details>, which
+  # GitHub renders as an expandable arrow. The summary carries id, state,
+  # title, and criteria progress — enough to decide whether to expand.
   if [ -d "$ROOT/ledger" ]; then
     echo "## Tasks"
     echo
-    rows=""
+    any=""
     for f in "$ROOT"/ledger/*.md; do
       [ -e "$f" ] || continue
+      any=1
       id=$(sed -n 's/^id:[[:space:]]*//p'      "$f" | head -1)
       st=$(sed -n 's/^state:[[:space:]]*//p'   "$f" | head -1)
       ti=$(sed -n 's/^title:[[:space:]]*//p'   "$f" | head -1)
-      tr=$(sed -n 's/^tier:[[:space:]]*//p'    "$f" | head -1)
-      br=$(sed -n 's/^blocked_reason:[[:space:]]*//p' "$f" | head -1)
+      br=$(yaml_field blocked_reason "$f" 2>/dev/null)
+      body=$(awk 'BEGIN{n=0} /^---[[:space:]]*$/{n++; next} n>=2{print}' "$f")
+      n_open=$(printf '%s\n' "$body" | grep -c '^[[:space:]]*- \[ \]' || true)
+      n_done=$(printf '%s\n' "$body" | grep -c '^[[:space:]]*- \[[xX]\]' || true)
+      n_all=$((n_open + n_done))
+      prog=""
+      [ "$n_all" -gt 0 ] && prog=" · $n_done/$n_all criteria"
       case "$st" in
-        done)        icon="done" ;;
-        in-progress) icon="running" ;;
-        blocked)     icon="**blocked**" ;;
-        *)           icon="todo" ;;
+        done)        icon="✅" ;;
+        in-progress) icon="🟢" ;;
+        blocked)     icon="🔴" ;;
+        *)           icon="⚪" ;;
       esac
-      [ -n "$br" ] && ti="$ti — $br"
-      rows="$rows| \`${id:-?}\` | $icon | ${ti:-untitled} | ${tr:-—} |
-"
+      summary="$icon <code>${id:-?}</code> ${st:-todo} — ${ti:-untitled}${prog}"
+      [ "$st" = "blocked" ] && summary="$summary — ${br:-no blocked_reason}"
+      echo "<details><summary>$summary</summary>"
+      echo
+      # Frontmatter detail minus what the summary already shows.
+      awk 'BEGIN{n=0} /^---[[:space:]]*$/{n++; next} n==1{print}' "$f" \
+        | grep -Ev '^(id|title|state):' | sed 's/^/- /'
+      echo
+      printf '%s\n' "$body"
+      echo
+      echo "</details>"
     done
-    if [ -n "$rows" ]; then
-      echo "| ID | State | Task | Tier |"
-      echo "|---|---|---|---|"
-      printf '%s' "$rows"
-    else
-      echo "Ledger is empty."
-    fi
+    [ -n "$any" ] || echo "Ledger is empty."
     echo
   fi
 

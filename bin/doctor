@@ -78,12 +78,28 @@ else
       say_bad "$h is not registered in settings.json — it will never fire"
     fi
   done
+
+  # liveness.sh is a library sourced by parallel-cap and the display surfaces,
+  # not a registered hook — presence is the check. The cap fails closed
+  # without it, so a missing file means no dispatch at all.
+  if [ -f ".claude/hooks/liveness.sh" ]; then
+    say_ok "liveness.sh present (sourced, not registered)"
+  else
+    say_bad "liveness.sh missing — parallel-cap fails closed and every dispatch is denied"
+  fi
+
+  # statusline.sh registers under statusLine, not hooks.
+  if jq -e '.statusLine.command // "" | test("statusline.sh")' "$SETTINGS" >/dev/null 2>&1; then
+    say_ok "statusline.sh registered under statusLine"
+  else
+    say_bad "statusline.sh not set as statusLine in settings.json — the fleet status line will not render"
+  fi
 fi
 
 # ── agent cards ──────────────────────────────────────────────────────────────
 head_ "Agent cards"
 
-for a in orchestrator builder-light builder builder-deep reviewer-light reviewer publisher; do
+for a in orchestrator builder-light builder builder-deep reviewer reviewer-deep publisher; do
   f=".claude/agents/$a.md"
   if [ ! -f "$f" ]; then
     say_bad "$a.md missing"

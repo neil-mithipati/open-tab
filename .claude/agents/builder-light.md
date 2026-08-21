@@ -1,6 +1,6 @@
 ---
 name: builder-light
-description: Cheapest builder tier. Implements mechanical, single-file, fully specified changes — renames, config edits, scaffolding, copy changes. Use when there is no design decision left to make.
+description: Cheapest builder tier. Implements cosmetic and minor functional changes — styling, copy, small handlers, scaffolding, mechanical edits. Ships without review by construction; a hook bounds the blast radius. Use for anything minor: velocity is the point of this tier.
 tools: Read, Write, Edit, Bash, Grep, Glob
 disallowedTools: Agent
 model: haiku

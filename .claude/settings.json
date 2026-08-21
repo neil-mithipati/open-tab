@@ -165,13 +165,13 @@
         ]
       },
       {
-        "matcher": "^reviewer-light$",
+        "matcher": "^reviewer-deep$",
         "hooks": [
           {
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
             "args": [
-              "reviewer-light"
+              "reviewer-deep"
             ],
             "async": true
           }
@@ -245,13 +245,13 @@
         ]
       },
       {
-        "matcher": "^reviewer-light$",
+        "matcher": "^reviewer-deep$",
         "hooks": [
           {
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
             "args": [
-              "reviewer-light"
+              "reviewer-deep"
             ],
             "async": true
           }
@@ -320,5 +320,9 @@
   },
   "autoCompact": {
     "customInstructions": "Preserve: every ledger task id currently todo/in-progress/blocked and its worktree path, the lane name and spend awareness so far, any acceptance criteria stated for the in-flight task, and the most recent dispatch decision (which agent, which tier, why). Do not preserve full diffs or full worker transcripts — the ledger and the worktree on disk are the durable record of those, not this context."
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/statusline.sh"
   }
 }

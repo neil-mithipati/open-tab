@@ -45,6 +45,31 @@ mkdir -p "$STATE" 2>/dev/null || exit 0
 session=$(printf '%s' "$input" | jq -r '.session_id // "unknown"' 2>/dev/null)
 active=$(printf '%s' "$input"  | jq -r '.stop_hook_active // false' 2>/dev/null)
 
+# ── the owner's turn beats the loop ──────────────────────────────────────────
+# The handbook tells the orchestrator to ask the owner by writing the question
+# and stopping to wait. This hook used to deny that stop whenever the ledger
+# had unfinished work, force-continuing the orchestrator into acting on its
+# own question — it once dispatched two builders while the owner's answer was
+# still pending. A reply whose final line is the literal marker
+#
+#   [awaiting owner]
+#
+# is a legitimate stop, always. The loop counter resets: the next owner
+# message starts a fresh chain, not a continuation of this one.
+tp=$(printf '%s' "$input" | jq -r '.transcript_path // ""' 2>/dev/null)
+if [ -n "$tp" ] && [ -f "$tp" ]; then
+  last_text=$(tail -80 "$tp" 2>/dev/null | jq -rs '
+    [.[] | select(.type == "assistant")
+     | .message.content // []
+     | map(select(.type == "text") | .text) | join("\n")]
+    | map(select(length > 0)) | last // ""
+  ' 2>/dev/null)
+  if printf '%s' "$last_text" | tail -3 | grep -qF '[awaiting owner]'; then
+    rm -f "$STATE/.loop-${session}.count" "$STATE/loop-note" 2>/dev/null
+    exit 0
+  fi
+fi
+
 counter="$STATE/.loop-${session}.count"
 count=0
 [ -f "$counter" ] && count=$(cat "$counter" 2>/dev/null)
@@ -52,7 +77,7 @@ case "$count" in ''|*[!0-9]*) count=0 ;; esac
 
 # ── brake 1: the hard cap ────────────────────────────────────────────────────
 if [ "$count" -ge "$LOOP_MAX" ]; then
-  rm -f "$counter" 2>/dev/null
+  rm -f "$counter" "$STATE/loop-note" 2>/dev/null
   exit 0
 fi
 
@@ -74,7 +99,7 @@ if [ -s "$spend" ] && [ -s "$budget" ]; then
     | if $cap > 0 and $spent >= $cap then "yes" else "no" end
   ' "$spend" "$budget" 2>/dev/null)
   if [ "$over" = "yes" ]; then
-    rm -f "$counter" 2>/dev/null
+    rm -f "$counter" "$STATE/loop-note" 2>/dev/null
     exit 0
   fi
 fi
@@ -83,6 +108,7 @@ fi
 [ -d "$LEDGER" ] || exit 0
 
 unfinished=""
+summary=""
 n=0
 for f in "$LEDGER"/*.md; do
   [ -e "$f" ] || continue
@@ -102,6 +128,11 @@ for f in "$LEDGER"/*.md; do
   pending=$(awk 'BEGIN{n=0} /^---[[:space:]]*$/{n++; next} n>=2{print}' "$f" \
     | sed -n 's/^[[:space:]]*-[[:space:]]*\[ \][[:space:]]*//p')
 
+  n_pending=0
+  [ -n "$pending" ] && n_pending=$(printf '%s\n' "$pending" | grep -c .)
+  summary="${summary:+$summary, }${id:-?}${n_pending:+}"
+  [ "$n_pending" -gt 0 ] && summary="$summary ($n_pending open)"
+
   unfinished="$unfinished
   ${id:-?} [$st] ${ti:-untitled}"
   if [ -n "$pending" ]; then
@@ -115,7 +146,7 @@ done
 
 # Nothing outstanding — let it stop, and clear the counter for the next task.
 if [ "$n" -eq 0 ]; then
-  rm -f "$counter" 2>/dev/null
+  rm -f "$counter" "$STATE/loop-note" 2>/dev/null
   exit 0
 fi
 
@@ -125,9 +156,22 @@ echo "$count" > "$counter" 2>/dev/null
 
 remaining=$((LOOP_MAX - count))
 
-cat >&2 <<EOF
+# SILENT BY DESIGN. Anything on stderr here renders in the owner's chat on
+# every forced continuation, and the owner asked for all of it gone. The
+# block itself (exit 2) is the signal to the orchestrator: a blocked stop
+# with no message means "the ledger has unfinished granted work — re-read
+# ledger/ and continue" (documented in the handbook). The one-line summary
+# goes to a state file instead, which the statusline renders underneath the
+# terminal and the orchestrator may read. LOOP_VERBOSE=1 restores stderr for
+# debugging.
+note="Unfinished ($n): $summary · loop $count/$LOOP_MAX"
+printf '%s\n' "$note" > "$STATE/loop-note" 2>/dev/null
+
+if [ "${LOOP_VERBOSE:-0}" = "1" ]; then
+  cat >&2 <<EOF
 Unfinished in ledger ($n):
 $unfinished
 EOF
+fi
 
 exit 2

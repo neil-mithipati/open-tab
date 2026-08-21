@@ -1,17 +1,22 @@
 #!/bin/bash
-# verify-trivial.sh — SubagentStop hook. Checks that any task marked `review: skip`
-# actually stayed inside the presentational boundary, and forces review if it did
-# not.
+# verify-trivial.sh — SubagentStop hook. Checks that builder-light work stayed
+# inside its boundary — cosmetic and minor functional changes — and forces a
+# re-route if it did not.
 #
-# Why this exists: `review: skip` is the one place in the system where work reaches
-# main without a second reader. That makes "is this task really trivial?" a
-# security-relevant judgment, and every other judgment in this system that was left
-# to a prompt has eventually been ignored. So the claim is checked against the
+# Why this exists: builder-light ships without a reviewer by construction, the
+# one place work reaches main without a second reader. That makes "did this
+# stay minor?" a security-relevant judgment, and every judgment left to a
+# prompt has eventually been ignored — so the routing is checked against the
 # actual diff rather than trusted.
 #
-# It does not decide whether the change is *good* — it decides whether the change
-# is *eligible* for the fast path. On violation it exits 2, which rejects the
-# builder's completion, and the orchestrator must re-dispatch with `review: full`.
+# TWO PATHS, ONE CHECKED. builder-light's automatic skip is bounded by this
+# hook: dangerous paths and data/auth-touching code force a re-route to
+# `builder` plus a reviewer. A task the OWNER marked `review: skip` is not
+# checked at all, on any tier — that skip is the owner's explicit call and
+# the risk is theirs by decision, so this hook steps aside entirely.
+#
+# On violation it exits 2, which rejects the builder's completion; the
+# orchestrator re-routes to `builder` with a normal review.
 #
 # Deliberately conservative: anything it cannot classify counts as a violation.
 # A false positive costs one review. A false negative ships unreviewed logic.
@@ -74,6 +79,7 @@ check_task() {
     $path — auth or session" ;;
       *.config.*|.github/*|Dockerfile*|*.yml|*.yaml) violations="$violations
     $path — build or CI configuration" ;;
+      ledger/*) ;;
       src/*.css|src/**/*.css|*.css|*.scss) ;;
       public/*|src/*.svg|src/**/*.svg|*.png|*.jpg|*.jpeg|*.webp|*.ico) ;;
       src/*) ;;
@@ -82,9 +88,9 @@ check_task() {
     esac
   done
 
-  if [ "$count" -gt 3 ]; then
+  if [ "$count" -gt 5 ]; then
     violations="$violations
-    $count files changed — the fast path allows at most 3"
+    $count files changed — builder-light allows at most 5"
   fi
 
   for path in $changed; do
@@ -104,9 +110,12 @@ check_task() {
       added=$(git diff --no-index -- /dev/null "$path" 2>/dev/null | grep '^+' | grep -v '^+++')
     fi
     [ -z "$added" ] && continue
-    if printf '%s' "$added" | grep -qE '\b(useState|useEffect|useReducer|useMemo|useCallback|fetch|await|async|createClient|supabase)\b|=>[[:space:]]*\{|\bif[[:space:]]*\(|\breturn[[:space:]]+.*\?'; then
+    # Minor functional changes are in-boundary now — small handlers, local
+    # state, a conditional. What still violates is code that touches the
+    # data or auth surface: that is never "minor" regardless of diff size.
+    if printf '%s' "$added" | grep -qE '\b(createClient|supabase|fetch|process\.env)\b|\b(auth|session|cookie)[A-Za-z]*\s*[.(=]'; then
       violations="$violations
-    $path — added logic (hooks, control flow, or data access), not presentation"
+    $path — touches data, network, or auth surface; not minor"
     fi
   done
 
@@ -122,8 +131,12 @@ report=""
 for f in "$LEDGER"/*.md; do
   [ -e "$f" ] || continue
   rv=$(sed -n 's/^review:[[:space:]]*//p' "$f" | head -1)
+  tr=$(sed -n 's/^tier:[[:space:]]*//p'   "$f" | head -1)
   st=$(sed -n 's/^state:[[:space:]]*//p'  "$f" | head -1)
-  case "$rv" in skip|Skip|SKIP) ;; *) continue ;; esac
+  # Owner-directed skip: unchecked, unconditionally, on every tier.
+  case "$rv" in skip|Skip|SKIP) continue ;; esac
+  # Everything else: only builder-light's automatic fast path is checked.
+  [ "$tr" = "builder-light" ] || continue
   case "$st" in in-progress|done) ;; *) continue ;; esac
 
   id=$(sed -n 's/^id:[[:space:]]*//p' "$f" | head -1)
@@ -152,11 +165,14 @@ done
 [ "$any_violation" -eq 0 ] && exit 0
 
 cat >&2 <<EOF
-Task(s) marked \`review: skip\` are not presentational:
+builder-light task(s) escaped the light boundary:
 $report
 
-The fast path is for CSS, Tailwind classes, spacing, colour, copy, and asset
-swaps — at most three files, no logic. This change is outside that boundary.
+builder-light covers cosmetic and minor functional changes — at most five
+files under src/, no data, network, or auth surface, no dangerous paths.
+Re-route each flagged task to \`builder\` with a normal review. If the owner
+wants it shipped unreviewed anyway, they mark it \`review: skip\` and this
+check steps aside.
 
 Set \`review: full\` on the task and dispatch the reviewer. Do not narrow the diff
 to fit the fast path; if the work genuinely needs doing, it genuinely needs review.

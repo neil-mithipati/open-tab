@@ -82,6 +82,12 @@ if [ "${1:-}" = "--heartbeat" ]; then
     [ "$(( now - last ))" -ge "$HB_MIN_INTERVAL_SECONDS" ] || exit 0
   fi
   mkdir -p "$HB_DIR" 2>/dev/null
+  # One-time stamp proving the heartbeat pipeline works in this repo. Never
+  # deleted (stop cleanup removes only the per-agent file). liveness.sh
+  # treats "no heartbeat file" as death evidence only when this stamp
+  # exists — without it, a broken heartbeat pipeline would make every agent
+  # look dead.
+  [ -f "$HB_DIR/.enabled" ] || : > "$HB_DIR/.enabled" 2>/dev/null
   tmp="$HB_DIR/.tmp.$$"
   if printf '%s %s %s\n' "$agent_id" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$now" >"$tmp" 2>/dev/null; then
     mv -f "$tmp" "$hb" 2>/dev/null || rm -f "$tmp" 2>/dev/null
