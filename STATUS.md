@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 05:59 UTC · regenerated on every task completion.
+Updated 2026-08-21 06:00 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $45.7 | $200.00 | ██░░░░░░░░ 22% |
+| open-tab | $47.14 | $200.00 | ██░░░░░░░░ 23% |
 
 ## Agents
 
@@ -14,6 +14,7 @@ Updated 2026-08-21 05:59 UTC · regenerated on every task completion.
 |---|---|---|---|
 | 🟢 builder | open-tab | 2026-08-21T05:52:18Z | 1 |
 | 🟢 reviewer-deep | open-tab | 2026-08-21T05:56:59Z | 2 |
+| 🟢 reviewer | open-tab | 2026-08-21T05:59:57Z | 1 |
 
 ## Blocked — needs your input
 
@@ -10727,26 +10728,26 @@ Expect 53/53. Then commit the kit copy, or the next `add-fleet` reverts it.
 ## Recent activity
 
 ```
-2026-08-21T05:58:33Z  open-tab  SubagentStop  
-2026-08-21T05:58:33Z  open-tab  SubagentStop  
-2026-08-21T05:58:36Z  open-tab  SubagentStop  
-2026-08-21T05:58:36Z  open-tab  SubagentStop  
-2026-08-21T05:58:36Z  open-tab  SubagentStop  
-2026-08-21T05:58:36Z  open-tab  SubagentStop  
-2026-08-21T05:58:36Z  open-tab  SubagentStop  
-2026-08-21T05:58:36Z  open-tab  SubagentStop  
-2026-08-21T05:59:08Z  open-tab  SubagentStop  
-2026-08-21T05:59:08Z  open-tab  SubagentStop  
-2026-08-21T05:59:08Z  open-tab  SubagentStop  
-2026-08-21T05:59:08Z  open-tab  SubagentStop  
-2026-08-21T05:59:08Z  open-tab  SubagentStop  
-2026-08-21T05:59:08Z  open-tab  SubagentStop  
-2026-08-21T05:59:36Z  open-tab  SubagentStop  
-2026-08-21T05:59:36Z  open-tab  SubagentStop  
-2026-08-21T05:59:36Z  open-tab  SubagentStop  
-2026-08-21T05:59:36Z  open-tab  SubagentStop  
-2026-08-21T05:59:36Z  open-tab  SubagentStop  
-2026-08-21T05:59:36Z  open-tab  SubagentStop  
+2026-08-21T06:00:08Z  open-tab  SubagentStop  
+2026-08-21T06:00:08Z  open-tab  SubagentStop  
+2026-08-21T06:00:28Z  open-tab  SubagentStop  
+2026-08-21T06:00:28Z  open-tab  SubagentStop  
+2026-08-21T06:00:28Z  open-tab  SubagentStop  
+2026-08-21T06:00:28Z  open-tab  SubagentStop  
+2026-08-21T06:00:28Z  open-tab  SubagentStop  
+2026-08-21T06:00:28Z  open-tab  SubagentStop  
+2026-08-21T06:00:34Z  open-tab  SubagentStop  
+2026-08-21T06:00:34Z  open-tab  SubagentStop  
+2026-08-21T06:00:34Z  open-tab  SubagentStop  
+2026-08-21T06:00:34Z  open-tab  SubagentStop  
+2026-08-21T06:00:34Z  open-tab  SubagentStop  
+2026-08-21T06:00:34Z  open-tab  SubagentStop  
+2026-08-21T06:00:39Z  open-tab  SubagentStop  
+2026-08-21T06:00:39Z  open-tab  SubagentStop  
+2026-08-21T06:00:39Z  open-tab  SubagentStop  
+2026-08-21T06:00:39Z  open-tab  SubagentStop  
+2026-08-21T06:00:39Z  open-tab  SubagentStop  
+2026-08-21T06:00:39Z  open-tab  SubagentStop  
 ```
 
 ---
