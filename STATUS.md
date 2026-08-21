@@ -1,19 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 02:42 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:43 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $25.62 | $200.00 | █░░░░░░░░░ 12% |
+| open-tab | $27.09 | $200.00 | █░░░░░░░░░ 13% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | 🟢 builder-deep | open-tab | 2026-08-21T02:27:25Z | 1 |
-| 🟢 reviewer | open-tab | 2026-08-21T02:39:41Z | 4 |
+| 🟢 reviewer | open-tab | 2026-08-21T02:39:41Z | 3 |
 
 ## Blocked — needs your input
 
@@ -7920,7 +7920,7 @@ is checked the day it lands.
   assert something true about a file no database runs.
 
 </details>
-<details><summary>🟢 <code>OT-138</code> in-progress — three live fail-opens in parallel-cap.sh let an uncapped dispatch through · 0/10 criteria</summary>
+<details><summary>🟢 <code>OT-138</code> in-progress — three live fail-opens in parallel-cap.sh let an uncapped dispatch through · 5/10 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -8055,13 +8055,13 @@ hostile ids and must stay true.
 
 ## Acceptance criteria
 
-- [ ] a torn line in `events.jsonl` no longer allows: fixture with two live
+- [x] a torn line in `events.jsonl` no longer allows: fixture with two live
       builder starts plus one truncated line must DENY
-- [ ] a stub `jq` that exits 1 no longer allows: same fixture must DENY
-- [ ] an absent `jq` (empty PATH) no longer allows: must DENY with a valid
+- [x] a stub `jq` that exits 1 no longer allows: same fixture must DENY
+- [x] an absent `jq` (empty PATH) no longer allows: must DENY with a valid
       hand-built JSON document on stdout
-- [ ] `deny()` denies when jq exits non-zero after printing a partial document
-- [ ] the stderr live-agent inventory is restored, prints `agent_id:type:age:idle=`
+- [x] `deny()` denies when jq exits non-zero after printing a partial document
+- [x] the stderr live-agent inventory is restored, prints `agent_id:type:age:idle=`
       per counted agent, and cannot corrupt the hook's stdout JSON decision
 - [ ] all four OT-127 heartbeat fixtures still behave as before: stale heartbeat
       excludes, fresh heartbeat on a 40-min-old start still counts, no heartbeat
@@ -8185,6 +8185,48 @@ and 6-10 dispatched to two reviewers in parallel, gates pre-run and supplied as
 given, and both told to emit a partial Result rather than run to the wall.
 Worth remembering for any future task with a criteria list this long — the
 review is the part that does not fit, not the build.
+
+
+## Review verdict — criteria 1-5 PASS
+
+Verified by executing the hook against fixtures in `/private/tmp`, with pasted
+output for each. Torn line denies. Stub `jq` exiting 1 denies with 377 bytes of
+valid JSON rather than 0. Absent `jq` emits a hand-built document that
+round-trips through real `jq`. `deny()` falls back correctly when jq exits
+non-zero after a partial document, with no fragment leaking ahead of it. The
+stderr inventory prints `idle=` in both forms and survived six hostile ids —
+`*` printed literally with no pathname expansion, and stdout stayed valid JSON
+with the correct count.
+
+All three of section 5's lows landed: `deny()`'s `rc` check, `json_escape`
+covering `\r` and `\x01-\x1f`, and `"async": true` on the heartbeat
+registration in `settings.json`.
+
+Sanity checks confirm the fixes did not turn the cap into a blanket deny: an
+empty log allows, one live builder allows.
+
+## New finding — partial corruption undercounts, medium, NOT fixed here
+
+The reviewer's adversarial pass found a sixth fail-open, distinct from the five
+this task closes:
+
+    content_lines=4  parsed_records=1  starts=1
+    -> hook ALLOWED
+
+Fixture: an interleaved append putting two records on one physical line, plus a
+line of binary garbage. Two live builders were counted as one and the dispatch
+was allowed.
+
+The `content_lines`/`parsed_records` guard only fires when `parsed_records` is
+zero, so total corruption denies but 75% record loss passes through as a low
+count. Bounded compared to the original GAP 4 — the cap still enforces, just on
+a number that is too small — but it is the same class: an unknown count that
+does not fail closed.
+
+A ratio guard would close it. That goes beyond the port design this task's file
+explicitly settled and told the implementer not to re-litigate, so it is not
+being folded in here. Filed as a follow-up for the owner to decide, since it
+means editing the same fleet-protected hook again.
 
 </details>
 <details><summary>✅ <code>OT-139</code> done — lock down receipt image storage — private bucket, RLS, signed URLs, retention job · 6/6 criteria</summary>
@@ -9618,26 +9660,26 @@ you did not perform.
 ## Recent activity
 
 ```
-2026-08-21T02:42:16Z  open-tab  SubagentStop  
-2026-08-21T02:42:16Z  open-tab  SubagentStop  
-2026-08-21T02:42:19Z  open-tab  SubagentStop  
-2026-08-21T02:42:19Z  open-tab  SubagentStop  
-2026-08-21T02:42:19Z  open-tab  SubagentStop  
-2026-08-21T02:42:19Z  open-tab  SubagentStop  
-2026-08-21T02:42:19Z  open-tab  SubagentStop  
-2026-08-21T02:42:19Z  open-tab  SubagentStop  
-2026-08-21T02:42:38Z  open-tab  SubagentStop  
-2026-08-21T02:42:38Z  open-tab  SubagentStop  
-2026-08-21T02:42:38Z  open-tab  SubagentStop  
-2026-08-21T02:42:38Z  open-tab  SubagentStop  
-2026-08-21T02:42:38Z  open-tab  SubagentStop  
-2026-08-21T02:42:38Z  open-tab  SubagentStop  
-2026-08-21T02:42:47Z  open-tab  SubagentStop  
-2026-08-21T02:42:47Z  open-tab  SubagentStop  
-2026-08-21T02:42:47Z  open-tab  SubagentStop  
-2026-08-21T02:42:47Z  open-tab  SubagentStop  
-2026-08-21T02:42:47Z  open-tab  SubagentStop  
-2026-08-21T02:42:47Z  open-tab  SubagentStop  
+2026-08-21T02:43:09Z  open-tab  SubagentStop  
+2026-08-21T02:43:19Z  open-tab  SubagentStop  
+2026-08-21T02:43:19Z  open-tab  SubagentStop  
+2026-08-21T02:43:19Z  open-tab  SubagentStop  
+2026-08-21T02:43:19Z  open-tab  SubagentStop  
+2026-08-21T02:43:19Z  open-tab  SubagentStop  
+2026-08-21T02:43:19Z  open-tab  SubagentStop  
+2026-08-21T02:43:21Z  open-tab  SubagentStop  
+2026-08-21T02:43:21Z  open-tab  SubagentStop  
+2026-08-21T02:43:21Z  open-tab  SubagentStop  
+2026-08-21T02:43:21Z  open-tab  SubagentStop  
+2026-08-21T02:43:21Z  open-tab  SubagentStop  
+2026-08-21T02:43:21Z  open-tab  SubagentStop  
+2026-08-21T02:43:31Z  open-tab  SubagentStop  reviewer
+2026-08-21T02:43:50Z  open-tab  SubagentStop  
+2026-08-21T02:43:50Z  open-tab  SubagentStop  
+2026-08-21T02:43:50Z  open-tab  SubagentStop  
+2026-08-21T02:43:50Z  open-tab  SubagentStop  
+2026-08-21T02:43:50Z  open-tab  SubagentStop  
+2026-08-21T02:43:50Z  open-tab  SubagentStop  
 ```
 
 ---
