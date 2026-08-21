@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 06:11 UTC · regenerated on every task completion.
+Updated 2026-08-21 06:12 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $56.48 | $200.00 | ██░░░░░░░░ 28% |
+| open-tab | $56.82 | $200.00 | ██░░░░░░░░ 28% |
 
 ## Agents
 
@@ -10863,18 +10863,6 @@ closes 20 live holes and opens none. Add the one line, then install.
 ## Recent activity
 
 ```
-2026-08-21T06:10:06Z  open-tab  SubagentStop  
-2026-08-21T06:10:06Z  open-tab  SubagentStop  
-2026-08-21T06:10:18Z  open-tab  SubagentStop  
-2026-08-21T06:10:18Z  open-tab  SubagentStop  
-2026-08-21T06:10:18Z  open-tab  SubagentStop  
-2026-08-21T06:10:18Z  open-tab  SubagentStop  
-2026-08-21T06:10:18Z  open-tab  SubagentStop  
-2026-08-21T06:10:18Z  open-tab  SubagentStop  
-2026-08-21T06:10:50Z  open-tab  SubagentStop  
-2026-08-21T06:10:50Z  open-tab  SubagentStop  
-2026-08-21T06:10:50Z  open-tab  SubagentStop  
-2026-08-21T06:10:50Z  open-tab  SubagentStop  
 2026-08-21T06:10:50Z  open-tab  SubagentStop  
 2026-08-21T06:10:50Z  open-tab  SubagentStop  
 2026-08-21T06:11:22Z  open-tab  SubagentStop  
@@ -10883,6 +10871,18 @@ closes 20 live holes and opens none. Add the one line, then install.
 2026-08-21T06:11:22Z  open-tab  SubagentStop  
 2026-08-21T06:11:22Z  open-tab  SubagentStop  
 2026-08-21T06:11:22Z  open-tab  SubagentStop  
+2026-08-21T06:11:53Z  open-tab  SubagentStop  
+2026-08-21T06:11:53Z  open-tab  SubagentStop  
+2026-08-21T06:11:53Z  open-tab  SubagentStop  
+2026-08-21T06:11:53Z  open-tab  SubagentStop  
+2026-08-21T06:11:53Z  open-tab  SubagentStop  
+2026-08-21T06:11:53Z  open-tab  SubagentStop  
+2026-08-21T06:12:25Z  open-tab  SubagentStop  
+2026-08-21T06:12:25Z  open-tab  SubagentStop  
+2026-08-21T06:12:25Z  open-tab  SubagentStop  
+2026-08-21T06:12:25Z  open-tab  SubagentStop  
+2026-08-21T06:12:25Z  open-tab  SubagentStop  
+2026-08-21T06:12:25Z  open-tab  SubagentStop  
 ```
 
 ---
