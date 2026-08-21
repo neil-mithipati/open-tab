@@ -1,18 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 02:12 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:13 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $9.18 | $200.00 | ░░░░░░░░░░ 4% |
+| open-tab | $10.41 | $200.00 | ░░░░░░░░░░ 5% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer-light | open-tab | 2026-08-21T02:12:43Z | 3 |
+| 🟢 reviewer-light | open-tab | 2026-08-21T02:06:48Z | 1 |
+| 🟢 publisher | open-tab | 2026-08-21T02:13:30Z | 1 |
 
 ## Blocked — needs your input
 
@@ -8989,7 +8990,7 @@ own evidence, including a negative control proving a rotated photo would have
 uploaded sideways without the fix.
 
 </details>
-<details><summary>🟢 <code>OT-141</code> in-progress — fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor · 0/4 criteria</summary>
+<details><summary>✅ <code>OT-141</code> done — fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor · 4/4 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -9044,12 +9045,12 @@ to move.
 
 ## Acceptance criteria
 
-- [ ] `handleDelete` uses `boundStoragePath` and no longer parses the path inline
-- [ ] a null return means no `storage.remove` call at all
-- [ ] the sweep test fails on inline `"/receipt-images/"` parsing outside
+- [x] `handleDelete` uses `boundStoragePath` and no longer parses the path inline
+- [x] a null return means no `storage.remove` call at all
+- [x] the sweep test fails on inline `"/receipt-images/"` parsing outside
       `src/lib/storage.ts`, demonstrated by showing it fail against the current
       code before the fix
-- [ ] existing tests still pass
+- [x] existing tests still pass
 
 ## Prove it
 
@@ -9448,26 +9449,26 @@ scope had missed, and the task could not merge until it was fixed.
 ## Recent activity
 
 ```
-2026-08-21T02:11:55Z  open-tab  SubagentStop  
-2026-08-21T02:11:56Z  open-tab  SubagentStop  builder
-2026-08-21T02:11:59Z  open-tab  SubagentStop  builder
-2026-08-21T02:12:02Z  open-tab  SubagentStop  builder
-2026-08-21T02:12:03Z  open-tab  SubagentStop  
-2026-08-21T02:12:03Z  open-tab  SubagentStop  
-2026-08-21T02:12:03Z  open-tab  SubagentStop  
-2026-08-21T02:12:03Z  open-tab  SubagentStop  
-2026-08-21T02:12:03Z  open-tab  SubagentStop  
-2026-08-21T02:12:03Z  open-tab  SubagentStop  
-2026-08-21T02:12:05Z  open-tab  SubagentStop  builder
-2026-08-21T02:12:08Z  open-tab  SubagentStop  builder
-2026-08-21T02:12:26Z  open-tab  SubagentStart  reviewer-light
-2026-08-21T02:12:43Z  open-tab  SubagentStart  reviewer-light
-2026-08-21T02:12:54Z  open-tab  SubagentStop  
-2026-08-21T02:12:54Z  open-tab  SubagentStop  
-2026-08-21T02:12:54Z  open-tab  SubagentStop  
-2026-08-21T02:12:54Z  open-tab  SubagentStop  
-2026-08-21T02:12:54Z  open-tab  SubagentStop  
-2026-08-21T02:12:54Z  open-tab  SubagentStop  
+2026-08-21T02:13:44Z  open-tab  SubagentStop  
+2026-08-21T02:13:46Z  open-tab  SubagentStop  
+2026-08-21T02:13:46Z  open-tab  SubagentStop  
+2026-08-21T02:13:46Z  open-tab  SubagentStop  
+2026-08-21T02:13:46Z  open-tab  SubagentStop  
+2026-08-21T02:13:46Z  open-tab  SubagentStop  
+2026-08-21T02:13:46Z  open-tab  SubagentStop  
+2026-08-21T02:13:50Z  open-tab  SubagentStop  
+2026-08-21T02:13:50Z  open-tab  SubagentStop  
+2026-08-21T02:13:50Z  open-tab  SubagentStop  
+2026-08-21T02:13:50Z  open-tab  SubagentStop  
+2026-08-21T02:13:50Z  open-tab  SubagentStop  
+2026-08-21T02:13:50Z  open-tab  SubagentStop  
+2026-08-21T02:13:53Z  open-tab  SubagentStop  reviewer-light
+2026-08-21T02:13:55Z  open-tab  SubagentStop  
+2026-08-21T02:13:55Z  open-tab  SubagentStop  
+2026-08-21T02:13:55Z  open-tab  SubagentStop  
+2026-08-21T02:13:55Z  open-tab  SubagentStop  
+2026-08-21T02:13:55Z  open-tab  SubagentStop  
+2026-08-21T02:13:55Z  open-tab  SubagentStop  
 ```
 
 ---
