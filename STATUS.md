@@ -1,18 +1,17 @@
 # Agent status
 
-Updated 2026-08-21 02:26 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:27 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $13.83 | $200.00 | ░░░░░░░░░░ 6% |
+| open-tab | $14.43 | $200.00 | ░░░░░░░░░░ 7% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer-light | open-tab | 2026-08-21T02:06:48Z | 1 |
 | 🟢 reviewer | open-tab | 2026-08-21T02:25:46Z | 1 |
 
 ## Blocked — needs your input
@@ -9457,22 +9456,118 @@ skipped the reviewer, not correctness — the tests caught the third file the
 scope had missed, and the task could not merge until it was fixed.
 
 </details>
+<details><summary>🟢 <code>OT-145</code> in-progress — nothing detects schema drift between the repo and the live database · 0/8 criteria</summary>
+
+- app: open-tab
+- tier: builder-deep
+- review: full
+- attempts: 0
+- branch: task/OT-145
+- worktree: ../wt-OT-145
+- files:
+-   - scripts/
+-   - docs/deployment.md
+-   - package.json
+- blocked_reason: null
+
+
+## Why
+
+Split out of OT-142, which recorded it as "the criterion that matters beyond
+tonight". OT-142 found production running ~14 migrations behind the repo, with
+`supabase_migrations.schema_migrations` entirely empty — the live schema had been
+built by hand in the dashboard and no migration had ever been tracked.
+
+That went unnoticed until a migration happened to fail. Merged, reviewed, gated
+code had been reading columns that did not exist live. Every gate passed the
+whole time, because gates run against the repo inside a worktree and nothing in
+the fleet can see a live database. The drift is invisible by construction.
+
+The reset in OT-142 fixed the instance. Nothing stops it recurring.
+
+## Scope
+
+A check that fails when the live database disagrees with the repo. Two halves,
+both needed:
+
+1. **Migrations.** Every file in `supabase/migrations/` is recorded as applied in
+   `supabase_migrations.schema_migrations`, and nothing is recorded that the repo
+   does not have. `supabase migration list --linked` already reports this; wrapping
+   it and giving it a non-zero exit on any divergence is a legitimate implementation.
+2. **Storage policies.** The policies live on `storage.objects` and match
+   `supabase/storage-policies.sql` (created by OT-143). These are applied by hand
+   through the dashboard because no automated path connects as
+   `supabase_storage_admin`, so they are the most likely thing to drift.
+
+## Compare expressions, not names — this is the whole trick
+
+From OT-143, observed live on 2026-08-20 after the manual apply:
+
+    receipt_images_delete_own 13hfyy5_0                  | {authenticated} | DELETE
+    receipt_images_delete_own 13hfyy5_1                  | {authenticated} | SELECT
+    receipt_images_insert_own 13hfyy5_0                  | {authenticated} | INSERT
+    receipt_images_select_owner_or_participant 13hfyy5_0 | {authenticated} | SELECT
+
+The dashboard appends its own suffix, so a live name never equals the declared
+name — a name-based check is guaranteed to be either always-failing or written to
+ignore names, and neither detects anything. It also silently split the delete
+policy into a DELETE row and a SELECT row when both operations were ticked in the
+UI. That is the `_1` row: nobody intended it, nothing named it wrongly, and the
+count was wrong. A name-based check misses it completely.
+
+Normalise and compare the `USING` / `WITH CHECK` expressions and the command each
+policy applies to.
+
+## Constraints
+
+- **Never print a secret.** Read credentials from the environment or from the
+  linked Supabase CLI project. Do not echo them, do not write them to a file, do
+  not include them in error output. `.env*` is never read into stdout.
+- **Do not wire this as a required gate in `.claude/gates.json`.** Gates run
+  inside worktrees with no database access; a required gate that cannot reach a
+  database would fail every task. This is a deploy-time and on-demand check.
+  (It also could not be done from here — `gates.json` is fleet-protected.)
+- **Nothing under `bin/` or `.claude/`.** Both are fleet-protected and this task
+  carries no maintenance grant. Put the script under `scripts/`.
+- **Fail loudly, never silently pass.** If credentials are absent, the project is
+  not linked, or a query errors, exit non-zero with a message saying the check did
+  not run. A drift check that quietly reports success when it checked nothing is
+  worse than no check, because it converts an unknown into a false all-clear.
+  Distinguish "drift found" from "could not check" in the exit code or the output.
+- `psql` is NOT installed on this machine. The Supabase CLI is, at
+  `/opt/homebrew/bin/supabase`. Work with what is present, or vendor a node
+  postgres client through `package.json` if that is genuinely the only route —
+  and justify it in the Result if you do.
+
+## Acceptance criteria
+
+- [ ] a single command reports whether the live database matches the repo, and
+      exits non-zero when it does not
+- [ ] the migration half detects both directions: a repo migration missing live,
+      and a recorded migration absent from the repo
+- [ ] the storage-policy half compares normalised expressions and the command
+      each policy applies to, not policy names
+- [ ] an extra live policy that the repo does not declare is reported — the
+      `_1` case above must be caught
+- [ ] absent credentials, an unlinked project, or a failed query exits non-zero
+      with a message distinguishing "could not check" from "no drift"
+- [ ] no secret is printed, logged, or written to a file on any path
+- [ ] the command is documented in `docs/deployment.md` with when to run it
+- [ ] existing tests still pass
+
+## Prove it
+
+You cannot reach a hosted project. Say plainly what was verified locally and what
+needs the owner. Unit-test the comparison logic against fixture inputs — the
+parsing and normalisation are the part that can be tested without a database, and
+the `_1` extra-policy case must be one of the fixtures. Do not claim a live run
+you did not perform.
+
+</details>
 
 ## Recent activity
 
 ```
-2026-08-21T02:15:53Z  open-tab  SubagentStop  
-2026-08-21T02:15:53Z  open-tab  SubagentStop  
-2026-08-21T02:15:53Z  open-tab  SubagentStop  
-2026-08-21T02:15:53Z  open-tab  SubagentStop  
-2026-08-21T02:15:53Z  open-tab  SubagentStop  
-2026-08-21T02:15:53Z  open-tab  SubagentStop  
-2026-08-21T02:15:59Z  open-tab  SubagentStop  publisher
-2026-08-21T02:19:06Z  open-tab  SubagentStop  
-2026-08-21T02:19:06Z  open-tab  SubagentStop  
-2026-08-21T02:19:06Z  open-tab  SubagentStop  
-2026-08-21T02:19:06Z  open-tab  SubagentStop  
-2026-08-21T02:19:06Z  open-tab  SubagentStop  
 2026-08-21T02:19:06Z  open-tab  SubagentStop  
 2026-08-21T02:25:46Z  open-tab  SubagentStart  reviewer
 2026-08-21T02:26:17Z  open-tab  SubagentStop  
@@ -9481,6 +9576,18 @@ scope had missed, and the task could not merge until it was fixed.
 2026-08-21T02:26:17Z  open-tab  SubagentStop  
 2026-08-21T02:26:17Z  open-tab  SubagentStop  
 2026-08-21T02:26:17Z  open-tab  SubagentStop  
+2026-08-21T02:26:49Z  open-tab  SubagentStop  
+2026-08-21T02:26:49Z  open-tab  SubagentStop  
+2026-08-21T02:26:49Z  open-tab  SubagentStop  
+2026-08-21T02:26:49Z  open-tab  SubagentStop  
+2026-08-21T02:26:49Z  open-tab  SubagentStop  
+2026-08-21T02:26:49Z  open-tab  SubagentStop  
+2026-08-21T02:27:20Z  open-tab  SubagentStop  
+2026-08-21T02:27:20Z  open-tab  SubagentStop  
+2026-08-21T02:27:20Z  open-tab  SubagentStop  
+2026-08-21T02:27:20Z  open-tab  SubagentStop  
+2026-08-21T02:27:20Z  open-tab  SubagentStop  
+2026-08-21T02:27:20Z  open-tab  SubagentStop  
 ```
 
 ---
