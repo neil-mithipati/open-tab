@@ -1,5 +1,57 @@
 # Deployment notes
 
+## Applying the receipt-images storage policies (OT-143)
+
+`supabase/migrations/0026_receipt_image_storage_lockdown.sql` used to also
+carry the `receipt-images` bucket privacy setting and its three storage
+policies. `supabase db push` against a hosted project failed inside it:
+
+    ERROR: must be owner of table objects (SQLSTATE 42501)
+    At statement: 3
+    alter table storage.objects enable row level security
+
+`storage.buckets` and `storage.objects` are owned by `supabase_storage_admin`
+on a hosted project. Neither `supabase db push` nor the dashboard SQL editor
+connects as that role, and `set role supabase_storage_admin` is refused too.
+So that half cannot be applied by any automated SQL path on a hosted project —
+it has to go through the dashboard's Storage UI, which does have the rights.
+
+**Dependency:** apply `0026` first. Every policy below calls
+`public.receipt_image_receipt_id`, which `0026` creates. Applying the policies
+before `0026` fails with "function does not exist".
+
+The exact expressions are versioned in `supabase/storage-policies.sql` — that
+file is the source of truth for what the dashboard settings below must match.
+It is not runnable as a SQL script against a hosted project for the same
+ownership reason as above; it exists so the text is reviewable in a diff, not
+so it can be pasted into the SQL editor.
+
+**Procedure, once `0026` is applied:**
+
+1. Storage > Buckets > `receipt-images` > turn the "Public bucket" toggle OFF.
+   (If the bucket does not exist yet, create it first, named `receipt-images`,
+   not public.)
+2. Storage > Policies > `receipt-images` > New policy, three times, one per
+   operation below. For each: paste the expression from
+   `supabase/storage-policies.sql`, and tick only the one operation named —
+   ticking more than one on the delete policy makes the dashboard silently
+   split it into two separate rows (see `supabase/storage-policies.sql` for
+   why that's harmless but not what's declared).
+   - `receipt_images_select_owner_or_participant` — SELECT only, target
+     role `authenticated`, USING expression from the file.
+   - `receipt_images_insert_own` — INSERT only, target role `authenticated`,
+     WITH CHECK expression from the file.
+   - `receipt_images_delete_own` — DELETE only, target role `authenticated`,
+     USING expression from the file.
+   - Do not create an UPDATE policy for this bucket.
+
+**What this does not yet cover:** a check that fails when the live dashboard
+policies drift from what's declared in `supabase/storage-policies.sql`. Worth
+having, not built here. If it's ever written, it must compare expressions, not
+names — the dashboard appends its own suffix to whatever name is entered
+(e.g. `receipt_images_delete_own 13hfyy5_0`), so live names never match the
+file's names.
+
 ## `supabase/migrations/0020_receipts_parsed_at.sql` — apply BEFORE the next code deploy (OT-123, merged)
 
 OT-123 closes the last gap in the parse-replay defense: a receipt whose parse

@@ -10,8 +10,29 @@
 -- nothing fails if someone widens them. The app has always signed its URLs
 -- (there is not one getPublicUrl call in the codebase), which is evidence the
 -- bucket was meant to be private — but "meant to be" is not a control. This
--- migration makes the bucket and its policies part of the schema, so they are
--- reviewable, reproducible and testable like everything else.
+-- migration, together with `supabase/storage-policies.sql`, makes the bucket
+-- and its policies part of the schema, so they are reviewable, reproducible and
+-- testable like everything else.
+--
+-- ── why this file stops short of the bucket and its policies ───────────────
+--
+-- `storage.buckets` and `storage.objects` are owned by `supabase_storage_admin`
+-- on a hosted Supabase project, not by the role `supabase db push` or the
+-- dashboard SQL editor connects as, and `set role supabase_storage_admin` is
+-- refused too. A statement here that touches either table aborts the whole
+-- migration transaction with `must be owner of table objects` (SQLSTATE
+-- 42501) partway through `db push` — which is exactly what happened the first
+-- time this file tried to enable RLS on `storage.objects` and create policies
+-- on it in the same transaction as the statements below.
+--
+-- So this file (0026) is only the `public.` half: the helper function the
+-- storage policies call, and the retention function and index the purge job
+-- calls. Both apply cleanly under `db push` because they own nothing in the
+-- `storage` schema. The bucket privacy setting and the three storage policies
+-- that reference `receipt_image_receipt_id` below live in
+-- `supabase/storage-policies.sql` instead, with the dashboard procedure to
+-- apply them documented in `docs/deployment.md`. Apply this file first — the
+-- policies in that other file call the function this file creates.
 --
 -- ── the path convention this all rests on ──────────────────────────────────
 --
@@ -33,42 +54,21 @@
 -- ── additive only ─────────────────────────────────────────────────────────
 --
 -- No table, column, index or row is dropped, and no application data is read or
--- rewritten. The three `drop policy if exists` lines below, and the one
--- `drop function if exists`, name objects this migration recreates on the very
--- next statement; they exist so re-running the file is safe, which is the same
--- shape 0009 and 0019 used. (The function drop is not optional dressing: a
--- `create or replace` cannot change a function's OUT columns, so without it a
--- second run of this file against a project that already has an older
--- receipt_images_due_for_purge would fail.)
--- Turning the bucket private is a configuration change, not a data change, and
--- it is the whole point of the task.
+-- rewritten. The one `drop function if exists` line below names an object this
+-- migration recreates on the very next statement; it exists so re-running the
+-- file is safe, which is the same shape 0009 and 0019 used. (The function drop
+-- is not optional dressing: a `create or replace` cannot change a function's
+-- OUT columns, so without it a second run of this file against a project that
+-- already has an older receipt_images_due_for_purge would fail.)
 --
--- DEPLOYMENT ORDER: apply this BEFORE deploying the code that ships with it.
+-- DEPLOYMENT ORDER: apply this BEFORE deploying the code that ships with it,
+-- and BEFORE applying `supabase/storage-policies.sql` (see docs/deployment.md).
 -- It is backward compatible with what is deployed now — today's client already
 -- uploads to `<user id>/<receipt id>.<ext>` and already reads through signed
 -- URLs — so nothing breaks in the window between the two.
 
 -- ---------------------------------------------------------------------------
--- 1. the bucket is private
--- ---------------------------------------------------------------------------
---
--- `public = false` is what closes /storage/v1/object/public/<bucket>/<name>.
--- With it set, that route answers 400 "Bucket not found" to everyone including
--- the owner, and the only way to read an object is a signed URL or an
--- authenticated request that satisfies the policies below.
---
--- Insert-then-update rather than a bare update so this file also stands up the
--- bucket from nothing on a fresh project. The conflict branch sets `public`
--- and nothing else on purpose: file_size_limit and allowed_mime_types are
--- whatever the live project already has, they are not the control this task is
--- about, and overwriting live upload constraints during a security fix is how a
--- security fix becomes an outage.
-insert into storage.buckets (id, name, public)
-values ('receipt-images', 'receipt-images', false)
-on conflict (id) do update set public = false;
-
--- ---------------------------------------------------------------------------
--- 2. name → receipt id
+-- 1. name → receipt id
 -- ---------------------------------------------------------------------------
 --
 -- Returns null rather than raising for anything that is not exactly
@@ -90,88 +90,10 @@ returns uuid language sql immutable as $$
 $$;
 
 comment on function public.receipt_image_receipt_id(text) is
-  'Receipt id encoded in a receipt-images object name (<user id>/<receipt id>.<ext>). Null for any name that does not match that shape, so storage policies deny rather than raise on an unexpected object.';
+  'Receipt id encoded in a receipt-images object name (<user id>/<receipt id>.<ext>). Null for any name that does not match that shape, so storage policies deny rather than raise on an unexpected object. The policies that call this live in supabase/storage-policies.sql, applied via the Supabase dashboard — see docs/deployment.md.';
 
 -- ---------------------------------------------------------------------------
--- 3. policies on storage.objects
--- ---------------------------------------------------------------------------
---
--- Already on in a Supabase project; restated so a rebuilt schema cannot end up
--- with these policies present and unenforced.
-alter table storage.objects enable row level security;
-
--- Every policy below is granted `to authenticated` only. There is deliberately
--- no policy for `anon`, and that omission IS the anonymous-read control: RLS
--- denies by default, so a request carrying the publishable key and no session
--- matches no policy and reads nothing. Note that anonymous SIGN-IN (0013) still
--- produces a real session with a real auth.uid(), so those users are
--- `authenticated` here and are held to the same owner-or-participant test as
--- everyone else — they do not get in through this door either.
-
--- READ. The owner of the receipt, or anyone the receipt lists as a participant.
--- Both questions are asked through the security definer helpers 0009 added, for
--- the reason 0009 added them: the lookup must not re-enter `receipts`' or
--- `receipt_participants`' own policies.
---
--- Note what is NOT here: the path prefix. A participant's user id is not the
--- first path segment — the uploader's is — so pinning reads to the prefix would
--- deny every participant. Ownership is established from the receipt row instead,
--- which is the same source of truth receipts_select_participant uses.
-drop policy if exists "receipt_images_select_owner_or_participant" on storage.objects;
-create policy "receipt_images_select_owner_or_participant" on storage.objects
-  for select to authenticated
-  using (
-    bucket_id = 'receipt-images'
-    and (
-      public.receipt_creator_id(public.receipt_image_receipt_id(name)) = auth.uid()
-      or public.is_receipt_participant(public.receipt_image_receipt_id(name))
-    )
-  );
-
--- WRITE. Both halves are required and they guard different things.
---
---   * the prefix check stops a user writing into another user's folder, which
---     is what boundStoragePath() assumes when it decides a stored path belongs
---     to the receipt it is recorded on;
---   * the ownership check stops a user parking an object under their OWN prefix
---     but named with someone else's receipt id — which the read policy above
---     resolves by receipt id, so without this half an attacker could plant a
---     name that makes their object readable by a victim's participants, or
---     collide with a name the victim's own upload wants.
---
--- A malformed name yields a null receipt id, receipt_creator_id(null) is null,
--- and `null = auth.uid()` is not true — so the naming convention the rest of
--- the code depends on is enforced here rather than merely hoped for.
-drop policy if exists "receipt_images_insert_own" on storage.objects;
-create policy "receipt_images_insert_own" on storage.objects
-  for insert to authenticated
-  with check (
-    bucket_id = 'receipt-images'
-    and (storage.foldername(name))[1] = auth.uid()::text
-    and public.receipt_creator_id(public.receipt_image_receipt_id(name)) = auth.uid()
-  );
-
--- DELETE. Owner only, on the same two-part test. Participants can see the check
--- but cannot destroy the payer's copy of it. This is the policy the discard
--- path in ReceiptSplitStep runs under; it removes the object before deleting
--- the receipt row, so the ownership lookup still resolves.
-drop policy if exists "receipt_images_delete_own" on storage.objects;
-create policy "receipt_images_delete_own" on storage.objects
-  for delete to authenticated
-  using (
-    bucket_id = 'receipt-images'
-    and (storage.foldername(name))[1] = auth.uid()::text
-    and public.receipt_creator_id(public.receipt_image_receipt_id(name)) = auth.uid()
-  );
-
--- There is no UPDATE policy, and that is deliberate rather than an oversight.
--- Nothing in the app overwrites an object: uploads are plain inserts with no
--- upsert, and a retry reuses the image already stored rather than replacing it.
--- Without an update policy, an object's bytes cannot be swapped after the fact
--- for a receipt someone else has already reviewed.
-
--- ---------------------------------------------------------------------------
--- 4. retention: the image is not kept forever
+-- 2. retention: the image is not kept forever
 -- ---------------------------------------------------------------------------
 --
 -- Once a receipt is parsed, the photo has done its job — the line items are in

@@ -4,33 +4,42 @@ import path from "node:path";
 
 // WHAT THIS FILE IS, AND WHAT IT IS NOT.
 //
-// It is a set of assertions about the TEXT of migration 0026. It reads the .sql
-// file off disk and matches strings in it. There is no database in this suite
-// (see chargesRls.test.ts, which makes the same trade), nothing here connects to
-// one, and no statement in 0026 is ever executed by it. So nothing in this file
-// is evidence that the bucket is private, that an anonymous read is refused, or
-// that a non-participant cannot select an object. A green run here means the
-// migration still SAYS what it said, not that postgres DOES what it says — the
-// file was renamed away from `storageRls` and every name below reworded to
-// "declares" because the old wording read like the second claim.
+// It is a set of assertions about the TEXT of two files: migration 0026 and
+// supabase/storage-policies.sql. It reads them off disk and matches strings.
+// There is no database in this suite (see chargesRls.test.ts, which makes the
+// same trade), nothing here connects to one, and no statement in either file
+// is ever executed by it. So nothing in this file is evidence that the bucket
+// is private, that an anonymous read is refused, or that a non-participant
+// cannot select an object. A green run here means the files still SAY what
+// they said, not that postgres DOES what they say.
 //
-// Runtime proof of the policies has to come from a real server: apply 0026 to a
-// project and run the selects. The value of the static half is narrower and
-// still worth having — it catches the specific later edits that quietly undo
-// the fix. A bucket flipped back to public, an `anon` grant added to a policy,
-// the participant branch dropped from the read policy so only owners can see a
-// check, the receipt-ownership half dropped from the write policy, or a purge
-// predicate narrowed to parsed_at alone so a receipt escapes retention by
-// having failed to parse.
+// Runtime proof of the policies has to come from a real server: apply 0026,
+// apply the storage policies through the dashboard (see docs/deployment.md),
+// and run the selects. The value of the static half is narrower and still
+// worth having — it catches the specific later edits that quietly undo the
+// fix. A bucket flipped back to public, an `anon` grant added to a policy,
+// the participant branch dropped from the read policy so only owners can see
+// a check, the receipt-ownership half dropped from the write policy, or a
+// purge predicate narrowed to parsed_at alone so a receipt escapes retention
+// by having failed to parse.
+//
+// OT-143 split the original all-in-one 0026 in two: `0026` keeps only the
+// `public.` objects, because `storage.buckets` and `storage.objects` are
+// owned by `supabase_storage_admin` on a hosted project and `supabase db
+// push` cannot touch them. The bucket privacy row and the three storage
+// policies moved to `supabase/storage-policies.sql`. This file asserts both
+// halves, plus that the moved statements are actually gone from 0026 — that
+// absence is the whole point of the split.
 
-const migrations = path.join(process.cwd(), "supabase", "migrations");
-const FILE = "0026_receipt_image_storage_lockdown.sql";
+const root = process.cwd();
+const MIGRATION_FILE = "0026_receipt_image_storage_lockdown.sql";
+const POLICIES_FILE = "storage-policies.sql";
 
-function read(file: string): string {
-  return readFileSync(path.join(migrations, file), "utf8");
+function read(dir: string, file: string): string {
+  return readFileSync(path.join(root, dir, file), "utf8");
 }
 
-// `--` line comments only; no migration here puts one inside a string literal.
+// `--` line comments only; no file here puts one inside a string literal.
 function stripComments(sql: string): string {
   return sql
     .split("\n")
@@ -42,8 +51,8 @@ function flatten(sql: string): string {
   return stripComments(sql).replace(/\s+/g, " ").trim().toLowerCase();
 }
 
-// Split on semicolons outside parentheses. 0026's two function bodies contain
-// no semicolons, so this does not need to understand dollar quoting.
+// Split on semicolons outside parentheses. Neither file's function bodies
+// contain semicolons, so this does not need to understand dollar quoting.
 function statements(sql: string): string[] {
   const out: string[] = [];
   let depth = 0;
@@ -64,31 +73,53 @@ function statements(sql: string): string[] {
     .filter(Boolean);
 }
 
-const sql = flatten(read(FILE));
-const stmts = statements(read(FILE));
+const migrationSql = flatten(read("supabase/migrations", MIGRATION_FILE));
+const migrationStmts = statements(read("supabase/migrations", MIGRATION_FILE));
+
+const policiesSql = flatten(read("supabase", POLICIES_FILE));
+const policiesStmts = statements(read("supabase", POLICIES_FILE));
 
 function policy(name: string): string {
-  const found = stmts.find(
+  const found = policiesStmts.find(
     (s) => s.startsWith("create policy") && s.includes(`"${name}"`)
   );
-  if (!found) throw new Error(`no ${name} policy in ${FILE}`);
+  if (!found) throw new Error(`no ${name} policy in ${POLICIES_FILE}`);
   return found;
 }
 
 describe("0026 takes the next free migration slot", () => {
   it("is the highest-numbered migration", () => {
-    const files = readdirSync(migrations)
+    const files = readdirSync(path.join(root, "supabase", "migrations"))
       .filter((f) => f.endsWith(".sql"))
       .sort();
 
-    expect(files.at(-1)).toBe(FILE);
+    expect(files.at(-1)).toBe(MIGRATION_FILE);
     expect(files.filter((f) => f.startsWith("0026_"))).toHaveLength(1);
   });
 });
 
-describe("0026 declares the bucket private", () => {
+describe("0026 no longer carries the storage half", () => {
+  // The whole point of OT-143: db push cannot touch storage.objects or
+  // storage.buckets, so nothing that requires those tables' owner may sit in
+  // a migration db push executes.
+  it("does not enable row level security on storage.objects", () => {
+    expect(migrationSql).not.toContain(
+      "alter table storage.objects enable row level security"
+    );
+  });
+
+  it("creates no policy on storage.objects", () => {
+    expect(migrationSql).not.toContain("create policy");
+  });
+
+  it("does not touch storage.buckets", () => {
+    expect(migrationSql).not.toContain("storage.buckets");
+  });
+});
+
+describe("storage-policies.sql declares the bucket private", () => {
   it("declares public = false when it creates the bucket", () => {
-    expect(sql).toContain(
+    expect(policiesSql).toContain(
       "insert into storage.buckets (id, name, public) values ('receipt-images', 'receipt-images', false)"
     );
   });
@@ -96,18 +127,20 @@ describe("0026 declares the bucket private", () => {
   // The important half. Every real deployment already has this bucket, so the
   // insert is a no-op there and the conflict branch is the only thing that runs.
   it("forces public = false on a bucket that already exists", () => {
-    expect(sql).toContain("on conflict (id) do update set public = false");
+    expect(policiesSql).toContain("on conflict (id) do update set public = false");
   });
 
   it("never sets public true", () => {
-    expect(sql).not.toMatch(/public\s*=\s*true/);
-    expect(sql).not.toContain("'receipt-images', true");
+    expect(policiesSql).not.toMatch(/public\s*=\s*true/);
+    expect(policiesSql).not.toContain("'receipt-images', true");
   });
 });
 
-describe("0026 declares its storage.objects policies", () => {
+describe("storage-policies.sql declares its storage.objects policies", () => {
   it("declares row level security on", () => {
-    expect(sql).toContain("alter table storage.objects enable row level security");
+    expect(policiesSql).toContain(
+      "alter table storage.objects enable row level security"
+    );
   });
 
   // The anonymous-read control is an ABSENCE — no policy admits `anon`, so RLS
@@ -115,7 +148,7 @@ describe("0026 declares its storage.objects policies", () => {
   // edit restores without meaning to, which is why it is asserted rather than
   // trusted.
   it("declares no policy for anon or for public", () => {
-    for (const p of stmts.filter((s) => s.startsWith("create policy"))) {
+    for (const p of policiesStmts.filter((s) => s.startsWith("create policy"))) {
       expect(p).toContain("to authenticated");
       expect(p).not.toContain("to anon");
       expect(p).not.toContain("to public");
@@ -124,7 +157,7 @@ describe("0026 declares its storage.objects policies", () => {
   });
 
   it("declares every policy scoped to the receipt-images bucket", () => {
-    const policies = stmts.filter((s) => s.startsWith("create policy"));
+    const policies = policiesStmts.filter((s) => s.startsWith("create policy"));
     expect(policies.length).toBeGreaterThan(0);
     for (const p of policies) {
       expect(p).toContain("bucket_id = 'receipt-images'");
@@ -190,7 +223,7 @@ describe("0026 declares its storage.objects policies", () => {
   });
 
   it("declares no update policy, so stored bytes cannot be swapped", () => {
-    expect(sql).not.toContain("for update");
+    expect(policiesSql).not.toContain("for update");
   });
 });
 
@@ -199,7 +232,7 @@ describe("receipt_image_receipt_id, as written", () => {
   // object would break reads for every other object in the same query. The
   // regex guard is what makes the cast total.
   it("guards the cast with a uuid pattern instead of casting blind", () => {
-    const fn = stmts.find((s) =>
+    const fn = migrationStmts.find((s) =>
       s.includes("create or replace function public.receipt_image_receipt_id")
     )!;
 
@@ -209,7 +242,7 @@ describe("receipt_image_receipt_id, as written", () => {
   });
 
   it("does not need definer rights, because it reads no table", () => {
-    const fn = stmts.find((s) =>
+    const fn = migrationStmts.find((s) =>
       s.includes("create or replace function public.receipt_image_receipt_id")
     )!;
 
@@ -219,7 +252,7 @@ describe("receipt_image_receipt_id, as written", () => {
 });
 
 describe("the retention selection, as written", () => {
-  const fn = stmts.find((s) =>
+  const fn = migrationStmts.find((s) =>
     s.includes("create function public.receipt_images_due_for_purge")
   )!;
 
@@ -269,52 +302,73 @@ describe("0026 is additive, as written", () => {
       "drop column",
       "drop index",
     ]) {
-      expect(sql).not.toContain(forbidden);
+      expect(migrationSql).not.toContain(forbidden);
     }
   });
 
-  // The only writes are the bucket row, and everything removed is recreated by
-  // the next statement — which is what makes re-running the file safe. The
-  // function is in that set because a create-or-replace cannot change a
-  // function's OUT columns, and the retention function grew one.
+  // The only drop in 0026 is the function it immediately recreates on the
+  // next statement, which is what makes re-running the file safe. It exists
+  // because a create-or-replace cannot change a function's OUT columns, and
+  // the retention function grew one.
   it("removes nothing it does not immediately recreate", () => {
-    const dropped = stmts
-      .filter((s) => s.startsWith("drop policy if exists"))
-      .map((s) => s.match(/"([^"]+)"/)![1]);
-    const created = stmts
-      .filter((s) => s.startsWith("create policy"))
-      .map((s) => s.match(/"([^"]+)"/)![1]);
-
-    expect(dropped.length).toBeGreaterThan(0);
-    for (const name of dropped) expect(created).toContain(name);
-
-    const functions = stmts
+    const functions = migrationStmts
       .filter((s) => s.startsWith("drop function"))
       .map((s) => s.replace("drop function if exists ", "").split("(")[0]);
     expect(functions).toEqual(["public.receipt_images_due_for_purge"]);
     for (const fn of functions) {
-      expect(stmts.some((s) => s.startsWith(`create function ${fn}(`))).toBe(true);
+      expect(migrationStmts.some((s) => s.startsWith(`create function ${fn}(`))).toBe(
+        true
+      );
     }
   });
 
   // Everything removed is removed conditionally, so a first run against a
   // project that has none of these objects yet does not fail on the way in.
   it("guards every removal with if exists", () => {
-    for (const s of stmts.filter((x) => x.startsWith("drop "))) {
+    for (const s of migrationStmts.filter((x) => x.startsWith("drop "))) {
+      expect(s).toContain("if exists");
+    }
+  });
+
+  it("writes to no table — the only write in the pair is the bucket row in storage-policies.sql", () => {
+    const writes = migrationStmts.filter(
+      (s) => s.startsWith("insert into") || s.startsWith("update ")
+    );
+    expect(writes).toHaveLength(0);
+  });
+
+  it("creates its index concurrently-safely and idempotently", () => {
+    expect(migrationSql).toContain(
+      "create index if not exists idx_receipts_image_retention"
+    );
+  });
+});
+
+describe("storage-policies.sql removes nothing it does not immediately recreate", () => {
+  it("every dropped policy is recreated", () => {
+    const dropped = policiesStmts
+      .filter((s) => s.startsWith("drop policy if exists"))
+      .map((s) => s.match(/"([^"]+)"/)![1]);
+    const created = policiesStmts
+      .filter((s) => s.startsWith("create policy"))
+      .map((s) => s.match(/"([^"]+)"/)![1]);
+
+    expect(dropped.length).toBeGreaterThan(0);
+    for (const name of dropped) expect(created).toContain(name);
+  });
+
+  it("guards every removal with if exists", () => {
+    for (const s of policiesStmts.filter((x) => x.startsWith("drop "))) {
       expect(s).toContain("if exists");
     }
   });
 
   it("writes to exactly one table, and that table is the bucket registry", () => {
-    const writes = stmts.filter(
+    const writes = policiesStmts.filter(
       (s) => s.startsWith("insert into") || s.startsWith("update ")
     );
 
     expect(writes).toHaveLength(1);
     expect(writes[0].startsWith("insert into storage.buckets")).toBe(true);
-  });
-
-  it("creates its index concurrently-safely and idempotently", () => {
-    expect(sql).toContain("create index if not exists idx_receipts_image_retention");
   });
 });
