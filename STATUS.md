@@ -1,18 +1,19 @@
 # Agent status
 
-Updated 2026-08-20 23:56 UTC · regenerated on every task completion.
+Updated 2026-08-21 00:01 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $107.56 | $125.00 | ████████░░ 86% |
+| open-tab | $108.28 | $125.00 | ████████░░ 86% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-20T22:35:12Z | 1 |
+| reviewer | open-tab | 2026-08-21T00:00:56Z | 1 |
 
 ## Tasks
 
@@ -53,7 +54,7 @@ Updated 2026-08-20 23:56 UTC · regenerated on every task completion.
 | `OT-132` | done | a parse outage is invisible to the user — no message on any non-429 failure — null | builder |
 | `OT-133` | done | a late claim is destroyed by the item re-mint when the claimer IS in the payload — null | builder-deep |
 | `OT-134` | done | a transient gemini outage permanently burns a receipt's only parse — no retry affordance — null | builder-deep |
-| `OT-135` | **blocked** | migrate receipt parser to gemini-2.5-flash-lite with schema enforced as config — >- | builder |
+| `OT-135` | done | migrate receipt parser to gemini-2.5-flash-lite with schema enforced as config — null | builder |
 | `OT-136` | running | arithmetic validation on parsed receipts, money as integer cents end to end — null | builder-deep |
 | `OT-137` | done | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
 | `OT-138` | **blocked** | three live fail-opens in parallel-cap.sh let an uncapped dispatch through — >- | builder-deep |
@@ -64,13 +65,6 @@ Updated 2026-08-20 23:56 UTC · regenerated on every task completion.
 ## Recent activity
 
 ```
-2026-08-20T23:36:04Z  open-tab  SubagentStop  
-2026-08-20T23:36:04Z  open-tab  SubagentStop  
-2026-08-20T23:36:07Z  open-tab  SubagentStop  
-2026-08-20T23:36:07Z  open-tab  SubagentStop  
-2026-08-20T23:36:07Z  open-tab  SubagentStop  
-2026-08-20T23:36:07Z  open-tab  SubagentStop  
-2026-08-20T23:36:07Z  open-tab  SubagentStop  
 2026-08-20T23:36:07Z  open-tab  SubagentStop  
 2026-08-20T23:36:08Z  open-tab  SubagentStop  
 2026-08-20T23:36:08Z  open-tab  SubagentStop  
@@ -84,6 +78,13 @@ Updated 2026-08-20 23:56 UTC · regenerated on every task completion.
 2026-08-20T23:56:20Z  open-tab  SubagentStop  
 2026-08-20T23:56:20Z  open-tab  SubagentStop  
 2026-08-20T23:56:20Z  open-tab  SubagentStop  
+2026-08-21T00:00:56Z  open-tab  SubagentStart  reviewer
+2026-08-21T00:01:27Z  open-tab  SubagentStop  
+2026-08-21T00:01:27Z  open-tab  SubagentStop  
+2026-08-21T00:01:27Z  open-tab  SubagentStop  
+2026-08-21T00:01:27Z  open-tab  SubagentStop  
+2026-08-21T00:01:27Z  open-tab  SubagentStop  
+2026-08-21T00:01:27Z  open-tab  SubagentStop  
 ```
 
 ---
