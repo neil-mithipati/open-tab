@@ -27,8 +27,10 @@ const bob: FlowParticipant = {
   isOwner: false,
 };
 
-const burger: EditableItem = { clientId: "item-1", name: "Burger", price: 12.0, quantity: 1 };
-const fries: EditableItem = { clientId: "item-2", name: "Fries", price: 8.0, quantity: 1 };
+// Integer cents throughout — see src/lib/money.ts. The dollar figures in the
+// comments are what each cent value means.
+const burger: EditableItem = { clientId: "item-1", name: "Burger", price: 1200, quantity: 1 };
+const fries: EditableItem = { clientId: "item-2", name: "Fries", price: 800, quantity: 1 };
 
 // ─── computeSharedClaimCharges ───────────────────────────────────────────────
 
@@ -38,8 +40,8 @@ describe("computeSharedClaimCharges", () => {
     const charges = computeSharedClaimCharges(
       [burger, fries], assignments, [owner, alice, bob], 0, 0, "me", "Test", null
     );
-    expect(charges.find((c) => c.participant.clientId === "alice")?.amount).toBe(12);
-    expect(charges.find((c) => c.participant.clientId === "bob")?.amount).toBe(8);
+    expect(charges.find((c) => c.participant.clientId === "alice")?.amountCents).toBe(1200);
+    expect(charges.find((c) => c.participant.clientId === "bob")?.amountCents).toBe(800);
   });
 
   it("splits unclaimed items evenly across ALL participants, including the owner", () => {
@@ -52,20 +54,20 @@ describe("computeSharedClaimCharges", () => {
     const a = charges.find((c) => c.participant.clientId === "alice")!;
     const b = charges.find((c) => c.participant.clientId === "bob")!;
     // alice: $12 claimed + $2.667 unclaimed share = $14.67
-    expect(a.amount).toBeCloseTo(14.67, 2);
+    expect(a.amountCents).toBe(1467);
     // bob: $0 claimed + $2.667 unclaimed share. Exact 1/3 shares of $8 are
     // $2.667, $2.667, $2.667 (owner, alice, bob) summing to $8.00; the owner
     // and alice absorb the two leftover cents (largest-remainder allocation,
     // ties broken by participant order), leaving bob at the floored $2.66 so
     // the three shares sum exactly instead of drifting a cent over $8.00.
-    expect(b.amount).toBeCloseTo(2.66, 2);
+    expect(b.amountCents).toBe(266);
   });
 
   it("applies tax/tip proportionally on top of claimed + unclaimed shares", () => {
     // subtotal=20, tax=2 (10%), tip=4 (20%) → 1.3 multiplier.
     const assignments = { "item-1": ["alice"], "item-2": [] };
     const charges = computeSharedClaimCharges(
-      [burger, fries], assignments, [owner, alice, bob], 2, 4, "me", "Test", null
+      [burger, fries], assignments, [owner, alice, bob], 200, 400, "me", "Test", null
     );
     const a = charges.find((c) => c.participant.clientId === "alice")!;
     const b = charges.find((c) => c.participant.clientId === "bob")!;
@@ -73,8 +75,8 @@ describe("computeSharedClaimCharges", () => {
     // floors to $3.46 — the owner absorbs the leftover cent (see the
     // largest-remainder note above) so the three shares sum exactly to
     // $26.00 instead of overcollecting by a cent.
-    expect(a.amount).toBeCloseTo(19.07, 2);
-    expect(b.amount).toBeCloseTo(3.46, 2);
+    expect(a.amountCents).toBe(1907);
+    expect(b.amountCents).toBe(346);
   });
 
   it("splits a shared item equally between its claimers", () => {
@@ -89,8 +91,8 @@ describe("computeSharedClaimCharges", () => {
     // the leftover cent from the $8/3 unclaimed split, so only one of the
     // two non-owners picks up the remaining leftover cent — alice here,
     // by participant order — leaving bob at the floored $8.66.
-    expect(a.amount).toBeCloseTo(8.67, 2);
-    expect(b.amount).toBeCloseTo(8.66, 2);
+    expect(a.amountCents).toBe(867);
+    expect(b.amountCents).toBe(866);
   });
 
   it("divides a fully-unclaimed bill evenly among non-owners (owner absorbs own share)", () => {
@@ -102,8 +104,8 @@ describe("computeSharedClaimCharges", () => {
     // the two leftover cents (largest-remainder allocation, ties broken by
     // participant order), so alice is $6.67 and bob is the floored $6.66 —
     // the three shares now sum exactly to $20.00 instead of $20.01.
-    expect(charges.find((c) => c.participant.clientId === "alice")?.amount).toBeCloseTo(6.67, 2);
-    expect(charges.find((c) => c.participant.clientId === "bob")?.amount).toBeCloseTo(6.66, 2);
+    expect(charges.find((c) => c.participant.clientId === "alice")?.amountCents).toBe(667);
+    expect(charges.find((c) => c.participant.clientId === "bob")?.amountCents).toBe(666);
   });
 
   it("excludes the owner from the returned charges", () => {
@@ -148,15 +150,15 @@ describe("computeSharedClaimCharges", () => {
     "all-friend, fully-unclaimed charges sum exactly to the total for %i people",
     (n) => {
       const participants = allFriends(n);
-      const item: EditableItem = { clientId: "item-1", name: "Tab", price: 116.71, quantity: 1 };
+      const item: EditableItem = { clientId: "item-1", name: "Tab", price: 11671, quantity: 1 };
       const assignments: Record<string, string[]> = { "item-1": [] }; // fully unclaimed
-      const tax = 8.5;
-      const tip = 15.0;
+      const tax = 850;
+      const tip = 1500;
       const charges = computeSharedClaimCharges(
         [item], assignments, participants, tax, tip, "me", "Test", null
       );
-      const grandTotalCents = Math.round((116.71 + tax + tip) * 100);
-      const chargeCents = charges.map((c) => Math.round(c.amount * 100));
+      const grandTotalCents = 11671 + tax + tip;
+      const chargeCents = charges.map((c) => c.amountCents);
       expect(chargeCents.reduce((sum, c) => sum + c, 0)).toBe(grandTotalCents);
       expect(Math.max(...chargeCents) - Math.min(...chargeCents)).toBeLessThanOrEqual(1);
     }

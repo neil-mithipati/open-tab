@@ -14,6 +14,7 @@ import {
 import { buildTabUrl } from "@/lib/qr/inviteUrl";
 import { isClaimJoinRateLimited } from "@/lib/rateLimit";
 import type { SharedReceipt, EditableItem, FlowParticipant } from "@/types";
+import { fromCents, toCents } from "@/lib/money";
 
 // ===========================================================================
 // Public claim actions — no auth. Access is gated entirely by the share_token,
@@ -421,12 +422,13 @@ export async function closeClaiming(
   }
 
   // Map DB rows into the shapes computeSharedClaimCharges expects, using the
-  // DB id as the clientId.
+  // DB id as the clientId. numeric(10,2) dollars in, integer cents out — the
+  // arithmetic that decides what somebody is charged never sees a float.
   const flowItems: EditableItem[] = (items ?? []).map((it) => ({
     clientId: it.id,
     dbId: it.id,
     name: it.name,
-    price: it.price,
+    price: toCents(it.price),
     quantity: it.quantity,
   }));
   const flowParticipants: FlowParticipant[] = (participants ?? []).map((p) => ({
@@ -449,8 +451,8 @@ export async function closeClaiming(
     flowItems,
     assignments,
     flowParticipants,
-    receipt.tax ?? 0,
-    receipt.tip ?? 0,
+    toCents(receipt.tax ?? 0),
+    toCents(receipt.tip ?? 0),
     ownerVenmo,
     receipt.merchant_name,
     receipt.date_of_receipt
@@ -459,12 +461,13 @@ export async function closeClaiming(
   // Replace any prior charges, then insert fresh ones.
   await service.from("charges").delete().eq("receipt_id", receiptId);
   const chargeRows = computed
-    .filter((c) => c.amount > 0 && c.participant.dbId)
+    .filter((c) => c.amountCents > 0 && c.participant.dbId)
     .map((c) => ({
       receipt_id: receiptId,
       from_user_id: receipt.created_by,
       to_participant_id: c.participant.dbId!,
-      amount: c.amount,
+      // cents → dollars, once, on the way into numeric(10,2).
+      amount: fromCents(c.amountCents),
       venmo_link: c.venmoLink,
       paid_at: null,
     }));

@@ -8,6 +8,7 @@ export interface Profile {
   updated_at: string;
 }
 
+// numeric(10,2) columns — dollars, not cents. See the note further down.
 export interface Receipt {
   id: string;
   created_by: string;
@@ -25,6 +26,7 @@ export interface Receipt {
   created_at: string;
 }
 
+// numeric(10,2) column — `price` is dollars here, unlike ParsedItem below.
 export interface ReceiptItem {
   id: string;
   receipt_id: string;
@@ -59,6 +61,7 @@ export interface Friendship {
   created_at: string;
 }
 
+// numeric(10,2) column — `amount` is dollars here, unlike ComputedCharge below.
 export interface Charge {
   id: string;
   receipt_id: string;
@@ -71,18 +74,42 @@ export interface Charge {
 }
 
 // Client-side flow types
+// ===========================================================================
+// MONEY UNITS. Read this before touching a number below.
+//
+// The row interfaces above (Receipt, ReceiptItem, Charge, SharedReceipt) mirror
+// numeric(10,2) columns, so their money is DOLLARS. That is the only place
+// dollars are allowed to live.
+//
+// Everything from here down — the parse result, the editing flow, the computed
+// charges — is INTEGER CENTS. See src/lib/money.ts for the rounding rule and
+// the conversion helpers; toCents at every read out of the database or off the
+// model, fromCents at every write back into it.
+//
+// The cent-denominated fields keep their old names (`price`, `subtotal`,
+// `total`, …) rather than gaining a `_cents` suffix because they are also the
+// wire shape of /api/receipts/parse, which CaptureStep copies straight into
+// the flow state field for field. Renaming them would have meant editing that
+// component, which is owned by another change in flight. The unit is the one
+// documented here, not the one the name suggests.
+// ===========================================================================
 export interface ParsedReceipt {
   merchant_name: string | null;
   date_of_receipt: string | null;
   items: ParsedItem[];
+  /** Integer cents. */
   subtotal: number | null;
+  /** Integer cents. */
   tax: number | null;
+  /** Integer cents. */
   tip: number | null;
+  /** Integer cents. */
   total: number | null;
 }
 
 export interface ParsedItem {
   name: string;
+  /** Unit price, integer cents. Signed — a discount line is negative. */
   price: number;
   quantity: number;
 }
@@ -120,7 +147,8 @@ export interface FriendGroup {
 
 export interface ComputedCharge {
   participant: FlowParticipant;
-  amount: number;
+  /** Integer cents. */
+  amountCents: number;
   venmoLink: string;
   venmoAppLink: string;
 }

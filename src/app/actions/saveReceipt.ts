@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { z } from "zod";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { userReceiptsTag } from "@/lib/cacheTags";
+import { fromCents, fromCentsOrNull } from "@/lib/money";
 
 // ===========================================================================
 // Atomic save for the owner's own receipt. The browser used to delete every
@@ -12,6 +14,13 @@ import { userReceiptsTag } from "@/lib/cacheTags";
 //
 // Computation stays on the client — this only maps the flow's camelCase,
 // clientId-keyed state onto the jsonb payloads the function expects.
+//
+// Money arrives as INTEGER CENTS and is converted to dollars exactly once, at
+// the point it is written into the jsonb payload for a numeric(10,2) column.
+// Nothing in this file does arithmetic on a dollar figure, and the schema
+// below refuses a caller that hands it one: a fractional "cent" is a caller
+// that has already rounded, and this is the last place that can be caught
+// before it becomes a Venmo charge.
 // ===========================================================================
 
 // SQLSTATE save_receipt_state raises when the participant set changed under
@@ -33,7 +42,8 @@ export interface SaveReceiptItem {
    */
   dbId?: string | null;
   name: string;
-  price: number;
+  /** Unit price, integer cents. */
+  priceCents: number;
   quantity: number;
 }
 
@@ -47,19 +57,21 @@ export interface SaveReceiptParticipant {
 
 export interface SaveReceiptCharge {
   participantClientId: string;
-  amount: number;
+  /** Integer cents. */
+  amountCents: number;
   venmoLink: string | null;
   paidAt: string | null;
 }
 
+/** All money here is integer cents. */
 export interface SaveReceiptFields {
   status?: "open" | "shared" | "closed";
   splitMode?: "equal" | "by_item";
   merchantName?: string | null;
-  subtotal?: number | null;
-  tax?: number | null;
-  tip?: number | null;
-  total?: number | null;
+  subtotalCents?: number | null;
+  taxCents?: number | null;
+  tipCents?: number | null;
+  totalCents?: number | null;
 }
 
 export interface SaveReceiptInput {
@@ -108,10 +120,11 @@ function receiptFields(fields: SaveReceiptFields): Record<string, unknown> {
   if (fields.status !== undefined) out.status = fields.status;
   if (fields.splitMode !== undefined) out.split_mode = fields.splitMode;
   if (fields.merchantName !== undefined) out.merchant_name = fields.merchantName;
-  if (fields.subtotal !== undefined) out.subtotal = fields.subtotal;
-  if (fields.tax !== undefined) out.tax = fields.tax;
-  if (fields.tip !== undefined) out.tip = fields.tip;
-  if (fields.total !== undefined) out.total = fields.total;
+  // cents → dollars, once, on the way into numeric(10,2).
+  if (fields.subtotalCents !== undefined) out.subtotal = fromCentsOrNull(fields.subtotalCents);
+  if (fields.taxCents !== undefined) out.tax = fromCentsOrNull(fields.taxCents);
+  if (fields.tipCents !== undefined) out.tip = fromCentsOrNull(fields.tipCents);
+  if (fields.totalCents !== undefined) out.total = fromCentsOrNull(fields.totalCents);
   return out;
 }
 
@@ -166,7 +179,7 @@ function buildSavePayload(input: SaveReceiptInput): RpcPayload {
     if (!target) continue;
     p_charges.push({
       participant_client_id: target,
-      amount: c.amount,
+      amount: fromCents(c.amountCents),
       venmo_link: c.venmoLink,
       paid_at: c.paidAt,
     });
@@ -186,7 +199,7 @@ function buildSavePayload(input: SaveReceiptInput): RpcPayload {
       client_id: it.clientId,
       ...(dbId ? { id: dbId } : {}),
       name: it.name,
-      price: it.price,
+      price: fromCents(it.priceCents),
       quantity: it.quantity,
       sort_order: i,
     };
@@ -202,6 +215,49 @@ function buildSavePayload(input: SaveReceiptInput): RpcPayload {
   };
 }
 
+// The last guard before money reaches the database. Every amount must be a
+// whole number of cents: anything fractional means a caller did its own
+// dollar arithmetic and rounded on the way, which is exactly the drift this
+// change removed. Shape only — it does not second-guess the user's numbers,
+// which are theirs to set. The arithmetic check on a MODEL's numbers lives in
+// src/lib/reconcile.ts and runs at parse time.
+const cents = z.int();
+const centsOrNull = z.int().nullable();
+
+const saveInputSchema = z.object({
+  receiptId: z.string().min(1),
+  items: z.array(
+    z.object({
+      clientId: z.string().min(1),
+      dbId: z.string().nullish(),
+      name: z.string(),
+      priceCents: cents,
+      quantity: z.int().min(1),
+    })
+  ),
+  participants: z.array(z.object({ clientId: z.string().min(1) }).loose()),
+  assignments: z.record(z.string(), z.array(z.string())),
+  charges: z.array(
+    z.object({
+      participantClientId: z.string().min(1),
+      // A charge is what somebody is actually asked to pay. Negative is not a
+      // request for money and Venmo cannot express it.
+      amountCents: cents.min(0),
+      venmoLink: z.string().nullable(),
+      paidAt: z.string().nullable(),
+    })
+  ),
+  receipt: z.object({
+    status: z.enum(["open", "shared", "closed"]).optional(),
+    splitMode: z.enum(["equal", "by_item"]).optional(),
+    merchantName: z.string().nullish(),
+    subtotalCents: centsOrNull.optional(),
+    taxCents: centsOrNull.optional(),
+    tipCents: centsOrNull.optional(),
+    totalCents: centsOrNull.optional(),
+  }),
+});
+
 export async function saveReceiptState(
   input: SaveReceiptInput
 ): Promise<{ error?: string }> {
@@ -213,6 +269,16 @@ export async function saveReceiptState(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
+
+  const valid = saveInputSchema.safeParse(input);
+  if (!valid.success) {
+    console.error(
+      `[saveReceipt] refusing to write receipt ${input.receiptId}: ${valid.error.issues
+        .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
+        .join("; ")}`
+    );
+    return { error: "Those amounts don't look right. Check them and try again." };
+  }
 
   const { error } = await supabase.rpc(
     "save_receipt_state",
