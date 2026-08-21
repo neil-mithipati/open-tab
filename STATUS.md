@@ -1,16 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 14:13 UTC · regenerated on every task completion.
+Updated 2026-08-21 14:24 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $100.02 | $200.00 | █████░░░░░ 50% |
+| open-tab | $100.5 | $200.00 | █████░░░░░ 50% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| 🟢 builder-light | open-tab | 2026-08-21T14:24:18Z | 1 |
 
 ## Blocked — needs your input
 
@@ -11433,23 +11435,50 @@ fixtures still exercise the fallback path.
 - [ ] OT-151's ten transcript-only fixtures still pass
 
 </details>
+<details><summary>🟢 <code>OT-158</code> in-progress — remove the Sentry wizard's example page and route before launch · 0/6 criteria</summary>
+
+- app: open-tab
+- tier: builder-light
+- review: full
+- attempts: 0
+- branch: task/OT-158
+- worktree: ../wt-OT-158
+- files:
+-   - src/app/sentry-example-page/page.tsx
+-   - src/app/api/sentry-example-api/route.ts
+- blocked_reason: null
+
+
+## What
+
+The Sentry setup wizard (commit e0e9336) scaffolded a demo page and a demo API
+route that throw on purpose so you can confirm errors reach Sentry. Both are
+publicly routable. They must not ship.
+
+Delete both files, and their parent directories if the deletion leaves those
+directories empty.
+
+Do not touch anything else the wizard added — `next.config.ts`,
+`src/instrumentation.ts`, `src/instrumentation-client.ts`,
+`sentry.server.config.ts` and `sentry.edge.config.ts` are all correct and stay.
+
+Nothing in the app links to either file; confirm that with a grep for
+`sentry-example` across `src/` before finishing, and report what it returns.
+
+## Acceptance criteria
+
+- [ ] src/app/sentry-example-page/page.tsx is deleted
+- [ ] src/app/api/sentry-example-api/route.ts is deleted
+- [ ] both parent directories are gone, not left empty
+- [ ] grep for `sentry-example` across src/ returns nothing
+- [ ] no other file is modified
+- [ ] typecheck, lint and tests all pass
+
+</details>
 
 ## Recent activity
 
 ```
-2026-08-21T14:11:07Z  open-tab  SubagentStop  
-2026-08-21T14:11:07Z  open-tab  SubagentStop  
-2026-08-21T14:11:10Z  open-tab  SubagentStop  
-2026-08-21T14:11:10Z  open-tab  SubagentStop  
-2026-08-21T14:11:10Z  open-tab  SubagentStop  
-2026-08-21T14:11:10Z  open-tab  SubagentStop  
-2026-08-21T14:11:10Z  open-tab  SubagentStop  
-2026-08-21T14:11:10Z  open-tab  SubagentStop  
-2026-08-21T14:11:13Z  open-tab  SubagentStop  
-2026-08-21T14:11:13Z  open-tab  SubagentStop  
-2026-08-21T14:11:13Z  open-tab  SubagentStop  
-2026-08-21T14:11:13Z  open-tab  SubagentStop  
-2026-08-21T14:11:13Z  open-tab  SubagentStop  
 2026-08-21T14:11:13Z  open-tab  SubagentStop  
 2026-08-21T14:13:27Z  open-tab  SubagentStop  
 2026-08-21T14:13:27Z  open-tab  SubagentStop  
@@ -11457,6 +11486,19 @@ fixtures still exercise the fallback path.
 2026-08-21T14:13:27Z  open-tab  SubagentStop  
 2026-08-21T14:13:27Z  open-tab  SubagentStop  
 2026-08-21T14:13:27Z  open-tab  SubagentStop  
+2026-08-21T14:13:32Z  open-tab  SubagentStop  
+2026-08-21T14:13:32Z  open-tab  SubagentStop  
+2026-08-21T14:13:32Z  open-tab  SubagentStop  
+2026-08-21T14:13:32Z  open-tab  SubagentStop  
+2026-08-21T14:13:32Z  open-tab  SubagentStop  
+2026-08-21T14:13:32Z  open-tab  SubagentStop  
+2026-08-21T14:24:18Z  open-tab  SubagentStart  builder-light
+2026-08-21T14:24:50Z  open-tab  SubagentStop  
+2026-08-21T14:24:50Z  open-tab  SubagentStop  
+2026-08-21T14:24:50Z  open-tab  SubagentStop  
+2026-08-21T14:24:50Z  open-tab  SubagentStop  
+2026-08-21T14:24:50Z  open-tab  SubagentStop  
+2026-08-21T14:24:50Z  open-tab  SubagentStop  
 ```
 
 ---
