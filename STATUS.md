@@ -1,18 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 11:48 UTC · regenerated on every task completion.
+Updated 2026-08-21 11:49 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $80.14 | $200.00 | ████░░░░░░ 40% |
+| open-tab | $81.16 | $200.00 | ████░░░░░░ 40% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 builder-deep | open-tab | 2026-08-21T11:33:54Z | 2 |
+| 🟢 builder-deep | open-tab | 2026-08-21T11:33:47Z | 1 |
 
 ## Blocked — needs your input
 
@@ -11226,31 +11226,78 @@ stderr output from the hook. Nothing was in-progress in the ledger at the
 time, so the trigger was not unfinished granted work — it was the marker
 being missed. Confirms OT-151's matcher fix did not close it.
 
+## Verification
+
+Cause, from real session JSONL (not fixtures):
+
+- Replayed the merged OT-151 hook against the three post-fix live blocks, using
+  the real transcripts truncated to the marker entry — the exact file state at
+  hook time if the file were current:
+  11d96a11 line 35, 11d96a11 line 115, ea9aa9f0 line 1198. All three exit 0.
+  The matcher is right; the bytes it read live were not the bytes on disk now.
+- 32 transcripts in ~/.claude/projects/-Users-neil-Documents-build-claude-open-tab
+  scanned for write ordering: every long session has out-of-order entries
+  (ea9aa9f0: 33 entries, worst 27.3s; 3a3c2aea: 42, worst 35.9s). The JSONL is
+  flushed asynchronously, so its tail is not "what was just said".
+- CLI binary 2.1.238, offset 296927674: the Stop payload includes
+  last_assistant_message, built in memory from the message just produced.
+  Captured a real Stop payload from a live `claude -p` run and confirmed the
+  field is present and holds the reply text verbatim.
+
+Live behaviour, real harness, fixed hook wired as the Stop hook, sandbox project
+dir holding a copy of the real ledger (3 armed todo/in-progress tasks):
+
+- reply ending in the marker             -> hook_exit 0, one stop, no continuation
+- marker mentioned mid-reply, text after -> hook_exit 2, harness forced a
+                                            continuation (second stop arrived
+                                            with stop_hook_active=true)
+- no marker, unfinished ledger           -> hook_exit 2, continuation forced
+
+Fixture suite, 15 cases, all pass on the fixed hook (10 of them are OT-151's,
+driven by transcript only so they exercise the fallback path): marker last line;
+trailing whitespace and blank lines; empty trailing text block; mid-reply
+mention; marker in a fenced block; marker then blank line then prose; no marker
+with unfinished ledger; empty, garbage and nonexistent transcripts; plus four
+new payload cases including a stale transcript with the marker only in the
+payload. The same suite run against the merged hook fails exactly the cases that
+model the live bug (11, 13) and also case 15, where a stale marker left in the
+transcript wrongly lets a no-marker reply stop.
+
+Gates from ../wt-OT-155: typecheck pass, lint pass (1 pre-existing warning, 0
+errors), tests pass (37 files, 653 tests).
+
+Builder commit: 962ce18 on task/OT-155.
+
+Re-run scripts (ephemeral scratchpad):
+/private/tmp/claude-501/-Users-neil-Documents-build-claude-open-tab/11d96a11-d512-4ed0-8453-53883e99bfa3/scratchpad/fixtures.sh
+(set HOOK= to compare hooks), .../scratchpad/livetest/run.sh,
+.../scratchpad/monotonic.py, .../scratchpad/runhook.sh
+
 </details>
 
 ## Recent activity
 
 ```
-2026-08-21T11:47:15Z  open-tab  SubagentStop  
-2026-08-21T11:47:15Z  open-tab  SubagentStop  
-2026-08-21T11:47:46Z  open-tab  SubagentStop  
-2026-08-21T11:47:46Z  open-tab  SubagentStop  
-2026-08-21T11:47:46Z  open-tab  SubagentStop  
-2026-08-21T11:47:46Z  open-tab  SubagentStop  
-2026-08-21T11:47:46Z  open-tab  SubagentStop  
-2026-08-21T11:47:46Z  open-tab  SubagentStop  
-2026-08-21T11:47:48Z  open-tab  SubagentStop  
-2026-08-21T11:47:48Z  open-tab  SubagentStop  
-2026-08-21T11:47:48Z  open-tab  SubagentStop  
-2026-08-21T11:47:48Z  open-tab  SubagentStop  
-2026-08-21T11:47:48Z  open-tab  SubagentStop  
-2026-08-21T11:47:48Z  open-tab  SubagentStop  
 2026-08-21T11:48:18Z  open-tab  SubagentStop  
-2026-08-21T11:48:18Z  open-tab  SubagentStop  
-2026-08-21T11:48:18Z  open-tab  SubagentStop  
-2026-08-21T11:48:18Z  open-tab  SubagentStop  
-2026-08-21T11:48:18Z  open-tab  SubagentStop  
-2026-08-21T11:48:18Z  open-tab  SubagentStop  
+2026-08-21T11:48:20Z  open-tab  SubagentStop  
+2026-08-21T11:48:20Z  open-tab  SubagentStop  
+2026-08-21T11:48:20Z  open-tab  SubagentStop  
+2026-08-21T11:48:20Z  open-tab  SubagentStop  
+2026-08-21T11:48:20Z  open-tab  SubagentStop  
+2026-08-21T11:48:20Z  open-tab  SubagentStop  
+2026-08-21T11:48:43Z  open-tab  SubagentStop  builder-deep
+2026-08-21T11:48:51Z  open-tab  SubagentStop  
+2026-08-21T11:48:51Z  open-tab  SubagentStop  
+2026-08-21T11:48:51Z  open-tab  SubagentStop  
+2026-08-21T11:48:51Z  open-tab  SubagentStop  
+2026-08-21T11:48:51Z  open-tab  SubagentStop  
+2026-08-21T11:48:51Z  open-tab  SubagentStop  
+2026-08-21T11:49:23Z  open-tab  SubagentStop  
+2026-08-21T11:49:23Z  open-tab  SubagentStop  
+2026-08-21T11:49:23Z  open-tab  SubagentStop  
+2026-08-21T11:49:23Z  open-tab  SubagentStop  
+2026-08-21T11:49:23Z  open-tab  SubagentStop  
+2026-08-21T11:49:23Z  open-tab  SubagentStop  
 ```
 
 ---
