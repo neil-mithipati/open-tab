@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 14:24 UTC · regenerated on every task completion.
+Updated 2026-08-21 14:29 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $100.5 | $200.00 | █████░░░░░ 50% |
+| open-tab | $100.91 | $200.00 | █████░░░░░ 50% |
 
 ## Agents
 
@@ -11435,7 +11435,7 @@ fixtures still exercise the fallback path.
 - [ ] OT-151's ten transcript-only fixtures still pass
 
 </details>
-<details><summary>🟢 <code>OT-158</code> in-progress — remove the Sentry wizard's example page and route before launch · 0/6 criteria</summary>
+<details><summary>✅ <code>OT-158</code> done — remove the Sentry wizard's example page and route before launch · 6/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-light
@@ -11467,24 +11467,25 @@ Nothing in the app links to either file; confirm that with a grep for
 
 ## Acceptance criteria
 
-- [ ] src/app/sentry-example-page/page.tsx is deleted
-- [ ] src/app/api/sentry-example-api/route.ts is deleted
-- [ ] both parent directories are gone, not left empty
-- [ ] grep for `sentry-example` across src/ returns nothing
-- [ ] no other file is modified
-- [ ] typecheck, lint and tests all pass
+- [x] src/app/sentry-example-page/page.tsx is deleted
+- [x] src/app/api/sentry-example-api/route.ts is deleted
+- [x] both parent directories are gone, not left empty
+- [x] grep for `sentry-example` across src/ returns nothing
+- [x] no other file is modified
+- [x] typecheck, lint and tests all pass
+
+## Note
+
+The builder committed cleanly (fc664dc) but died before emitting its result
+block. Criteria verified independently from the branch: diff is exactly the two
+deletions, both parent directories gone, no `sentry-example` reference left in
+src/, worktree clean, gates green on the branch.
 
 </details>
 
 ## Recent activity
 
 ```
-2026-08-21T14:11:13Z  open-tab  SubagentStop  
-2026-08-21T14:13:27Z  open-tab  SubagentStop  
-2026-08-21T14:13:27Z  open-tab  SubagentStop  
-2026-08-21T14:13:27Z  open-tab  SubagentStop  
-2026-08-21T14:13:27Z  open-tab  SubagentStop  
-2026-08-21T14:13:27Z  open-tab  SubagentStop  
 2026-08-21T14:13:27Z  open-tab  SubagentStop  
 2026-08-21T14:13:32Z  open-tab  SubagentStop  
 2026-08-21T14:13:32Z  open-tab  SubagentStop  
@@ -11499,6 +11500,12 @@ Nothing in the app links to either file; confirm that with a grep for
 2026-08-21T14:24:50Z  open-tab  SubagentStop  
 2026-08-21T14:24:50Z  open-tab  SubagentStop  
 2026-08-21T14:24:50Z  open-tab  SubagentStop  
+2026-08-21T14:29:28Z  open-tab  SubagentStop  
+2026-08-21T14:29:28Z  open-tab  SubagentStop  
+2026-08-21T14:29:28Z  open-tab  SubagentStop  
+2026-08-21T14:29:28Z  open-tab  SubagentStop  
+2026-08-21T14:29:28Z  open-tab  SubagentStop  
+2026-08-21T14:29:28Z  open-tab  SubagentStop  
 ```
 
 ---
