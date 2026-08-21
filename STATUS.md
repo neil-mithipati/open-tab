@@ -1,18 +1,25 @@
 # Agent status
 
-Updated 2026-08-21 05:50 UTC · regenerated on every task completion.
+Updated 2026-08-21 05:52 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $37.58 | $200.00 | █░░░░░░░░░ 18% |
+| open-tab | $38.63 | $200.00 | █░░░░░░░░░ 19% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 builder-deep | open-tab | 2026-08-21T05:45:01Z | 2 |
+| 🟢 builder-deep | open-tab | 2026-08-21T05:45:01Z | 1 |
+| 🟢 builder | open-tab | 2026-08-21T05:52:18Z | 1 |
+
+## Blocked — needs your input
+
+> [!CAUTION]
+> 🔴 **Blocked `OT-150`** — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.
+> 🔴 **Blocked `OT-152`** — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.
 
 ## Tasks
 
@@ -10362,7 +10369,7 @@ one file was correct.
 Gates: typecheck pass, lint pass, tests 653/653. Commit `07ca02c`.
 
 </details>
-<details><summary>🟢 <code>OT-150</code> in-progress — maintenance grant never activates for a dispatched subagent · 4/4 criteria</summary>
+<details><summary>🔴 <code>OT-150</code> blocked — maintenance grant never activates for a dispatched subagent · 4/4 criteria — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -10372,7 +10379,10 @@ Gates: typecheck pass, lint pass, tests 653/653. Commit `07ca02c`.
 - worktree: null
 - files:
 -   - .claude/hooks/protect-fleet.sh
-- blocked_reason: null
+- blocked_reason: >-
+-   fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent
+-   can install it: protect-fleet.sh is never-overridable in both guards, which
+-   is itself an acceptance criterion here. owner copies it in.
 
 
 ## The defect
@@ -10482,6 +10492,61 @@ reviewer's own note says splitting them means writing the same canonicalization
 twice and getting one copy wrong. One worktree, `../wt-OT-150`, satisfies both
 criteria sets; OT-152 is verified and closed from the same diff.
 
+
+## Fix written and verified — but no agent can install it, by design
+
+The builder wrote a complete replacement and proved it, then hit the wall this
+task is partly about: `protect-fleet.sh` is on the never-overridable list of
+BOTH guards, above the grant check. Write/Edit denies it; Bash denies any
+mutating command that mentions it. That non-overridability is itself an
+acceptance criterion here, so the correct outcome was to stop, not to find a
+way around it. It did not route around the denial. Good call.
+
+The brief was wrong, not the worker: the maintenance grant never covered this
+file and was never going to.
+
+**Artifact, preserved outside the agent scratchpad:**
+
+    /tmp/ot150-candidate.sh        the replacement hook, 169 lines
+    /tmp/ot150-run-cases.sh        the 53-case harness
+    /tmp/ot150-setup-fixtures.sh   builds the fixtures, all under /tmp
+
+**Measured, by execution:** the installed hook FAILS 17 of the 53 cases —
+reproducing every exploit recorded in OT-150 and OT-152. The candidate passes
+53/53.
+
+What it changes:
+
+- `canon_path()` resolves the target before any matching. Not `realpath`: that
+  fails on a path that does not exist yet, and `-m` is not portable. It walks up
+  to the deepest existing ancestor, `cd -P`s that, re-attaches the tail, then
+  folds `//`, `.` and `..` lexically. A first write to a brand-new hook file is
+  still matched and denied.
+- `maint_active()` drops the `wt-` segment scan and the string glob entirely. It
+  takes worktree roots from `git worktree list --porcelain`, canonicalizes them,
+  requires the canonical target to sit under one, excludes the main checkout,
+  and reads the grant through a canonicalized `--git-common-dir` so a relative
+  common-dir cannot be re-anchored through an attacker's symlink.
+- The `hit` matcher runs on the canonical path, and `*/bin/*` joins the
+  absolute-suffix list.
+- The grant-file and guard-hook deny moved OUT of `if [ -n "$hit" ]` and now
+  runs first, unconditionally — which is what made the doubled-slash bypass
+  possible.
+
+**One judgement call flagged by the builder:** `*/bin/*` denies Edit/Write to
+any path with a `bin/` component anywhere on disk, including `node_modules/.bin/`.
+No tracked file in this repo matches and package installs go through Bash, so
+the blast radius is nil here — but it is broader than "bin/ of a checkout", and
+narrowing it to repo roots would reopen the "another checkout's bin/" case.
+
+## Owner install, morning
+
+    cp /tmp/ot150-candidate.sh .claude/hooks/protect-fleet.sh
+    cp /tmp/ot150-candidate.sh ../agent-fleet-kit/.claude/hooks/protect-fleet.sh
+    bash /tmp/ot150-run-cases.sh .claude/hooks/protect-fleet.sh
+
+Expect 53/53. Then commit the kit copy, or the next `add-fleet` reverts it.
+
 </details>
 <details><summary>🟢 <code>OT-151</code> in-progress — the stop hook ignores the [awaiting owner] marker and forces continuation anyway · 0/5 criteria</summary>
 
@@ -10545,7 +10610,7 @@ Grant is live. Independent of OT-147 and OT-150: different file, no shared
 surface, so it runs in parallel with them.
 
 </details>
-<details><summary>🟢 <code>OT-152</code> in-progress — fleet-path matcher is bypassed by path spelling, no grant needed · 0/7 criteria</summary>
+<details><summary>🔴 <code>OT-152</code> blocked — fleet-path matcher is bypassed by path spelling, no grant needed · 0/7 criteria — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -10555,7 +10620,10 @@ surface, so it runs in parallel with them.
 - worktree: ../wt-OT-150
 - files:
 -   - .claude/hooks/protect-fleet.sh
-- blocked_reason: null
+- blocked_reason: >-
+-   fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent
+-   can install it: protect-fleet.sh is never-overridable in both guards, which
+-   is itself an acceptance criterion here. owner copies it in.
 
 
 ## Found by `reviewer-deep` while reviewing OT-150. Pre-existing, not introduced there.
@@ -10599,31 +10667,86 @@ Same file, same root cause (matching on an uncanonicalized path). Dispatched as
 one builder-deep in `../wt-OT-150`. This task's criteria are reviewed from that
 same diff.
 
+
+## Fix written and verified — but no agent can install it, by design
+
+The builder wrote a complete replacement and proved it, then hit the wall this
+task is partly about: `protect-fleet.sh` is on the never-overridable list of
+BOTH guards, above the grant check. Write/Edit denies it; Bash denies any
+mutating command that mentions it. That non-overridability is itself an
+acceptance criterion here, so the correct outcome was to stop, not to find a
+way around it. It did not route around the denial. Good call.
+
+The brief was wrong, not the worker: the maintenance grant never covered this
+file and was never going to.
+
+**Artifact, preserved outside the agent scratchpad:**
+
+    /tmp/ot150-candidate.sh        the replacement hook, 169 lines
+    /tmp/ot150-run-cases.sh        the 53-case harness
+    /tmp/ot150-setup-fixtures.sh   builds the fixtures, all under /tmp
+
+**Measured, by execution:** the installed hook FAILS 17 of the 53 cases —
+reproducing every exploit recorded in OT-150 and OT-152. The candidate passes
+53/53.
+
+What it changes:
+
+- `canon_path()` resolves the target before any matching. Not `realpath`: that
+  fails on a path that does not exist yet, and `-m` is not portable. It walks up
+  to the deepest existing ancestor, `cd -P`s that, re-attaches the tail, then
+  folds `//`, `.` and `..` lexically. A first write to a brand-new hook file is
+  still matched and denied.
+- `maint_active()` drops the `wt-` segment scan and the string glob entirely. It
+  takes worktree roots from `git worktree list --porcelain`, canonicalizes them,
+  requires the canonical target to sit under one, excludes the main checkout,
+  and reads the grant through a canonicalized `--git-common-dir` so a relative
+  common-dir cannot be re-anchored through an attacker's symlink.
+- The `hit` matcher runs on the canonical path, and `*/bin/*` joins the
+  absolute-suffix list.
+- The grant-file and guard-hook deny moved OUT of `if [ -n "$hit" ]` and now
+  runs first, unconditionally — which is what made the doubled-slash bypass
+  possible.
+
+**One judgement call flagged by the builder:** `*/bin/*` denies Edit/Write to
+any path with a `bin/` component anywhere on disk, including `node_modules/.bin/`.
+No tracked file in this repo matches and package installs go through Bash, so
+the blast radius is nil here — but it is broader than "bin/ of a checkout", and
+narrowing it to repo roots would reopen the "another checkout's bin/" case.
+
+## Owner install, morning
+
+    cp /tmp/ot150-candidate.sh .claude/hooks/protect-fleet.sh
+    cp /tmp/ot150-candidate.sh ../agent-fleet-kit/.claude/hooks/protect-fleet.sh
+    bash /tmp/ot150-run-cases.sh .claude/hooks/protect-fleet.sh
+
+Expect 53/53. Then commit the kit copy, or the next `add-fleet` reverts it.
+
 </details>
 
 ## Recent activity
 
 ```
-2026-08-21T05:50:13Z  open-tab  SubagentStop  
-2026-08-21T05:50:13Z  open-tab  SubagentStop  
-2026-08-21T05:50:19Z  open-tab  SubagentStop  
-2026-08-21T05:50:19Z  open-tab  SubagentStop  
-2026-08-21T05:50:19Z  open-tab  SubagentStop  
-2026-08-21T05:50:19Z  open-tab  SubagentStop  
-2026-08-21T05:50:19Z  open-tab  SubagentStop  
-2026-08-21T05:50:19Z  open-tab  SubagentStop  
-2026-08-21T05:50:45Z  open-tab  SubagentStop  
-2026-08-21T05:50:45Z  open-tab  SubagentStop  
-2026-08-21T05:50:45Z  open-tab  SubagentStop  
-2026-08-21T05:50:45Z  open-tab  SubagentStop  
-2026-08-21T05:50:45Z  open-tab  SubagentStop  
-2026-08-21T05:50:45Z  open-tab  SubagentStop  
-2026-08-21T05:50:51Z  open-tab  SubagentStop  
-2026-08-21T05:50:51Z  open-tab  SubagentStop  
-2026-08-21T05:50:51Z  open-tab  SubagentStop  
-2026-08-21T05:50:51Z  open-tab  SubagentStop  
-2026-08-21T05:50:51Z  open-tab  SubagentStop  
-2026-08-21T05:50:51Z  open-tab  SubagentStop  
+2026-08-21T05:51:17Z  open-tab  SubagentStop  
+2026-08-21T05:51:17Z  open-tab  SubagentStop  
+2026-08-21T05:51:17Z  open-tab  SubagentStop  
+2026-08-21T05:51:17Z  open-tab  SubagentStop  
+2026-08-21T05:51:17Z  open-tab  SubagentStop  
+2026-08-21T05:51:17Z  open-tab  SubagentStop  
+2026-08-21T05:51:23Z  open-tab  SubagentStop  
+2026-08-21T05:51:23Z  open-tab  SubagentStop  
+2026-08-21T05:51:23Z  open-tab  SubagentStop  
+2026-08-21T05:51:23Z  open-tab  SubagentStop  
+2026-08-21T05:51:23Z  open-tab  SubagentStop  
+2026-08-21T05:51:23Z  open-tab  SubagentStop  
+2026-08-21T05:51:23Z  open-tab  SubagentStop  builder-deep
+2026-08-21T05:52:18Z  open-tab  SubagentStart  builder
+2026-08-21T05:52:18Z  open-tab  SubagentStop  
+2026-08-21T05:52:18Z  open-tab  SubagentStop  
+2026-08-21T05:52:18Z  open-tab  SubagentStop  
+2026-08-21T05:52:18Z  open-tab  SubagentStop  
+2026-08-21T05:52:18Z  open-tab  SubagentStop  
+2026-08-21T05:52:18Z  open-tab  SubagentStop  
 ```
 
 ---
