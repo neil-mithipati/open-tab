@@ -1,5 +1,58 @@
 # Deployment notes
 
+## Checking the live database against the repo (OT-145)
+
+    npm run check:drift
+
+Compares the linked Supabase project with this checkout and exits non-zero if
+they disagree. Three things:
+
+- every file in `supabase/migrations/` is recorded in
+  `supabase_migrations.schema_migrations`, and nothing is recorded there that
+  the repo does not have — both directions;
+- the policies on `storage.objects` match `supabase/storage-policies.sql`;
+- the `public` flag on every bucket the repo declares.
+
+**When to run it.** Before a deploy, after applying a migration, after
+touching anything in the dashboard's Storage UI, and any time a bug looks like
+"the code reads a column that isn't there." OT-142 found production ~14
+migrations behind with the migration history table completely empty; that was
+invisible until a migration happened to fail. This is the check that sees it.
+
+**Exit codes. The third one is the point:**
+
+| code | meaning |
+|---|---|
+| 0 | checked, live matches the repo |
+| 1 | checked, drift found — listed on stdout |
+| 2 | **could not check** — not linked, CLI missing, query failed. Nothing was verified. Not a pass. |
+
+**Prerequisites.** The Supabase CLI on `PATH` (or `SUPABASE_BIN` set to it),
+logged in with `supabase login`, and run from a checkout that has been linked
+with `supabase link`. A git worktree has no link of its own — `supabase/.temp/`
+is gitignored — so run this from the main checkout, not from `../wt-*`.
+
+**This is not a gate,** deliberately. Gates run inside worktrees with no
+network and no linked project; a required gate that needs a database would fail
+every task. `.claude/gates.json` is untouched.
+
+**It compares expressions, not names.** The dashboard appends its own suffix to
+every policy name (`receipt_images_delete_own 13hfyy5_0`), so a live name never
+equals a declared one. Both sides are parsed and rendered to a canonical form
+that ignores redundant parentheses, casts, a leading `public.` qualifier,
+keyword case, and the order of AND/OR operands — and nothing else. A policy is
+matched on (command, roles, permissive/restrictive, USING, WITH CHECK), one for
+one, so the extra `…_1` row the dashboard creates when two operations are
+ticked on one policy is reported as an undeclared live policy.
+
+**What has not been verified.** The comparison logic is unit-tested against
+fixtures, and the script's exit codes are tested end to end against a stub CLI
+(`src/__tests__/scripts/schemaDrift.test.ts`). It has never been run against a
+hosted project — that needs the owner. The one thing to confirm on the first
+real run is that `supabase db query --linked` returns rows in a shape the
+script recognises; if it does not, it exits **2** with "could not find a result
+set in the supabase CLI output", never 0.
+
 ## Applying the receipt-images storage policies (OT-143)
 
 `supabase/migrations/0026_receipt_image_storage_lockdown.sql` used to also
@@ -45,12 +98,11 @@ so it can be pasted into the SQL editor.
      USING expression from the file.
    - Do not create an UPDATE policy for this bucket.
 
-**What this does not yet cover:** a check that fails when the live dashboard
-policies drift from what's declared in `supabase/storage-policies.sql`. Worth
-having, not built here. If it's ever written, it must compare expressions, not
-names — the dashboard appends its own suffix to whatever name is entered
-(e.g. `receipt_images_delete_own 13hfyy5_0`), so live names never match the
-file's names.
+**After applying, run `npm run check:drift`** (see the first section of this
+file). It reads the live policies back and compares their expressions against
+this file, which is how you find out whether the dashboard did what you meant —
+including the extra SELECT row it splits off if you tick two operations on the
+delete policy.
 
 ## `supabase/migrations/0020_receipts_parsed_at.sql` — apply BEFORE the next code deploy (OT-123, merged)
 
