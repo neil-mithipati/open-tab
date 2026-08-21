@@ -191,6 +191,14 @@ describe("expressions normalise across the postgres round trip", () => {
     expect(canonicalizeExpression("(a or b) and c")).not.toBe(canonicalizeExpression("a or (b and c)"));
   });
 
+  // Finding 1: -> and ->> must bind tighter than comparison, matching
+  // postgres' real precedence — not sit inside COMPARISON_OPS at the same
+  // level, which parsed `a = b ->> 'c'` as `(a = b) ->> 'c'`.
+  it("gives -> and ->> higher precedence than comparison, not lower", () => {
+    expect(canonicalizeExpression("a = b ->> 'c'")).toBe(canonicalizeExpression("a = (b ->> 'c')"));
+    expect(canonicalizeExpression("a = b ->> 'c'")).not.toBe(canonicalizeExpression("(a = b) ->> 'c'"));
+  });
+
   it("treats an absent expression as absent, not as empty", () => {
     expect(canonicalizeExpression(null)).toBeNull();
     expect(canonicalizeExpression("   ")).toBeNull();
@@ -201,6 +209,39 @@ describe("expressions normalise across the postgres round trip", () => {
   it("throws rather than guessing at an expression it cannot parse", () => {
     expect(() => canonicalizeExpression("bucket_id = ")).toThrow();
     expect(() => canonicalizeExpression("bucket_id = 'x' and")).toThrow();
+  });
+});
+
+// Locks in the 16 genuinely-different-predicate pairs the OT-148 review
+// probed the normaliser with. Every pair must still compare distinct after
+// any change to the normaliser — a normaliser that collapses any of these
+// is the exact false all-clear this script exists to prevent.
+describe("16 genuinely different predicates stay distinct after normalisation", () => {
+  const pairs: Array<[string, string, string]> = [
+    ["regrouped booleans", "(a or b) and c", "a or (b and c)"],
+    ["NOT scope", "not (a and b)", "(not a) and b"],
+    ["a dropped prefix clause", "a = 1 and b = 2", "b = 2"],
+    ["a changed subscript index", "(storage.foldername(name))[1]", "(storage.foldername(name))[2]"],
+    ["whitespace inside a string literal", "bucket_id = 'receipt images'", "bucket_id = 'receipt  images'"],
+    ["auth.uid() vs auth.jwt()", "created_by = auth.uid()", "created_by = auth.jwt()"],
+    ["IN vs NOT IN", "role in ('a', 'b')", "role not in ('a', 'b')"],
+    ["quoted-vs-unquoted identifier case", 'bucket_id = "Name"', "bucket_id = name"],
+    ["a different bucket name", "bucket_id = 'receipt-images'", "bucket_id = 'avatars'"],
+    [
+      "a dropped disjunct branch",
+      "(bucket_id = 'x') and ((a = auth.uid()) or is_participant(b))",
+      "(bucket_id = 'x') and (a = auth.uid())",
+    ],
+    ["a different schema-qualified function", "public.f(x)", "evil.f(x)"],
+    ["a different comparison operator", "a = b", "a <> b"],
+    ["a different function name", "f(x)", "g(x)"],
+    ["a different literal type", "a = 1", "a = '1'"],
+    ["an added clause", "a = 1", "a = 1 and b = 2"],
+    ["a different array literal", "x = array[1, 2]", "x = array[1, 3]"],
+  ];
+
+  it.each(pairs)("%s", (_label, left, right) => {
+    expect(canonicalizeExpression(left)).not.toBe(canonicalizeExpression(right));
   });
 });
 
@@ -430,6 +471,29 @@ describe("reading the supabase CLI's answer", () => {
     const result = extractQueryRows("Connecting to remote database...\nsomething went sideways");
     expect(result.ok).toBe(false);
   });
+
+  // Finding 2: a stray `[]` progress line is itself a parseable (empty)
+  // array — `if (rows)` is true for `[]` in JS — so taking the FIRST
+  // parseable array reads the wrong thing and reports zero rows that were
+  // never really zero.
+  it("does not let a stray [] progress line ahead of the real rows win", () => {
+    const result = extractQueryRows('Connecting to remote database...\n[]\n[{"version":"0001"}]');
+    expect(result).toEqual({ ok: true, rows: [{ version: "0001" }] });
+  });
+
+  it("still reads a genuinely empty result set as empty when it is the only array", () => {
+    expect(extractQueryRows('Connecting to remote database...\n[]')).toEqual({ ok: true, rows: [] });
+  });
+
+  // Finding 3: `{"_tag":"Success","result":null}` must not be read as one
+  // NDJSON data row equal to the whole envelope object. It was already
+  // examined and rejected by the envelope-unwrapping logic, so it must not
+  // be re-admitted by the "one object per line" NDJSON fallback either — an
+  // envelope this shape reads as "could not find a result set", not as data.
+  it("does not read a null-result envelope as one data row", () => {
+    const result = extractQueryRows('{"_tag":"Success","result":null}');
+    expect(result.ok).toBe(false);
+  });
 });
 
 describe("the report distinguishes the three outcomes", () => {
@@ -601,10 +665,37 @@ describe("the script's exit codes", () => {
     expect(run.stderr).toContain("COULD NOT CHECK");
   });
 
-  it("exits 0 for --help without going near a database", () => {
+  // --help never touches a database, but it also never compares anything —
+  // so it must not exit 0. A deploy step that passed a stray --help flag and
+  // only checked the exit code would otherwise read a green "no drift".
+  it("exits non-zero for --help, and never mistakable for a clean check", () => {
     const run = runScript({ ...process.env, SUPABASE_BIN: "/nonexistent/supabase" }, ["--help"]);
 
-    expect(run.status).toBe(0);
+    expect(run.status).not.toBe(0);
     expect(run.stdout).toContain("usage:");
+    expect(run.stdout).not.toContain("NO DRIFT");
+  });
+
+  it("exits non-zero for an unrecognised flag, having checked nothing", () => {
+    const run = runScript({ ...process.env, SUPABASE_BIN: "/nonexistent/supabase" }, ["--bogus"]);
+
+    expect(run.status).not.toBe(0);
+    expect(run.stderr).toContain("unrecognised");
+    expect(run.stderr).toContain("--bogus");
+    expect(run.stdout).not.toContain("NO DRIFT");
+  });
+
+  // Finding 4: SUPABASE_BIN is owner-supplied, not a credential — but every
+  // other output path runs through redactSecrets, and this one should too.
+  it("redacts SUPABASE_BIN out of the CLI-not-found message like every other path", () => {
+    const fakePat = "sbp" + "_" + "0123456789abcdef0123456789abcdef01234567";
+    const run = runScript({
+      ...process.env,
+      SUPABASE_BIN: `/nonexistent/${fakePat}/supabase`,
+    });
+
+    expect(run.status).toBe(2);
+    expect(run.stderr).not.toContain(fakePat);
+    expect(run.stderr).toContain("[redacted]");
   });
 });
