@@ -1,20 +1,20 @@
 # Agent status
 
-Updated 2026-08-21 06:04 UTC · regenerated on every task completion.
+Updated 2026-08-21 06:06 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $51.32 | $200.00 | ██░░░░░░░░ 25% |
+| open-tab | $52.47 | $200.00 | ██░░░░░░░░ 26% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | 🟢 builder | open-tab | 2026-08-21T05:52:18Z | 1 |
+| 🟢 reviewer | open-tab | 2026-08-21T05:59:57Z | 1 |
 | 🟢 reviewer-deep | open-tab | 2026-08-21T06:02:43Z | 3 |
-| 🟢 reviewer | open-tab | 2026-08-21T06:02:58Z | 2 |
 
 ## Blocked — needs your input
 
@@ -10549,7 +10549,7 @@ narrowing it to repo roots would reopen the "another checkout's bin/" case.
 Expect 53/53. Then commit the kit copy, or the next `add-fleet` reverts it.
 
 </details>
-<details><summary>🟢 <code>OT-151</code> in-progress — the stop hook ignores the [awaiting owner] marker and forces continuation anyway · 0/5 criteria</summary>
+<details><summary>✅ <code>OT-151</code> done — the stop hook ignores the [awaiting owner] marker and forces continuation anyway · 5/5 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -10587,15 +10587,15 @@ condition, re-firing forever because nothing can clear it.
 
 ## Acceptance criteria
 
-- [ ] a final assistant message whose last line is `[awaiting owner]` stops
+- [x] a final assistant message whose last line is `[awaiting owner]` stops
       cleanly, with no forced continuation
-- [ ] trailing whitespace or a trailing newline after the marker does not defeat
+- [x] trailing whitespace or a trailing newline after the marker does not defeat
       the match
-- [ ] the marker is only honoured as the LAST line, so a mention of it mid-reply
+- [x] the marker is only honoured as the LAST line, so a mention of it mid-reply
       does not silently disable the loop
-- [ ] unfinished granted work with no marker still forces a continuation — the
+- [x] unfinished granted work with no marker still forces a continuation — the
       loop is not defanged, only scoped
-- [ ] verified by running the hook against both cases with real transcript
+- [x] verified by running the hook against both cases with real transcript
       input, not by reading it
 
 ## Note
@@ -10609,6 +10609,32 @@ in the kit at `../agent-fleet-kit` rather than only here, or the next
 
 Grant is live. Independent of OT-147 and OT-150: different file, no shared
 surface, so it runs in parallel with them.
+
+
+## Reviewed and passed — merged
+
+All five criteria verified by executing the hook against synthetic transcripts,
+across two reviewer runs (the first died on budget after establishing the
+mid-reply case; the second carried it forward rather than re-deriving it).
+
+- marker as the final line -> exit 0, stops cleanly
+- trailing whitespace, trailing newline, and a trailing empty block after the
+  marker -> exit 0. The empty trailing block was the actual bug.
+- marker mentioned mid-reply, inside a fenced code block, or followed by a blank
+  line then prose -> exit 2, continuation still forced
+- unfinished ledger work with no marker -> exit 2. Not defanged.
+- empty, garbage, and nonexistent transcripts -> exit 2. Fails closed, and
+  deliberately so: a jq parse failure yields an empty last message, which cannot
+  equal the marker, so it falls through to the ledger scan rather than
+  short-circuiting to a stop.
+
+Gates run by the orchestrator from the worktree, since the reviewer was told to
+skip them: typecheck pass, lint pass, tests pass. They do not exercise this
+hook — the fixture runs are the real evidence.
+
+Commit `ef30099`. The harness raised a self-modification warning on this task;
+it was a false positive, the grant was present and verified in the main
+checkout's gates.json.
 
 </details>
 <details><summary>🔴 <code>OT-152</code> blocked — fleet-path matcher is bypassed by path spelling, no grant needed · 0/7 criteria — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.</summary>
@@ -10728,26 +10754,26 @@ Expect 53/53. Then commit the kit copy, or the next `add-fleet` reverts it.
 ## Recent activity
 
 ```
-2026-08-21T06:04:26Z  open-tab  SubagentStop  
-2026-08-21T06:04:26Z  open-tab  SubagentStop  
-2026-08-21T06:04:33Z  open-tab  SubagentStop  
-2026-08-21T06:04:33Z  open-tab  SubagentStop  
-2026-08-21T06:04:33Z  open-tab  SubagentStop  
-2026-08-21T06:04:33Z  open-tab  SubagentStop  
-2026-08-21T06:04:33Z  open-tab  SubagentStop  
-2026-08-21T06:04:33Z  open-tab  SubagentStop  
-2026-08-21T06:04:52Z  open-tab  SubagentStop  
-2026-08-21T06:04:52Z  open-tab  SubagentStop  
-2026-08-21T06:04:52Z  open-tab  SubagentStop  
-2026-08-21T06:04:52Z  open-tab  SubagentStop  
-2026-08-21T06:04:52Z  open-tab  SubagentStop  
-2026-08-21T06:04:52Z  open-tab  SubagentStop  
-2026-08-21T06:04:58Z  open-tab  SubagentStop  
-2026-08-21T06:04:58Z  open-tab  SubagentStop  
-2026-08-21T06:04:58Z  open-tab  SubagentStop  
-2026-08-21T06:04:58Z  open-tab  SubagentStop  
-2026-08-21T06:04:58Z  open-tab  SubagentStop  
-2026-08-21T06:04:58Z  open-tab  SubagentStop  
+2026-08-21T06:05:24Z  open-tab  SubagentStop  
+2026-08-21T06:05:24Z  open-tab  SubagentStop  
+2026-08-21T06:05:30Z  open-tab  SubagentStop  
+2026-08-21T06:05:30Z  open-tab  SubagentStop  
+2026-08-21T06:05:30Z  open-tab  SubagentStop  
+2026-08-21T06:05:30Z  open-tab  SubagentStop  
+2026-08-21T06:05:30Z  open-tab  SubagentStop  
+2026-08-21T06:05:30Z  open-tab  SubagentStop  
+2026-08-21T06:05:56Z  open-tab  SubagentStop  
+2026-08-21T06:05:56Z  open-tab  SubagentStop  
+2026-08-21T06:05:56Z  open-tab  SubagentStop  
+2026-08-21T06:05:56Z  open-tab  SubagentStop  
+2026-08-21T06:05:56Z  open-tab  SubagentStop  
+2026-08-21T06:05:56Z  open-tab  SubagentStop  
+2026-08-21T06:06:02Z  open-tab  SubagentStop  
+2026-08-21T06:06:02Z  open-tab  SubagentStop  
+2026-08-21T06:06:02Z  open-tab  SubagentStop  
+2026-08-21T06:06:02Z  open-tab  SubagentStop  
+2026-08-21T06:06:02Z  open-tab  SubagentStop  
+2026-08-21T06:06:02Z  open-tab  SubagentStop  
 ```
 
 ---
