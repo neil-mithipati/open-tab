@@ -21,89 +21,186 @@
 # edited upstream, repackaged, installed via add-fleet — not through an agent
 # self-editing mid-session. This hook makes that a hard boundary instead of an
 # unenforced expectation.
+#
+# Every decision below is made on the CANONICAL target path. Matching the raw
+# string was the bug behind OT-150 and OT-152: `.claude//hooks/x` and
+# `./bin/doctor` missed the matcher entirely, and `wt-OT-147/../open-tab/...`
+# — or a directory named wt-OT-147 in /tmp holding a `.claude` symlink —
+# carried a maintenance grant straight into the main checkout's hooks.
+
+set -f  # no globbing; the IFS splitting below must stay literal
 
 input=$(cat)
 path=$(jq -r '.tool_input.file_path // ""' <<<"$input")
 [ -z "$path" ] && exit 0
 
-# Relative to the project root, so this catches both absolute and relative
-# paths regardless of how the tool call expressed it. An absolute path OUTSIDE
-# the root (e.g. a worktree agent aiming at the main checkout's hooks) leaves
-# rel untouched, so a second suffix match below catches those too — matching
-# only relative to $ROOT was a bypass.
 ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
-rel="${path#"$ROOT"/}"
 
-# MAINTENANCE OVERRIDE — same grant as deny-irreversible.sh. The owner lists a
-# task id under "maintenance" in the MAIN checkout's .claude/gates.json; the
-# override holds only when this session's project dir is that task's worktree
-# (wt-<ID>). gates.json and the two guard hooks are never overridable.
-maint_active() {
-  local id="" seg main gates abs
-
-  # Absolute form of the target, so a relative tool call resolves the same way.
-  case "$path" in
-    /*) abs="$path" ;;
-    *)  abs="$ROOT/$path" ;;
-  esac
-
-  # First wt-<ID> path segment wins. An id is restricted to the same shape the
-  # ledger uses, so a directory literally named "wt-../.." cannot smuggle
-  # traversal through the jq lookup below.
+# Lexical cleanup of an absolute path: drops empty segments (// and a trailing
+# /), drops `.`, folds `x/..`. Only ever applied to a prefix already resolved
+# on disk plus a tail that does not exist yet.
+lex_norm() {
+  local seg out=""
   local IFS=/
-  for seg in $abs; do
+  for seg in $1; do
     case "$seg" in
-      wt-*)
-        id="${seg#wt-}"
-        case "$id" in
-          ''|*[!A-Za-z0-9_-]*) return 1 ;;
-          *) break ;;
-        esac
-        ;;
+      ''|.) continue ;;
+      ..) out="${out%/*}" ;;
+      *) out="$out/$seg" ;;
     esac
   done
-  unset IFS
-  [ -n "$id" ] || return 1
+  printf '%s' "${out:-/}"
+}
 
-  # The write must land INSIDE that worktree. Without this, a worker in
-  # wt-OT-147 could name a path that merely mentions wt-OT-147 while pointing
-  # somewhere else entirely.
-  case "$abs" in
-    */wt-"$id"/*) : ;;
-    *) return 1 ;;
+# Canonical absolute path, symlinks resolved, WITHOUT requiring the target to
+# exist — a first write to a brand-new hook file has to be matched too, which
+# is why this is not `realpath` (it fails on a missing path, and `-m` is not
+# portable). Walk up to the deepest existing ancestor, let `cd -P` resolve
+# that one for real, then re-attach the missing tail.
+#
+# The walk alone stops at the deepest existing DIRECTORY, so a symlink used as
+# the FINAL component survives it: `<dir>/link -> .claude/hooks/log-event.sh`
+# would be matched as `<dir>/link` while the write lands on the real hook. A
+# symlink-to-directory in the tail is already resolved by `cd -P`; only the
+# last component needs this. So: after each walk, if the result is still a
+# symlink, read it, re-anchor a relative target on the link's own directory,
+# and walk again. Bounded at 40 hops so a symlink loop cannot hang the hook.
+canon_path() {
+  local p="$1" dir next tail real link hops=0
+  case "$p" in
+    /*) : ;;
+    *) p="$ROOT/$p" ;;
   esac
+  while : ; do
+    tail=""
+    dir="$p"
+    while [ ! -d "$dir" ]; do
+      tail="${dir##*/}${tail:+/$tail}"
+      next="${dir%/*}"
+      if [ -z "$next" ] || [ "$next" = "$dir" ]; then
+        dir="/"
+        break
+      fi
+      dir="$next"
+    done
+    real=$(cd -P "$dir" 2>/dev/null && pwd -P) || real="$dir"
+    p=$(lex_norm "$real/$tail")
+    [ -L "$p" ] || break
+    hops=$((hops + 1))
+    [ "$hops" -le 40 ] || break
+    link=$(readlink "$p" 2>/dev/null) || break
+    [ -n "$link" ] || break
+    case "$link" in
+      /*) p="$link" ;;
+      *) p="${p%/*}/$link" ;;
+    esac
+  done
+  printf '%s' "$p"
+}
 
-  # The grant lives in the main checkout's gates.json, found from the worktree's
-  # own git common dir — same resolution as before, just anchored on the target.
-  main=$(git -C "$(dirname "$abs")" rev-parse --git-common-dir 2>/dev/null) || return 1
+cpath=$(canon_path "$path")
+ROOTC=$(canon_path "$ROOT")
+rel="${cpath#"$ROOTC"/}"
+
+# Case folding, deliberately one-directional. This volume is case-insensitive
+# APFS and bash's `pwd -P` does not correct the case of a path component, so
+# `.claude/Gates.json`, `Claude.md` and `Protect-Fleet.sh` all open the real
+# files while missing a case-sensitive glob — one letter of case was enough to
+# let a granted agent rewrite the grant file and both guard hooks.
+#
+# Every DENY match below runs against a lowercased copy. The GRANT side does
+# not: `shopt -s nocasematch` is shell-scoped and would also loosen the
+# worktree containment test in maint_active (`case "$cpath" in "$p"/*`), so on
+# a case-SENSITIVE volume a directory named `WT-OT-150` would inherit the grant
+# issued for `wt-OT-150`. Over-denying is harmless; over-granting is the hole
+# being closed. Lowercasing only the deny inputs keeps the looseness pointed in
+# the safe direction, on either kind of volume.
+#
+# Patterns matched against $lcpath and $lrel must be written in lowercase.
+lcpath=$(printf '%s' "$cpath" | tr '[:upper:]' '[:lower:]')
+lrel=$(printf '%s' "$rel" | tr '[:upper:]' '[:lower:]')
+
+# MAINTENANCE OVERRIDE — the owner lists a task id under "maintenance" in the
+# MAIN checkout's .claude/gates.json, and the grant then covers writes that
+# land inside that task's worktree. The worktree comes from
+# `git worktree list --porcelain` run on the session root, so it has to be a
+# real registered worktree of this repo — not any directory whose name happens
+# to start with `wt-`, and not a path that merely contains one. gates.json and
+# the two guard hooks are never overridable.
+maint_active() {
+  local main gates wt="" id="" line p
+
+  main=$(git -C "$ROOTC" rev-parse --git-common-dir 2>/dev/null) || return 1
   case "$main" in
     '') return 1 ;;
     /*) : ;;
-    *) main="$(dirname "$abs")/$main" ;;
+    *) main="$ROOTC/$main" ;;
   esac
-  main="${main%/.git}"; main="${main%/}"
+  main=$(canon_path "$main")
+  main="${main%/.git}"
+  main="${main%/}"
+  [ -n "$main" ] || return 1
+
   gates="$main/.claude/gates.json"
   [ -s "$gates" ] || return 1
+
+  while IFS= read -r line; do
+    case "$line" in
+      'worktree '*) p="${line#worktree }" ;;
+      *) continue ;;
+    esac
+    p=$(canon_path "$p")
+    # The main checkout is never a grantable worktree.
+    [ "$p" = "$main" ] && continue
+    case "$cpath" in
+      "$p"/*) [ "${#p}" -gt "${#wt}" ] && wt="$p" ;;
+    esac
+  done <<<"$(git -C "$ROOTC" worktree list --porcelain 2>/dev/null)"
+
+  [ -n "$wt" ] || return 1
+
+  id="${wt##*/}"
+  case "$id" in
+    wt-*) id="${id#wt-}" ;;
+    *) return 1 ;;
+  esac
+  case "$id" in
+    ''|*[!A-Za-z0-9_-]*) return 1 ;;
+  esac
 
   jq -e --arg id "$id" '(.maintenance // []) | index($id) != null' "$gates" >/dev/null 2>&1
 }
 
-hit=""
-case "$rel" in
-  .claude/hooks/*|.claude/agents/*|.claude/settings.json|.claude/gates.json|CLAUDE.md|bin/*) hit=1 ;;
+# Never overridable, and checked before anything else: an override that can
+# edit the grant file or the guards can widen itself. This used to sit inside
+# the `hit` branch, so any spelling that missed the matcher skipped it too.
+case "$lcpath" in
+  */.claude/gates.json|*deny-irreversible.sh|*protect-fleet.sh)
+    echo "Blocked: gates.json and the guard hooks are never editable by agents," >&2
+    echo "even under a maintenance grant — the override cannot widen itself." >&2
+    exit 2
+    ;;
 esac
-case "$path" in
-  */.claude/hooks/*|*/.claude/agents/*|*/.claude/settings.json|*/.claude/gates.json|*/CLAUDE.md) hit=1 ;;
+
+hit=""
+case "$lrel" in
+  .claude/hooks/*|.claude/agents/*|.claude/settings.json|.claude/gates.json|claude.md|bin/*) hit=1 ;;
+esac
+# The same list by absolute path, for a target outside the session root — a
+# worktree agent aiming at the main checkout, or at another checkout entirely.
+# `bin/` is here too; it used to be protected only relative to $ROOT.
+case "$lcpath" in
+  */.claude/hooks/*|*/.claude/agents/*|*/.claude/settings.json|*/.claude/gates.json|*/claude.md) hit=1 ;;
+  # A package's own bin/ is not the fleet's. This carve-out matters only
+  # because the tail symlink is now resolved: `node_modules/.bin/next` does
+  # not contain a literal `/bin/`, but it is a link to
+  # `node_modules/next/dist/bin/next`, which does. First match wins, so this
+  # narrows the `bin/` clause below and nothing above it.
+  */node_modules/*) : ;;
+  */bin/*) hit=1 ;;
 esac
 
 if [ -n "$hit" ]; then
-  case "$path" in
-    */.claude/gates.json|.claude/gates.json|*deny-irreversible.sh|*protect-fleet.sh)
-      echo "Blocked: gates.json and the guard hooks are never editable by agents," >&2
-      echo "even under a maintenance grant — the override cannot widen itself." >&2
-      exit 2
-      ;;
-  esac
   if maint_active; then
     exit 0
   fi
