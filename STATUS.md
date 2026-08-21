@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 02:39 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:40 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $22 | $200.00 | █░░░░░░░░░ 11% |
+| open-tab | $23.28 | $200.00 | █░░░░░░░░░ 11% |
 
 ## Agents
 
@@ -18,7 +18,6 @@ Updated 2026-08-21 02:39 UTC · regenerated on every task completion.
 ## Blocked — needs your input
 
 > [!CAUTION]
-> 🔴 **Blocked `OT-138`** — >-
 > 🔴 **Blocked `OT-142`** — >-
 
 ## Tasks
@@ -7921,7 +7920,7 @@ is checked the day it lands.
   assert something true about a file no database runs.
 
 </details>
-<details><summary>🔴 <code>OT-138</code> blocked — three live fail-opens in parallel-cap.sh let an uncapped dispatch through · 0/10 criteria — >-</summary>
+<details><summary>🟢 <code>OT-138</code> in-progress — three live fail-opens in parallel-cap.sh let an uncapped dispatch through · 0/10 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -7932,13 +7931,7 @@ is checked the day it lands.
 - files:
 -   - .claude/hooks/parallel-cap.sh
 -   - .claude/settings.json
-- blocked_reason: >-
--   the maintenance grant cannot activate for a dispatched subagent. maint_active()
--   in protect-fleet.sh and deny-irreversible.sh keys off basename(CLAUDE_PROJECT_DIR),
--   which is the main checkout for a worker, so it returns 1 before ever reading
--   gates.json. verified by probe and by live denial on both the edit and bash routes.
--   fix is owner-side: either re-run this task from a session rooted in
--   ../wt-OT-138, or change maint_active in both guards to key off the target path.
+- blocked_reason: null
 
 
 ## Context
@@ -8159,6 +8152,39 @@ more line of the same port, not a separate task.
 
 - [ ] an unsearchable ancestor dir (`chmod 000 .claude/state`) must DENY, not allow
 - [ ] a wholly corrupt log (zero parsed records from non-zero content lines) must DENY
+
+## Owner implemented this directly — commit 69e991b
+
+Attempt 1's blocker was the grant mechanism, not the engineering, so the owner
+wrote the fix by hand. Branch `task/OT-138`, one commit, based on `ea21e1e`.
+Its own diff (`git diff main...task/OT-138`) touches exactly
+`.claude/hooks/parallel-cap.sh` and `.claude/settings.json` — nothing else, and
+in particular nothing in `src/`.
+
+Gates run by the orchestrator from the worktree rather than by a reviewer, to
+leave the reviewers' whole budget for the criteria: typecheck clean, lint 0
+errors (1 pre-existing unused-var warning in `NewReceiptPage.test.tsx`), 395
+tests pass across 26 files.
+
+## Two full reviews were lost to turn budget before one landed
+
+The first stopped mid-sentence at "Restoring permissions now." The second
+stopped at "Pass 1 gates green. Now pass 2." Neither emitted a Result block, so
+roughly 130k subagent tokens produced no verdict at all.
+
+Cause: ten criteria, each requiring a fixture built and the hook executed
+against it, does not fit one reviewer's turn budget — especially when the
+reviewer also spends turns running gates.
+
+Also: the first reviewer ran `chmod 000` against a real `.claude/state` for
+criterion 9 and stopped before restoring it. Permissions were checked afterwards
+and were intact, but the fixture should never have been the live directory.
+
+Changed approach rather than retrying the same shape a third time: criteria 1-5
+and 6-10 dispatched to two reviewers in parallel, gates pre-run and supplied as
+given, and both told to emit a partial Result rather than run to the wall.
+Worth remembering for any future task with a criteria list this long — the
+review is the part that does not fit, not the build.
 
 </details>
 <details><summary>✅ <code>OT-139</code> done — lock down receipt image storage — private bucket, RLS, signed URLs, retention job · 6/6 criteria</summary>
@@ -9592,26 +9618,26 @@ you did not perform.
 ## Recent activity
 
 ```
-2026-08-21T02:38:28Z  open-tab  SubagentStop  
-2026-08-21T02:38:28Z  open-tab  SubagentStop  
-2026-08-21T02:38:28Z  open-tab  SubagentStop  
-2026-08-21T02:38:28Z  open-tab  SubagentStop  
-2026-08-21T02:38:28Z  open-tab  SubagentStop  
-2026-08-21T02:38:28Z  open-tab  SubagentStop  
-2026-08-21T02:38:39Z  open-tab  SubagentStop  
-2026-08-21T02:38:39Z  open-tab  SubagentStop  
-2026-08-21T02:38:39Z  open-tab  SubagentStop  
-2026-08-21T02:38:39Z  open-tab  SubagentStop  
-2026-08-21T02:38:39Z  open-tab  SubagentStop  
-2026-08-21T02:38:39Z  open-tab  SubagentStop  
-2026-08-21T02:39:26Z  open-tab  SubagentStart  reviewer
-2026-08-21T02:39:41Z  open-tab  SubagentStart  reviewer
-2026-08-21T02:39:41Z  open-tab  SubagentStop  
-2026-08-21T02:39:41Z  open-tab  SubagentStop  
-2026-08-21T02:39:41Z  open-tab  SubagentStop  
-2026-08-21T02:39:41Z  open-tab  SubagentStop  
-2026-08-21T02:39:41Z  open-tab  SubagentStop  
-2026-08-21T02:39:41Z  open-tab  SubagentStop  
+2026-08-21T02:39:57Z  open-tab  SubagentStop  
+2026-08-21T02:39:57Z  open-tab  SubagentStop  
+2026-08-21T02:40:12Z  open-tab  SubagentStop  
+2026-08-21T02:40:12Z  open-tab  SubagentStop  
+2026-08-21T02:40:12Z  open-tab  SubagentStop  
+2026-08-21T02:40:12Z  open-tab  SubagentStop  
+2026-08-21T02:40:12Z  open-tab  SubagentStop  
+2026-08-21T02:40:12Z  open-tab  SubagentStop  
+2026-08-21T02:40:29Z  open-tab  SubagentStop  
+2026-08-21T02:40:29Z  open-tab  SubagentStop  
+2026-08-21T02:40:29Z  open-tab  SubagentStop  
+2026-08-21T02:40:29Z  open-tab  SubagentStop  
+2026-08-21T02:40:29Z  open-tab  SubagentStop  
+2026-08-21T02:40:29Z  open-tab  SubagentStop  
+2026-08-21T02:40:44Z  open-tab  SubagentStop  
+2026-08-21T02:40:44Z  open-tab  SubagentStop  
+2026-08-21T02:40:44Z  open-tab  SubagentStop  
+2026-08-21T02:40:44Z  open-tab  SubagentStop  
+2026-08-21T02:40:44Z  open-tab  SubagentStop  
+2026-08-21T02:40:44Z  open-tab  SubagentStop  
 ```
 
 ---
