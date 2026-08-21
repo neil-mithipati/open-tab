@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 02:10 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:11 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $8.43 | $200.00 | ░░░░░░░░░░ 4% |
+| open-tab | $8.65 | $200.00 | ░░░░░░░░░░ 4% |
 
 ## Agents
 
@@ -9449,18 +9449,6 @@ scope had missed, and the task could not merge until it was fixed.
 ## Recent activity
 
 ```
-2026-08-21T02:09:19Z  open-tab  SubagentStop  builder
-2026-08-21T02:09:26Z  open-tab  SubagentStop  
-2026-08-21T02:09:26Z  open-tab  SubagentStop  
-2026-08-21T02:09:26Z  open-tab  SubagentStop  
-2026-08-21T02:09:26Z  open-tab  SubagentStop  
-2026-08-21T02:09:26Z  open-tab  SubagentStop  
-2026-08-21T02:09:26Z  open-tab  SubagentStop  
-2026-08-21T02:09:49Z  open-tab  SubagentStart  builder
-2026-08-21T02:09:57Z  open-tab  SubagentStop  
-2026-08-21T02:09:57Z  open-tab  SubagentStop  
-2026-08-21T02:09:57Z  open-tab  SubagentStop  
-2026-08-21T02:09:57Z  open-tab  SubagentStop  
 2026-08-21T02:09:57Z  open-tab  SubagentStop  
 2026-08-21T02:09:57Z  open-tab  SubagentStop  
 2026-08-21T02:10:21Z  open-tab  SubagentStop  
@@ -9469,6 +9457,18 @@ scope had missed, and the task could not merge until it was fixed.
 2026-08-21T02:10:21Z  open-tab  SubagentStop  
 2026-08-21T02:10:21Z  open-tab  SubagentStop  
 2026-08-21T02:10:21Z  open-tab  SubagentStop  
+2026-08-21T02:10:29Z  open-tab  SubagentStop  
+2026-08-21T02:10:29Z  open-tab  SubagentStop  
+2026-08-21T02:10:29Z  open-tab  SubagentStop  
+2026-08-21T02:10:29Z  open-tab  SubagentStop  
+2026-08-21T02:10:29Z  open-tab  SubagentStop  
+2026-08-21T02:10:29Z  open-tab  SubagentStop  
+2026-08-21T02:11:23Z  open-tab  SubagentStop  
+2026-08-21T02:11:23Z  open-tab  SubagentStop  
+2026-08-21T02:11:23Z  open-tab  SubagentStop  
+2026-08-21T02:11:23Z  open-tab  SubagentStop  
+2026-08-21T02:11:23Z  open-tab  SubagentStop  
+2026-08-21T02:11:23Z  open-tab  SubagentStop  
 ```
 
 ---
