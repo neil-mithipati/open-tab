@@ -1,18 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 02:27 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:28 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $14.43 | $200.00 | ░░░░░░░░░░ 7% |
+| open-tab | $15.36 | $200.00 | ░░░░░░░░░░ 7% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | 🟢 reviewer | open-tab | 2026-08-21T02:25:46Z | 1 |
+| 🟢 builder-deep | open-tab | 2026-08-21T02:27:25Z | 1 |
 
 ## Blocked — needs your input
 
@@ -9217,6 +9218,29 @@ The last criterion is the one that matters beyond tonight. Nothing in the
 current gate set compares repo migrations to a live database, so this could
 drift again the moment it is fixed. That check is the real deliverable.
 
+## Status after OT-143 merged
+
+`0026` no longer contains anything the migration tool cannot apply — OT-143 split
+its storage half into `supabase/storage-policies.sql` with the procedure in
+`docs/deployment.md`. The `42501` that stopped the push cannot recur, verified by
+statement-by-statement review, not by a live push.
+
+Remaining criteria and who owns each:
+
+- **applied up to 0026** — owner. `0001`-`0025` are in. Rerun `supabase db push`;
+  it should now complete. This is the only thing between here and go-live.
+- **dashboard policy steps** — owner, and apparently already done: OT-143 records
+  the four live policy rows observed on 2026-08-20, including removing the stray
+  `_1` row the UI created. Confirm against `docs/deployment.md` and check it off
+  if it holds.
+- **a check that catches this next time** — split out as **OT-145**, dispatched.
+  It was the one part of this task no agent was blocked from doing, and the task
+  file's own note calls it the deliverable that matters beyond tonight.
+
+The first three criteria are satisfied by the findings recorded above, but stay
+unchecked: no reviewer has verified them, and this file is not going to start
+checking its own boxes on the strength of its own prose.
+
 </details>
 <details><summary>✅ <code>OT-143</code> done — 0026 cannot be applied by supabase db push — split the storage half out of the migration · 5/5 criteria</summary>
 
@@ -9568,26 +9592,26 @@ you did not perform.
 ## Recent activity
 
 ```
-2026-08-21T02:19:06Z  open-tab  SubagentStop  
-2026-08-21T02:25:46Z  open-tab  SubagentStart  reviewer
-2026-08-21T02:26:17Z  open-tab  SubagentStop  
-2026-08-21T02:26:17Z  open-tab  SubagentStop  
-2026-08-21T02:26:17Z  open-tab  SubagentStop  
-2026-08-21T02:26:17Z  open-tab  SubagentStop  
-2026-08-21T02:26:17Z  open-tab  SubagentStop  
-2026-08-21T02:26:17Z  open-tab  SubagentStop  
-2026-08-21T02:26:49Z  open-tab  SubagentStop  
-2026-08-21T02:26:49Z  open-tab  SubagentStop  
-2026-08-21T02:26:49Z  open-tab  SubagentStop  
-2026-08-21T02:26:49Z  open-tab  SubagentStop  
-2026-08-21T02:26:49Z  open-tab  SubagentStop  
-2026-08-21T02:26:49Z  open-tab  SubagentStop  
 2026-08-21T02:27:20Z  open-tab  SubagentStop  
-2026-08-21T02:27:20Z  open-tab  SubagentStop  
-2026-08-21T02:27:20Z  open-tab  SubagentStop  
-2026-08-21T02:27:20Z  open-tab  SubagentStop  
-2026-08-21T02:27:20Z  open-tab  SubagentStop  
-2026-08-21T02:27:20Z  open-tab  SubagentStop  
+2026-08-21T02:27:25Z  open-tab  SubagentStart  builder-deep
+2026-08-21T02:27:52Z  open-tab  SubagentStop  
+2026-08-21T02:27:52Z  open-tab  SubagentStop  
+2026-08-21T02:27:52Z  open-tab  SubagentStop  
+2026-08-21T02:27:52Z  open-tab  SubagentStop  
+2026-08-21T02:27:52Z  open-tab  SubagentStop  
+2026-08-21T02:27:52Z  open-tab  SubagentStop  
+2026-08-21T02:27:56Z  open-tab  SubagentStop  
+2026-08-21T02:27:56Z  open-tab  SubagentStop  
+2026-08-21T02:27:56Z  open-tab  SubagentStop  
+2026-08-21T02:27:56Z  open-tab  SubagentStop  
+2026-08-21T02:27:56Z  open-tab  SubagentStop  
+2026-08-21T02:27:56Z  open-tab  SubagentStop  
+2026-08-21T02:28:24Z  open-tab  SubagentStop  
+2026-08-21T02:28:24Z  open-tab  SubagentStop  
+2026-08-21T02:28:24Z  open-tab  SubagentStop  
+2026-08-21T02:28:24Z  open-tab  SubagentStop  
+2026-08-21T02:28:24Z  open-tab  SubagentStop  
+2026-08-21T02:28:24Z  open-tab  SubagentStop  
 ```
 
 ---
