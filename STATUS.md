@@ -1,18 +1,16 @@
 # Agent status
 
-Updated 2026-08-21 11:50 UTC · regenerated on every task completion.
+Updated 2026-08-21 11:54 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $81.91 | $200.00 | ████░░░░░░ 40% |
+| open-tab | $82.29 | $200.00 | ████░░░░░░ 41% |
 
 ## Agents
 
-| Role | Lane | Started | Running |
-|---|---|---|---|
-| 🟢 builder-deep | open-tab | 2026-08-21T11:33:47Z | 1 |
+Idle — no agents currently running.
 
 ## Blocked — needs your input
 
@@ -11087,6 +11085,56 @@ the log can be rotated by an agent.
 
 Needs a maintenance grant.
 
+## Verification
+
+Executed, not read. Baseline = the reviewed task/OT-147 hooks, extracted to
+/tmp/ot153/baseline, run against the same fixtures so each defect is measured
+before and after.
+
+- /tmp/ot147/harness.sh (SRC=wt-OT-153 hooks): PASS=51 FAIL=0. Re-run against a
+  clone of main with task/OT-153 merged: PASS=51 FAIL=0.
+- /tmp/ot153/harness.sh, 37 new fixtures, PASS=37 FAIL=0:
+  - K, one read: counting shims show the log opened once by cat and zero times
+    as a jq file argument. Rotation shim that truncates the log the instant it
+    is read: new DENY, baseline ALLOW.
+  - L, knobs: STALE_SECS=1 / HB_DEAD_SECS=0 with two live builders — new DENY,
+    baseline ALLOW. Also abc, -1, 100000, 59, and a 26-digit value all DENY with
+    clean stderr; 300/60/30 and 3600/900/180 still ALLOW; an out-of-range knob
+    denies even with an empty or absent log.
+  - M, pairing: two builders whose stops predate their starts — new DENY,
+    baseline ALLOW. Ordinary pairing, same-second stops, and unreadable start
+    timestamps still free the slot; an unreadable stop timestamp holds it and
+    STALE_SECS still ages it out.
+  - N, root: CLAUDE_PROJECT_DIR unset with cwd outside the checkout — new DENY,
+    baseline ALLOW. Unset with cwd at the checkout, and a set root with no log,
+    still ALLOW.
+  - O: the two-dispatch race is recorded under KNOWN BOUNDS in parallel-cap.sh.
+- /tmp/ot153/libcheck.sh: one-arg and two-arg fleet_live_json return identical
+  output, so dashboard/statusline/status-page are unaffected; an out-of-range
+  knob still yields a usable count for display with LIVE_STATUS unknown.
+  statusline.sh and bin/dashboard both smoke-tested.
+- A NUL byte in a torn line denies via the lost-line rule with no stderr noise.
+
+Known bound left open by design, recorded in the hook: two dispatches decided
+before either logs its start both allow. Closing it needs a claim record with
+its own expiry and cleanup — a stale claim would wedge all dispatch, which is
+worse than a bounded one-agent overshoot.
+
+Builder commit: caa98a1 on task/OT-153.
+
+Merge coupling: parallel-cap.sh now denies if it loads a liveness.sh older than
+this change (no liveness_knob_error). Both files are in one commit and must land
+together.
+
+Merge order: task/OT-153 carries task/OT-147's hook content plus these fixes and
+merges into main clean. task/OT-147 already conflicts with main on its own
+(liveness.sh, parallel-cap.sh, loop-until-done.sh, ledger/OT-147.md,
+ledger/OT-149.md) from OT-150/OT-151 landing. Resolve OT-147's two hook files by
+taking main's side after OT-153 lands — OT-153's content is a strict superset.
+
+Fixture suites: /tmp/ot147/harness.sh (SRC=<hooks dir>) and
+/tmp/ot153/harness.sh (NEW=<hooks dir>), baseline in /tmp/ot153/baseline.
+
 </details>
 <details><summary>⚪ <code>OT-154</code> todo — leftover edges in the patched fleet guard · 0/6 criteria</summary>
 
@@ -11278,13 +11326,6 @@ Re-run scripts (ephemeral scratchpad):
 ## Recent activity
 
 ```
-2026-08-21T11:48:51Z  open-tab  SubagentStop  
-2026-08-21T11:48:51Z  open-tab  SubagentStop  
-2026-08-21T11:49:23Z  open-tab  SubagentStop  
-2026-08-21T11:49:23Z  open-tab  SubagentStop  
-2026-08-21T11:49:23Z  open-tab  SubagentStop  
-2026-08-21T11:49:23Z  open-tab  SubagentStop  
-2026-08-21T11:49:23Z  open-tab  SubagentStop  
 2026-08-21T11:49:23Z  open-tab  SubagentStop  
 2026-08-21T11:49:54Z  open-tab  SubagentStop  
 2026-08-21T11:49:54Z  open-tab  SubagentStop  
@@ -11298,6 +11339,13 @@ Re-run scripts (ephemeral scratchpad):
 2026-08-21T11:50:26Z  open-tab  SubagentStop  
 2026-08-21T11:50:26Z  open-tab  SubagentStop  
 2026-08-21T11:50:26Z  open-tab  SubagentStop  
+2026-08-21T11:50:46Z  open-tab  SubagentStop  builder-deep
+2026-08-21T11:54:23Z  open-tab  SubagentStop  
+2026-08-21T11:54:23Z  open-tab  SubagentStop  
+2026-08-21T11:54:23Z  open-tab  SubagentStop  
+2026-08-21T11:54:23Z  open-tab  SubagentStop  
+2026-08-21T11:54:23Z  open-tab  SubagentStop  
+2026-08-21T11:54:23Z  open-tab  SubagentStop  
 ```
 
 ---
