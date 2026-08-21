@@ -1,6 +1,6 @@
 // Downscales and re-encodes a receipt photo client-side before upload.
 // Phone cameras produce 3-8 MB originals; this brings them down to a JPEG
-// with the longest edge capped at 1600px, which is plenty for Gemini to
+// with the longest edge capped at 1568px, which is plenty for Gemini to
 // read line items off of and keeps Supabase storage usage sane.
 //
 // Pure browser-only logic — no Supabase imports, no network calls. If
@@ -8,17 +8,35 @@
 // file, no canvas support), the original file is returned unchanged: a big
 // upload beats a broken one.
 
-const MAX_EDGE = 1600;
-const JPEG_QUALITY = 0.8;
+const MAX_EDGE = 1568;
+const JPEG_QUALITY = 0.7;
 
 export type CompressResult = {
   blob: Blob;
   mimeType: string;
 };
 
+// Phone photos carry an EXIF orientation tag rather than pre-rotated pixels,
+// and browsers disagree on whether drawing that source to a canvas applies
+// it automatically. `imageOrientation: "from-image"` is the documented,
+// spec'd way to make createImageBitmap normalize it for us, so orientation
+// handling happens exactly once, here, regardless of what a given browser's
+// unstated default would otherwise have done. A browser old enough to throw
+// on the options object gets a plain decode instead: whatever that
+// browser's own default behaviour is (auto-applied or not) is what results,
+// but nothing downstream ever rotates a second time on top of it, so there
+// is no double-rotation path either way.
+async function decodeUpright(file: File): Promise<ImageBitmap> {
+  try {
+    return await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    return createImageBitmap(file);
+  }
+}
+
 export async function compressImage(file: File): Promise<CompressResult> {
   try {
-    const bitmap = await createImageBitmap(file);
+    const bitmap = await decodeUpright(file);
 
     const { width, height } = bitmap;
     const longestEdge = Math.max(width, height);
