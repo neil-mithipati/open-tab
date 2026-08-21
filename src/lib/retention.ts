@@ -7,12 +7,12 @@
 // no remaining product purpose — which is the definition of data that should
 // not still be there.
 //
-// Seven days is the default because it covers the two reasons a photo is
+// Fourteen days is the default because it covers the two reasons a photo is
 // genuinely wanted after the parse: the payer checking a line the model read
 // wrong, and a claimer disputing an item while the tab is still being settled.
 // Both happen in the days after a meal, not the months.
 
-export const DEFAULT_RECEIPT_IMAGE_RETENTION_DAYS = 7;
+export const DEFAULT_RECEIPT_IMAGE_RETENTION_DAYS = 14;
 
 // Deliberately bounded on both sides. Zero or negative would delete images the
 // job's own users are still looking at, and a value large enough to be a typo
@@ -24,7 +24,7 @@ const MAX_RETENTION_DAYS = 365;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * N, from RECEIPT_IMAGE_RETENTION_DAYS, falling back to 7.
+ * N, from RECEIPT_IMAGE_RETENTION_DAYS, falling back to 14.
  *
  * Fails SAFE rather than open, and the two directions are different here.
  * A rate limiter failing open leaves a limiter inert; a retention job failing
