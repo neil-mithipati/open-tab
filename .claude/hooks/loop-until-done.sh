@@ -58,13 +58,31 @@ active=$(printf '%s' "$input"  | jq -r '.stop_hook_active // false' 2>/dev/null)
 # message starts a fresh chain, not a continuation of this one.
 tp=$(printf '%s' "$input" | jq -r '.transcript_path // ""' 2>/dev/null)
 if [ -n "$tp" ] && [ -f "$tp" ]; then
+  # The transcript logs one JSONL line per content BLOCK, not per turn — a
+  # single reply that ends in text after a tool call is split across several
+  # assistant-typed lines. Picking only the single most-recent non-empty
+  # entry (the old approach) could pick a stray trailing block — a lone
+  # newline, an empty string — that shadows the marker sitting in the block
+  # right before it. Concatenate every text block from every assistant entry
+  # in the window instead, in order, then look at the actual last non-blank
+  # line of that combined text.
   last_text=$(tail -80 "$tp" 2>/dev/null | jq -rs '
     [.[] | select(.type == "assistant")
-     | .message.content // []
+     | (.message.content // [])
      | map(select(.type == "text") | .text) | join("\n")]
-    | map(select(length > 0)) | last // ""
+    | join("\n")
   ' 2>/dev/null)
-  if printf '%s' "$last_text" | tail -3 | grep -qF '[awaiting owner]'; then
+  # Trim trailing whitespace per line, then take the last line that is not
+  # entirely blank. This is what makes trailing whitespace/newlines after the
+  # marker harmless while still requiring the marker to be the LAST thing
+  # said — a mid-reply mention followed by more text lands on that later
+  # line, not the marker line, and correctly fails the match.
+  last_line=$(printf '%s' "$last_text" | awk '
+    { line = $0; gsub(/[ \t\r]+$/, "", line); gsub(/^[ \t\r]+/, "", line)
+      if (line != "") last = line }
+    END { print last }
+  ')
+  if [ "$last_line" = "[awaiting owner]" ]; then
     rm -f "$STATE/.loop-${session}.count" "$STATE/loop-note" 2>/dev/null
     exit 0
   fi
