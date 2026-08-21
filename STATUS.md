@@ -1,18 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 12:51 UTC · regenerated on every task completion.
+Updated 2026-08-21 12:52 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $90.28 | $200.00 | ████░░░░░░ 45% |
+| open-tab | $90.76 | $200.00 | ████░░░░░░ 45% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer-deep | open-tab | 2026-08-21T12:44:12Z | 3 |
+| 🟢 reviewer-deep | open-tab | 2026-08-21T12:37:59Z | 2 |
 
 ## Blocked — needs your input
 
@@ -11203,7 +11203,7 @@ Land it in the kit as well as this checkout, or the next `add-fleet` reverts it.
 That has already happened twice.
 
 </details>
-<details><summary>🟢 <code>OT-155</code> in-progress — the [awaiting owner] marker passes its fixtures but still fails live · 0/6 criteria</summary>
+<details><summary>✅ <code>OT-155</code> done — the [awaiting owner] marker passes its fixtures but still fails live · 6/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -11249,16 +11249,16 @@ neither confirmed:
 
 ## Acceptance criteria
 
-- [ ] the cause is identified from a REAL session transcript, not a synthetic
+- [x] the cause is identified from a REAL session transcript, not a synthetic
       one — read the actual JSONL the hook is passed and say what the last
       assistant text is at the moment the hook runs
-- [ ] a reply ending in the marker stops the loop in a live session, confirmed
+- [x] a reply ending in the marker stops the loop in a live session, confirmed
       by observation and not only by fixture
-- [ ] if the cause is a race, the fix does not depend on timing — polling or
+- [x] if the cause is a race, the fix does not depend on timing — polling or
       sleeping in a Stop hook is not acceptable
-- [ ] a mid-reply mention still forces a continuation, live
-- [ ] unfinished granted work with no marker still forces a continuation, live
-- [ ] OT-151's fixtures still pass
+- [x] a mid-reply mention still forces a continuation, live
+- [x] unfinished granted work with no marker still forces a continuation, live
+- [x] OT-151's fixtures still pass
 
 ## Note
 
@@ -11335,19 +11335,6 @@ about the criteria. Retried at the same tier with a narrowed prompt.
 ## Recent activity
 
 ```
-2026-08-21T12:50:06Z  open-tab  SubagentStop  
-2026-08-21T12:50:06Z  open-tab  SubagentStop  
-2026-08-21T12:50:08Z  open-tab  SubagentStop  
-2026-08-21T12:50:08Z  open-tab  SubagentStop  
-2026-08-21T12:50:08Z  open-tab  SubagentStop  
-2026-08-21T12:50:08Z  open-tab  SubagentStop  
-2026-08-21T12:50:08Z  open-tab  SubagentStop  
-2026-08-21T12:50:08Z  open-tab  SubagentStop  
-2026-08-21T12:50:39Z  open-tab  SubagentStop  
-2026-08-21T12:50:39Z  open-tab  SubagentStop  
-2026-08-21T12:50:39Z  open-tab  SubagentStop  
-2026-08-21T12:50:39Z  open-tab  SubagentStop  
-2026-08-21T12:50:39Z  open-tab  SubagentStop  
 2026-08-21T12:50:39Z  open-tab  SubagentStop  
 2026-08-21T12:51:11Z  open-tab  SubagentStop  
 2026-08-21T12:51:11Z  open-tab  SubagentStop  
@@ -11355,6 +11342,19 @@ about the criteria. Retried at the same tier with a narrowed prompt.
 2026-08-21T12:51:11Z  open-tab  SubagentStop  
 2026-08-21T12:51:11Z  open-tab  SubagentStop  
 2026-08-21T12:51:11Z  open-tab  SubagentStop  
+2026-08-21T12:51:43Z  open-tab  SubagentStop  
+2026-08-21T12:51:43Z  open-tab  SubagentStop  
+2026-08-21T12:51:43Z  open-tab  SubagentStop  
+2026-08-21T12:51:43Z  open-tab  SubagentStop  
+2026-08-21T12:51:43Z  open-tab  SubagentStop  
+2026-08-21T12:51:43Z  open-tab  SubagentStop  
+2026-08-21T12:51:56Z  open-tab  SubagentStop  reviewer-deep
+2026-08-21T12:52:26Z  open-tab  SubagentStop  
+2026-08-21T12:52:26Z  open-tab  SubagentStop  
+2026-08-21T12:52:26Z  open-tab  SubagentStop  
+2026-08-21T12:52:26Z  open-tab  SubagentStop  
+2026-08-21T12:52:26Z  open-tab  SubagentStop  
+2026-08-21T12:52:26Z  open-tab  SubagentStop  
 ```
 
 ---
