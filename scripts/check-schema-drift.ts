@@ -309,15 +309,24 @@ export type ExprNode =
   | { k: "array"; items: ExprNode[] };
 
 // Binding power, loosest first. NOT sits between AND and comparison, as in SQL.
+// `->` / `->>` (the JSON operators) sit ABOVE comparison, matching postgres'
+// real "any other operator" precedence tier — they bind tighter than `=`, so
+// `a = b ->> 'c'` parses as `a = (b ->> 'c')`, not `(a = b) ->> 'c'`. Getting
+// this wrong reads as a false DRIFT once a JSON-column policy exists (postgres
+// deparses with the parens this parser would otherwise have gotten wrong), so
+// the failure mode of a bug here is noisy, not a false all-clear — but it is
+// still wrong, and worth having right before it matters.
 const PREC_OR = 1;
 const PREC_AND = 2;
 const PREC_NOT = 3;
 const PREC_CMP = 4;
-const PREC_CONCAT = 5;
-const PREC_ADD = 6;
-const PREC_MUL = 7;
+const PREC_JSON = 5;
+const PREC_CONCAT = 6;
+const PREC_ADD = 7;
+const PREC_MUL = 8;
 
-const COMPARISON_OPS = new Set(["=", "<>", "!=", "<", ">", "<=", ">=", "~", "!~", "~~", "!~~", "@>", "<@", "->", "->>"]);
+const COMPARISON_OPS = new Set(["=", "<>", "!=", "<", ">", "<=", ">=", "~", "!~", "~~", "!~~", "@>", "<@"]);
+const JSON_OPS = new Set(["->", "->>"]);
 
 /** `a = b` means the same as `b = a`; render both to one canonical order. */
 const COMMUTATIVE_OPS = new Set(["=", "<>"]);
@@ -614,6 +623,7 @@ class ExpressionParser {
 }
 
 function binaryPrecedence(op: string): number | null {
+  if (JSON_OPS.has(op)) return PREC_JSON;
   if (COMPARISON_OPS.has(op)) return PREC_CMP;
   if (op === "||") return PREC_CONCAT;
   if (op === "+" || op === "-") return PREC_ADD;
@@ -1246,6 +1256,19 @@ function isErrorEnvelope(value: unknown): value is Record<string, unknown> {
   return isPlainObject(value) && value._tag === "Error";
 }
 
+// Keys `rowsFrom` already looks inside for a nested result set. An object
+// carrying one of these — `{"_tag":"Success","result":null}` is the shape
+// that surfaced this — has already been examined and rejected as "no rows
+// here" by `rowsFrom`. It must not then be re-admitted by the NDJSON
+// heuristic below as if it were one literal database row: a null/odd
+// envelope is "could not find a result set", never "one row that happens to
+// look like an envelope".
+const ENVELOPE_KEYS = new Set(["rows", "result", "results", "data", "records", "_tag"]);
+
+function looksLikeEnvelope(value: Record<string, unknown>): boolean {
+  return Object.keys(value).some((key) => ENVELOPE_KEYS.has(key));
+}
+
 function errorEnvelopeMessage(value: Record<string, unknown>): string {
   const error = isPlainObject(value.error) ? value.error : {};
   const code = optionalString(error.code);
@@ -1269,32 +1292,48 @@ function rowsFrom(value: unknown): Record<string, unknown>[] | null {
   return null;
 }
 
-function firstBalancedArray(text: string): string | null {
-  const start = text.indexOf("[");
-  if (start === -1) return null;
-  let depth = 0;
-  let inString = false;
-  for (let i = start; i < text.length; i += 1) {
-    const ch = text[i];
-    if (inString) {
-      if (ch === "\\") {
-        i += 1;
+/** Every top-level balanced `[...]` region in `text`, in the order they appear. */
+function findBalancedArrays(text: string): string[] {
+  const regions: string[] = [];
+  let searchFrom = 0;
+
+  while (searchFrom < text.length) {
+    const start = text.indexOf("[", searchFrom);
+    if (start === -1) break;
+
+    let depth = 0;
+    let inString = false;
+    let end = -1;
+    for (let i = start; i < text.length; i += 1) {
+      const ch = text[i];
+      if (inString) {
+        if (ch === "\\") {
+          i += 1;
+          continue;
+        }
+        if (ch === '"') inString = false;
         continue;
       }
-      if (ch === '"') inString = false;
-      continue;
+      if (ch === '"') {
+        inString = true;
+        continue;
+      }
+      if (ch === "[") depth += 1;
+      if (ch === "]") {
+        depth -= 1;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
     }
-    if (ch === '"') {
-      inString = true;
-      continue;
-    }
-    if (ch === "[") depth += 1;
-    if (ch === "]") {
-      depth -= 1;
-      if (depth === 0) return text.slice(start, i + 1);
-    }
+
+    if (end === -1) break;
+    regions.push(text.slice(start, end + 1));
+    searchFrom = end + 1;
   }
-  return null;
+
+  return regions;
 }
 
 /**
@@ -1315,22 +1354,51 @@ export function extractQueryRows(stdout: string): QueryResult {
   const failure = candidates.find(isErrorEnvelope);
   if (failure) return { ok: false, reason: errorEnvelopeMessage(failure), fromCli: true };
 
+  // Do not stop at the FIRST candidate that parses to an array — a stray `[]`
+  // progress line ahead of the real rows is itself a parseable (empty) array,
+  // and `if (rows)` is true for `[]` in JS. Scan every candidate and prefer
+  // the last one that actually has rows; only fall back to an empty match if
+  // nothing better ever showed up, which is what keeps a genuinely empty
+  // result set (the CLI's only line being `[]`) still reading as zero rows.
+  let candidateRows: Record<string, unknown>[] | null = null;
   for (const candidate of candidates) {
     const rows = rowsFrom(candidate);
-    if (rows) return { ok: true, rows };
+    if (rows === null) continue;
+    if (rows.length > 0) {
+      candidateRows = rows;
+      continue;
+    }
+    if (candidateRows === null) candidateRows = rows;
   }
+  if (candidateRows !== null) return { ok: true, rows: candidateRows };
 
-  // NDJSON: one row object per line.
-  const objectLines = lineValues.filter(isPlainObject);
+  // NDJSON: one row object per line. An envelope-shaped object (one of the
+  // wrapper keys above) is excluded — it already went through the candidate
+  // loop and was rejected there, so it is not a data row either.
+  const objectLines = lineValues.filter(
+    (value): value is Record<string, unknown> => isPlainObject(value) && !looksLikeEnvelope(value)
+  );
   if (objectLines.length > 0 && objectLines.length === lineValues.length) {
     return { ok: true, rows: objectLines };
   }
 
-  const region = firstBalancedArray(stdout);
-  if (region !== null) {
+  // A stray progress line can print an empty array (`[]`) before the real
+  // result set. Scan every balanced array in the output rather than just the
+  // first, and prefer the last NON-EMPTY one — the real result is what a
+  // deploy log tends to print last, and an empty match earlier must not win
+  // over real rows that come after it. A lone, genuinely empty result (the
+  // only array in the output) still falls through to that same empty match.
+  let fallbackRows: Record<string, unknown>[] | null = null;
+  for (const region of findBalancedArrays(stdout)) {
     const rows = rowsFrom(tryParseJson(region));
-    if (rows) return { ok: true, rows };
+    if (rows === null) continue;
+    if (rows.length > 0) {
+      fallbackRows = rows;
+      continue;
+    }
+    if (fallbackRows === null) fallbackRows = rows;
   }
+  if (fallbackRows !== null) return { ok: true, rows: fallbackRows };
 
   return {
     ok: false,
@@ -1360,7 +1428,9 @@ function runQuery(sql: string): Record<string, unknown>[] {
     const code = (result.error as NodeJS.ErrnoException).code;
     if (code === "ENOENT") {
       throw new CouldNotCheckError(
-        `the supabase CLI (${SUPABASE_BIN}) is not on PATH — install it, or set SUPABASE_BIN to its full path`
+        redactSecrets(
+          `the supabase CLI (${SUPABASE_BIN}) is not on PATH — install it, or set SUPABASE_BIN to its full path`
+        )
       );
     }
     throw new CouldNotCheckError(`could not run the supabase CLI: ${redactSecrets(result.error.message)}`);
@@ -1502,16 +1572,34 @@ has no link of its own. Exit codes:
 
   0  no drift
   1  drift found, listed on stdout
-  2  could not check — no credentials, not linked, or a query failed
+  2  could not check — no credentials, not linked, a query failed, --help was
+     requested, or an unrecognised argument was given (--help never means
+     "clean", because it never compared anything)
 
 env:
   SUPABASE_BIN   path to the supabase CLI (default: supabase on PATH)
 `;
 
 export function main(argv: string[]): number {
+  // --help is not a clean bill of health — a deploy step that passes a stray
+  // flag and only checks the exit code must not read this as "no drift". It
+  // still prints the usage text (to stdout, where a human looks for it) but
+  // exits the same non-zero code as any other "nothing was verified" case.
   if (argv.includes("--help") || argv.includes("-h")) {
     process.stdout.write(USAGE);
-    return 0;
+    process.stderr.write(
+      "RESULT: COULD NOT CHECK — usage was requested; no comparison was performed.\n"
+    );
+    return 2;
+  }
+
+  const unrecognised = argv.filter((arg) => arg.startsWith("-"));
+  if (unrecognised.length > 0) {
+    process.stderr.write(
+      `RESULT: COULD NOT CHECK — unrecognised argument(s): ${unrecognised.join(", ")}\n` +
+        `nothing was verified. this is NOT a clean bill of health.\n\n${USAGE}`
+    );
+    return 2;
   }
 
   try {
