@@ -1,19 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 03:04 UTC · regenerated on every task completion.
+Updated 2026-08-21 03:06 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $39.06 | $200.00 | █░░░░░░░░░ 19% |
+| open-tab | $40.17 | $200.00 | ██░░░░░░░░ 20% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | 🟢 builder-light | open-tab | 2026-08-21T02:53:24Z | 1 |
-| 🟢 publisher | open-tab | 2026-08-21T03:02:55Z | 1 |
+| 🟢 builder | open-tab | 2026-08-21T03:06:17Z | 1 |
 
 ## Blocked — needs your input
 
@@ -9950,18 +9950,204 @@ but an instruction not to echo a secret did not hold, and that is worth knowing
 before a review ever runs against a real one.
 
 </details>
+<details><summary>⚪ <code>OT-147</code> todo — four fail-opens remain in parallel-cap.sh after OT-138 · 0/6 criteria</summary>
+
+- app: open-tab
+- tier: builder-deep
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - .claude/hooks/parallel-cap.sh
+-   - .claude/hooks/log-event.sh
+- blocked_reason: null
+
+
+## Needs a maintenance grant before dispatch
+
+Fleet-protected files. Add `OT-147` to `"maintenance"` in the main checkout's
+`.claude/gates.json`, and note the OT-138 finding that the grant does not
+activate for a dispatched subagent — `maint_active()` keys off
+`basename(CLAUDE_PROJECT_DIR)`, which is the main checkout for a worker. Until
+that is fixed this has to be run from a session rooted in the worktree.
+
+## Findings, from the OT-138 reviews
+
+All four were measured by executing the hook, not by reading it. None is a
+regression from OT-138 — that task closed five real fail-opens and these are
+what remains.
+
+1. **Medium. Partial corruption undercounts instead of denying.**
+   4 content lines, 1 parsed record, 2 live builders counted as 1, dispatch
+   ALLOWED. The `content_lines`/`parsed_records` guard only fires when
+   `parsed_records` is zero, so heavy-but-not-total record loss passes through
+   as a low count. A ratio guard would close it.
+
+2. **Medium. One intact JSON object disarms the corruption guard entirely.**
+   The guard tests zero parsed *objects*, not zero *agent records*. A log
+   shredded to a single unrelated line allows:
+
+       {"event":"Heartbeat","note":"unrelated"} + 3 garbage lines  ->  ALLOW
+
+3. **Medium. A builder-deep ages out at one hour even with live heartbeats.**
+   With the default `STALE_SECS=3600` a fresh heartbeat can only shorten the
+   window, never extend it past the start cutoff. So the cap stops capping the
+   most expensive tier on any run over an hour. Confirmed identical to the
+   `ot-127-recovered` reference, so it is long-standing rather than new.
+
+4. **Medium. The jam fixture double-counts.** Each `SubagentStart` appears twice
+   with an identical `agent_id` and `ts`, and duplicates are tallied twice, so 3
+   live reviewers count as 6 and hit `MAX_PARALLEL_TOTAL`. Over-counting fails
+   closed, so it is not a fail-open — but it wedges dispatch, and the likely
+   cause is `log-event.sh` writing each start twice. Check the writer before
+   changing the counter.
+
+5. **Low. Criterion 7's jam fixture no longer guards what it was built for.**
+   Its 6 start records are ~30h old, so every one ages out of the 1h window and
+   the allow comes from staleness rather than stop-pairing. Rebasing its
+   timestamps would restore its value as a regression guard.
+
+## Acceptance criteria
+
+- [ ] partial corruption (non-zero content lines, some but not all records lost)
+      denies rather than counting low
+- [ ] a single intact non-agent JSON object no longer disarms the guard
+- [ ] a builder-deep with live heartbeats stays counted past the start cutoff
+- [ ] duplicate `SubagentStart` records with identical `agent_id` and `ts` count
+      once, and the cause in `log-event.sh` is identified and fixed if that is
+      where the duplication originates
+- [ ] the jam fixture's timestamps are rebased so it tests pairing again
+- [ ] every OT-138 criterion still passes — re-run its fixtures, do not assume
+
+## Prove it
+
+Same standard as OT-138: script the fixtures in one pass, execute the hook
+against each, paste the table. Finding 3 is the one to be most careful with —
+extending the live window is exactly the direction that turns a cap into a
+rubber stamp if the reasoning is wrong.
+
+</details>
+<details><summary>🟢 <code>OT-148</code> in-progress — robustness gaps in the schema drift check · 0/7 criteria</summary>
+
+- app: open-tab
+- tier: builder
+- review: full
+- attempts: 0
+- branch: task/OT-148
+- worktree: ../wt-OT-148
+- files:
+-   - scripts/check-schema-drift.ts
+-   - src/__tests__/scripts/schemaDrift.test.ts
+- blocked_reason: null
+
+
+## Context
+
+Findings from the OT-145 review. None blocked that merge; the check works and
+found real production drift on its first run. These are the edges.
+
+Not fleet-protected, so this is dispatchable now.
+
+1. **Medium. `->` and `->>` have comparison precedence.** They sit in
+   `COMPARISON_OPS` (~line 320), so `a = b ->> 'c'` parses as `(a = b) ->> 'c'`.
+   Unreachable today because no policy uses JSON operators, and the practical
+   direction is a false *drift* rather than a false pass, since postgres deparses
+   with explicit parens. Fix before any JSON-column policy is added.
+
+2. **Medium. `extractQueryRows` takes the first parseable array in the output.**
+   A stray `[]` progress line ahead of the real rows yields an empty result set.
+   Every consumer currently ends at exit 1, so it fails loud — but it is reading
+   the wrong thing, and that is luck rather than design.
+
+3. **Low. `{"_tag":"Success","result":null}` is read as one data row** by the
+   NDJSON branch.
+
+4. **Low. The ENOENT message interpolates `SUPABASE_BIN` unredacted.**
+   Owner-supplied path, not a credential, so this is tidiness not exposure.
+
+5. **Low. `--help` exits 0 having checked nothing.** A deploy step that passes a
+   stray flag would read green. Given the whole design principle of this script
+   is that it must never report a false all-clear, this one is worth more than
+   its severity suggests.
+
+## Acceptance criteria
+
+- [ ] `->` and `->>` parse with correct precedence, with a test covering
+      `a = b ->> 'c'`
+- [ ] `extractQueryRows` selects the actual result rows rather than the first
+      parseable array, with a test where a stray `[]` precedes them
+- [ ] a null `result` envelope is not read as a data row
+- [ ] the ENOENT message redacts, consistent with every other output path
+- [ ] `--help` and any unrecognised flag exit non-zero, or print and exit in a
+      way no deploy step can mistake for a clean check
+- [ ] the 16 different-predicate pairs the reviewer probed still compare as
+      distinct, and the `_1` extra-policy fixture still reports exactly one drift
+- [ ] existing tests still pass
+
+## Note
+
+Do not weaken normalisation to fix finding 1. Over-aggressive normalisation
+makes genuinely different predicates compare equal, which is a false all-clear —
+the exact failure this script exists to prevent.
+
+</details>
+<details><summary>⚪ <code>OT-149</code> todo — verify-trivial.sh re-fires forever on a done task whose worktree was removed · 0/4 criteria</summary>
+
+- app: open-tab
+- tier: builder
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - .claude/hooks/verify-trivial.sh
+- blocked_reason: null
+
+
+## Needs a maintenance grant before dispatch
+
+Fleet-protected. Same grant caveat as OT-147.
+
+## What happens
+
+Every subagent dispatched this session received a stop-hook message about
+OT-144, a task that is `done` and merged and whose worktree no longer exists.
+Workers cannot act on it — it is outside their task and their scope — so each
+one reported it as noise and carried on. Counted at least nine occurrences
+across builders and reviewers.
+
+Diagnosis from the OT-145 builder: `verify-trivial.sh` treats a `done` task with
+a removed worktree as a violation rather than skipping it. Once a task is merged
+and cleaned up, the condition can never clear, so the message repeats forever.
+
+## Why it is worth fixing rather than tolerating
+
+It is noise in every worker's context, on every dispatch, for the rest of the
+project's life — and it is noise of the worst kind, describing a problem the
+reader is structurally unable to fix. Two workers spent part of their final
+report explaining they could not act on it. That is budget spent on an artifact
+of our own tooling.
+
+## Acceptance criteria
+
+- [ ] a `done` task whose worktree has been removed is skipped, not flagged
+- [ ] a genuinely trivial-mislabelled task with a live worktree is still caught —
+      the check must not be defanged, only scoped
+- [ ] dispatching a fresh subagent produces no OT-144 message
+- [ ] the fix is verified by running the hook against both cases, not by reading
+
+## Note
+
+Check whether the same shape exists in the other state hooks before fixing only
+this one. A `done`-with-no-worktree case is a normal end state and any hook
+treating it as an error will behave the same way.
+
+</details>
 
 ## Recent activity
 
 ```
-2026-08-21T02:56:41Z  open-tab  SubagentStop  reviewer-light
-2026-08-21T03:02:55Z  open-tab  SubagentStart  publisher
-2026-08-21T03:03:26Z  open-tab  SubagentStop  
-2026-08-21T03:03:26Z  open-tab  SubagentStop  
-2026-08-21T03:03:26Z  open-tab  SubagentStop  
-2026-08-21T03:03:26Z  open-tab  SubagentStop  
-2026-08-21T03:03:26Z  open-tab  SubagentStop  
-2026-08-21T03:03:26Z  open-tab  SubagentStop  
 2026-08-21T03:03:58Z  open-tab  SubagentStop  
 2026-08-21T03:03:58Z  open-tab  SubagentStop  
 2026-08-21T03:03:58Z  open-tab  SubagentStop  
@@ -9974,6 +10160,14 @@ before a review ever runs against a real one.
 2026-08-21T03:04:29Z  open-tab  SubagentStop  
 2026-08-21T03:04:29Z  open-tab  SubagentStop  
 2026-08-21T03:04:29Z  open-tab  SubagentStop  
+2026-08-21T03:04:45Z  open-tab  SubagentStop  publisher
+2026-08-21T03:06:17Z  open-tab  SubagentStart  builder
+2026-08-21T03:06:48Z  open-tab  SubagentStop  
+2026-08-21T03:06:48Z  open-tab  SubagentStop  
+2026-08-21T03:06:48Z  open-tab  SubagentStop  
+2026-08-21T03:06:48Z  open-tab  SubagentStop  
+2026-08-21T03:06:48Z  open-tab  SubagentStop  
+2026-08-21T03:06:48Z  open-tab  SubagentStop  
 ```
 
 ---
