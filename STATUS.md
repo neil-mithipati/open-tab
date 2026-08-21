@@ -1,19 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 02:14 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:15 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $12.02 | $200.00 | ░░░░░░░░░░ 6% |
+| open-tab | $13.08 | $200.00 | ░░░░░░░░░░ 6% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | 🟢 reviewer-light | open-tab | 2026-08-21T02:06:48Z | 1 |
-| 🟢 publisher | open-tab | 2026-08-21T02:14:18Z | 2 |
 
 ## Blocked — needs your input
 
@@ -9461,26 +9460,26 @@ scope had missed, and the task could not merge until it was fixed.
 ## Recent activity
 
 ```
-2026-08-21T02:14:50Z  open-tab  SubagentStop  
-2026-08-21T02:14:50Z  open-tab  SubagentStop  
-2026-08-21T02:14:51Z  open-tab  SubagentStop  
-2026-08-21T02:14:51Z  open-tab  SubagentStop  
-2026-08-21T02:14:51Z  open-tab  SubagentStop  
-2026-08-21T02:14:51Z  open-tab  SubagentStop  
-2026-08-21T02:14:51Z  open-tab  SubagentStop  
-2026-08-21T02:14:51Z  open-tab  SubagentStop  
-2026-08-21T02:14:53Z  open-tab  SubagentStop  
-2026-08-21T02:14:53Z  open-tab  SubagentStop  
-2026-08-21T02:14:53Z  open-tab  SubagentStop  
-2026-08-21T02:14:53Z  open-tab  SubagentStop  
-2026-08-21T02:14:53Z  open-tab  SubagentStop  
-2026-08-21T02:14:53Z  open-tab  SubagentStop  
-2026-08-21T02:14:57Z  open-tab  SubagentStop  
-2026-08-21T02:14:57Z  open-tab  SubagentStop  
-2026-08-21T02:14:57Z  open-tab  SubagentStop  
-2026-08-21T02:14:57Z  open-tab  SubagentStop  
-2026-08-21T02:14:57Z  open-tab  SubagentStop  
-2026-08-21T02:14:57Z  open-tab  SubagentStop  
+2026-08-21T02:15:08Z  open-tab  SubagentStop  
+2026-08-21T02:15:08Z  open-tab  SubagentStop  
+2026-08-21T02:15:08Z  open-tab  SubagentStop  
+2026-08-21T02:15:08Z  open-tab  SubagentStop  
+2026-08-21T02:15:08Z  open-tab  SubagentStop  
+2026-08-21T02:15:08Z  open-tab  SubagentStop  
+2026-08-21T02:15:21Z  open-tab  SubagentStop  
+2026-08-21T02:15:21Z  open-tab  SubagentStop  
+2026-08-21T02:15:21Z  open-tab  SubagentStop  
+2026-08-21T02:15:21Z  open-tab  SubagentStop  
+2026-08-21T02:15:21Z  open-tab  SubagentStop  
+2026-08-21T02:15:21Z  open-tab  SubagentStop  
+2026-08-21T02:15:23Z  open-tab  SubagentStop  publisher
+2026-08-21T02:15:53Z  open-tab  SubagentStop  
+2026-08-21T02:15:53Z  open-tab  SubagentStop  
+2026-08-21T02:15:53Z  open-tab  SubagentStop  
+2026-08-21T02:15:53Z  open-tab  SubagentStop  
+2026-08-21T02:15:53Z  open-tab  SubagentStop  
+2026-08-21T02:15:53Z  open-tab  SubagentStop  
+2026-08-21T02:15:59Z  open-tab  SubagentStop  publisher
 ```
 
 ---
