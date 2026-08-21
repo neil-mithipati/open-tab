@@ -1,16 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 02:04 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:05 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $0.23 | $200.00 | ░░░░░░░░░░ 0% |
+| open-tab | $1.15 | $200.00 | ░░░░░░░░░░ 0% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| 🟢 builder | open-tab | 2026-08-21T02:04:48Z | 2 |
+| 🟢 publisher | open-tab | 2026-08-21T02:04:53Z | 1 |
 
 ## Blocked — needs your input
 
@@ -8987,7 +8990,7 @@ own evidence, including a negative control proving a rotated photo would have
 uploaded sideways without the fix.
 
 </details>
-<details><summary>⚪ <code>OT-141</code> todo — fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor · 0/4 criteria</summary>
+<details><summary>🟢 <code>OT-141</code> in-progress — fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor · 0/4 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -9216,7 +9219,7 @@ current gate set compares repo migrations to a live database, so this could
 drift again the moment it is fixed. That check is the real deliverable.
 
 </details>
-<details><summary>⚪ <code>OT-143</code> todo — 0026 cannot be applied by supabase db push — split the storage half out of the migration · 0/5 criteria</summary>
+<details><summary>🟢 <code>OT-143</code> in-progress — 0026 cannot be applied by supabase db push — split the storage half out of the migration · 0/5 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -9423,12 +9426,26 @@ scope had missed, and the task could not merge until it was fixed.
 ## Recent activity
 
 ```
-2026-08-21T02:04:10Z  open-tab  SubagentStop  
-2026-08-21T02:04:10Z  open-tab  SubagentStop  
-2026-08-21T02:04:10Z  open-tab  SubagentStop  
-2026-08-21T02:04:10Z  open-tab  SubagentStop  
-2026-08-21T02:04:10Z  open-tab  SubagentStop  
-2026-08-21T02:04:10Z  open-tab  SubagentStop  
+2026-08-21T02:05:07Z  open-tab  SubagentStop  
+2026-08-21T02:05:07Z  open-tab  SubagentStop  
+2026-08-21T02:05:08Z  open-tab  SubagentStop  
+2026-08-21T02:05:08Z  open-tab  SubagentStop  
+2026-08-21T02:05:08Z  open-tab  SubagentStop  
+2026-08-21T02:05:08Z  open-tab  SubagentStop  
+2026-08-21T02:05:08Z  open-tab  SubagentStop  
+2026-08-21T02:05:08Z  open-tab  SubagentStop  
+2026-08-21T02:05:09Z  open-tab  SubagentStop  
+2026-08-21T02:05:09Z  open-tab  SubagentStop  
+2026-08-21T02:05:09Z  open-tab  SubagentStop  
+2026-08-21T02:05:09Z  open-tab  SubagentStop  
+2026-08-21T02:05:09Z  open-tab  SubagentStop  
+2026-08-21T02:05:09Z  open-tab  SubagentStop  
+2026-08-21T02:05:12Z  open-tab  SubagentStop  
+2026-08-21T02:05:12Z  open-tab  SubagentStop  
+2026-08-21T02:05:12Z  open-tab  SubagentStop  
+2026-08-21T02:05:12Z  open-tab  SubagentStop  
+2026-08-21T02:05:12Z  open-tab  SubagentStop  
+2026-08-21T02:05:12Z  open-tab  SubagentStop  
 ```
 
 ---
