@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 04:59 UTC · regenerated on every task completion.
+Updated 2026-08-21 05:06 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $5.07 | $200.00 | ░░░░░░░░░░ 2% |
+| open-tab | $5.9 | $200.00 | ░░░░░░░░░░ 2% |
 
 ## Agents
 
@@ -15,9 +15,9 @@ Idle — no agents currently running.
 ## Blocked — needs your input
 
 > [!CAUTION]
-> 🔴 **Blocked `OT-142`** — needs the owner to run the schema_migrations query against production and decide the remediation path. no agent can see the live database, so the gap cannot be measured from here. this blocks the go-live, not just this task.
 > 🔴 **Blocked `OT-147`** — maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.
 > 🔴 **Blocked `OT-149`** — maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.
+> 🔴 **Blocked `OT-150`** — the guard hooks are outside every maintenance grant by design, so no agent can make this change. owner applies it upstream in the kit and re-runs add-fleet.
 
 ## Tasks
 
@@ -9233,7 +9233,7 @@ Show the extended sweep failing against the pre-fix file, then passing after.
 That is the criterion that stops this recurring.
 
 </details>
-<details><summary>🔴 <code>OT-142</code> blocked — production database is ~14 migrations behind the repo — merged code reads columns that do not exist live · 4/6 criteria — needs the owner to run the schema_migrations query against production and decide the remediation path. no agent can see the live database, so the gap cannot be measured from here. this blocks the go-live, not just this task.</summary>
+<details><summary>✅ <code>OT-142</code> done — production database is ~14 migrations behind the repo — merged code reads columns that do not exist live · 4/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -9243,10 +9243,7 @@ That is the criterion that stops this recurring.
 - worktree: null
 - files:
 -   - supabase/migrations/
-- blocked_reason: >-
--   needs the owner to run the schema_migrations query against production and
--   decide the remediation path. no agent can see the live database, so the gap
--   cannot be measured from here. this blocks the go-live, not just this task.
+- blocked_reason: null
 
 
 ## How this was found
@@ -9497,6 +9494,17 @@ Criteria 2 and 3 (per-table gap enumeration, remediation ordering) are moot —
 the owner's schema reset and full `db push` replaced reconciliation entirely.
 They stay unchecked rather than being claimed as satisfied by a route that was
 abandoned.
+
+
+## Closed, 2026-08-21
+
+Owner closed this. The live schema is correct: 26 migrations applied and
+tracked, bucket private, all four storage policies carrying their full tests.
+Drift detection exists (OT-145, hardened by OT-148).
+
+Criteria 2 and 3 stay unchecked on purpose. They describe the per-table
+reconciliation that the schema reset made unnecessary — not work that was
+skipped, work that stopped existing.
 
 </details>
 <details><summary>✅ <code>OT-143</code> done — 0026 cannot be applied by supabase db push — split the storage half out of the migration · 5/5 criteria</summary>
@@ -10232,30 +10240,88 @@ this one. A `done`-with-no-worktree case is a normal end state and any hook
 treating it as an error will behave the same way.
 
 </details>
+<details><summary>🔴 <code>OT-150</code> blocked — maintenance grant never activates for a dispatched subagent · 0/6 criteria — the guard hooks are outside every maintenance grant by design, so no agent can make this change. owner applies it upstream in the kit and re-runs add-fleet.</summary>
+
+- app: open-tab
+- tier: builder-deep
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - .claude/hooks/protect-fleet.sh
+- blocked_reason: >-
+-   the guard hooks are outside every maintenance grant by design, so no agent can
+-   make this change. owner applies it upstream in the kit and re-runs add-fleet.
+
+
+## The defect
+
+`maint_active()` (protect-fleet.sh:41-55) derives the task id from
+`basename($CLAUDE_PROJECT_DIR)` and requires it to match `wt-*`. A dispatched
+subagent's project dir is always the MAIN checkout, so the grant is inactive no
+matter what the grant file says. It only ever works in a session the owner
+manually rooted in the worktree.
+
+Cost so far: OT-138 blocked on it (owner wrote that fix by hand, later
+superseded), OT-147 and OT-149 blocked on it now.
+
+## Fix — option A, chosen by the owner
+
+Key the grant off the WRITE TARGET path rather than the session root. Drop-in
+replacement written to `/tmp/maint_active-option-a.sh`. It keeps the boundary:
+a path with no `wt-<ID>` segment gets no grant, the write must land inside that
+worktree, and the id must still be listed by the owner in the main checkout's
+grant file.
+
+The Bash guard keeps the session-root rule. A shell command has no single
+target path, so there is nothing to key on; workers use Edit/Write for fleet
+files instead.
+
+## Why upstream, not by hand
+
+Two kit re-installs have now reverted local fleet fixes — OT-131 lost five,
+OT-138's guards were discarded on 2026-08-21. A hand-edit here would be the
+third.
+
+## Acceptance criteria
+
+- [ ] a dispatched subagent writing to `../wt-<ID>/.claude/hooks/*` succeeds
+      when `<ID>` is listed under `maintenance` in the main checkout's grant
+      file
+- [ ] the same write is denied when the id is not listed
+- [ ] a write to the MAIN checkout's `.claude/` is denied regardless of any
+      grant
+- [ ] the grant file and both guard hooks remain non-overridable
+- [ ] a path merely containing the string `wt-<ID>` but resolving outside that
+      worktree is denied
+- [ ] the change ships through the kit and survives an `add-fleet` re-run
+
+</details>
 
 ## Recent activity
 
 ```
-2026-08-21T04:55:15Z  open-tab  SubagentStop  
-2026-08-21T04:55:15Z  open-tab  SubagentStop  
-2026-08-21T04:55:17Z  open-tab  SubagentStop  
-2026-08-21T04:55:17Z  open-tab  SubagentStop  
-2026-08-21T04:55:17Z  open-tab  SubagentStop  
-2026-08-21T04:55:17Z  open-tab  SubagentStop  
-2026-08-21T04:55:17Z  open-tab  SubagentStop  
-2026-08-21T04:55:17Z  open-tab  SubagentStop  
-2026-08-21T04:55:19Z  open-tab  SubagentStop  
-2026-08-21T04:55:19Z  open-tab  SubagentStop  
-2026-08-21T04:55:19Z  open-tab  SubagentStop  
-2026-08-21T04:55:19Z  open-tab  SubagentStop  
-2026-08-21T04:55:19Z  open-tab  SubagentStop  
-2026-08-21T04:55:19Z  open-tab  SubagentStop  
-2026-08-21T04:59:57Z  open-tab  SubagentStop  
-2026-08-21T04:59:57Z  open-tab  SubagentStop  
-2026-08-21T04:59:57Z  open-tab  SubagentStop  
-2026-08-21T04:59:57Z  open-tab  SubagentStop  
-2026-08-21T04:59:57Z  open-tab  SubagentStop  
-2026-08-21T04:59:57Z  open-tab  SubagentStop  
+2026-08-21T05:00:16Z  open-tab  SubagentStop  
+2026-08-21T05:00:16Z  open-tab  SubagentStop  
+2026-08-21T05:00:22Z  open-tab  SubagentStop  
+2026-08-21T05:00:22Z  open-tab  SubagentStop  
+2026-08-21T05:00:22Z  open-tab  SubagentStop  
+2026-08-21T05:00:22Z  open-tab  SubagentStop  
+2026-08-21T05:00:22Z  open-tab  SubagentStop  
+2026-08-21T05:00:22Z  open-tab  SubagentStop  
+2026-08-21T05:00:24Z  open-tab  SubagentStop  
+2026-08-21T05:00:24Z  open-tab  SubagentStop  
+2026-08-21T05:00:24Z  open-tab  SubagentStop  
+2026-08-21T05:00:24Z  open-tab  SubagentStop  
+2026-08-21T05:00:24Z  open-tab  SubagentStop  
+2026-08-21T05:00:24Z  open-tab  SubagentStop  
+2026-08-21T05:06:56Z  open-tab  SubagentStop  
+2026-08-21T05:06:56Z  open-tab  SubagentStop  
+2026-08-21T05:06:56Z  open-tab  SubagentStop  
+2026-08-21T05:06:56Z  open-tab  SubagentStop  
+2026-08-21T05:06:56Z  open-tab  SubagentStop  
+2026-08-21T05:06:56Z  open-tab  SubagentStop  
 ```
 
 ---
