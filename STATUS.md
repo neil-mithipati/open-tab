@@ -1,18 +1,23 @@
 # Agent status
 
-Updated 2026-08-21 05:31 UTC · regenerated on every task completion.
+Updated 2026-08-21 05:32 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $19.93 | $200.00 | ░░░░░░░░░░ 9% |
+| open-tab | $20.7 | $200.00 | █░░░░░░░░░ 10% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | 🟢 reviewer-deep | open-tab | 2026-08-21T05:30:49Z | 1 |
+
+## Blocked — needs your input
+
+> [!CAUTION]
+> 🔴 **Blocked `OT-150`** — reviewer-deep rejected the landed fix: two high findings let a grant for one task write the MAIN checkout. needs canonicalization before any further fleet-tooling dispatch, and the change must go back through the kit.
 
 ## Tasks
 
@@ -10269,7 +10274,7 @@ one file was correct.
 Gates: typecheck pass, lint pass, tests 653/653. Commit `07ca02c`.
 
 </details>
-<details><summary>🟢 <code>OT-150</code> in-progress — maintenance grant never activates for a dispatched subagent · 0/6 criteria</summary>
+<details><summary>🔴 <code>OT-150</code> blocked — maintenance grant never activates for a dispatched subagent · 4/4 criteria — reviewer-deep rejected the landed fix: two high findings let a grant for one task write the MAIN checkout. needs canonicalization before any further fleet-tooling dispatch, and the change must go back through the kit.</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -10279,7 +10284,10 @@ Gates: typecheck pass, lint pass, tests 653/653. Commit `07ca02c`.
 - worktree: null
 - files:
 -   - .claude/hooks/protect-fleet.sh
-- blocked_reason: null
+- blocked_reason: >-
+-   reviewer-deep rejected the landed fix: two high findings let a grant for one
+-   task write the MAIN checkout. needs canonicalization before any further
+-   fleet-tooling dispatch, and the change must go back through the kit.
 
 
 ## The defect
@@ -10313,16 +10321,16 @@ third.
 
 ## Acceptance criteria
 
-- [ ] a dispatched subagent writing to `../wt-<ID>/.claude/hooks/*` succeeds
+- [x] a dispatched subagent writing to `../wt-<ID>/.claude/hooks/*` succeeds
       when `<ID>` is listed under `maintenance` in the main checkout's grant
       file
-- [ ] the same write is denied when the id is not listed
-- [ ] a write to the MAIN checkout's `.claude/` is denied regardless of any
+- [x] the same write is denied when the id is not listed
+- [!] a write to the MAIN checkout's `.claude/` is denied regardless of any
       grant
-- [ ] the grant file and both guard hooks remain non-overridable
-- [ ] a path merely containing the string `wt-<ID>` but resolving outside that
+- [x] the grant file and both guard hooks remain non-overridable
+- [!] a path merely containing the string `wt-<ID>` but resolving outside that
       worktree is denied
-- [ ] the change ships through the kit and survives an `add-fleet` re-run
+- [x] the change ships through the kit and survives an `add-fleet` re-run
 
 
 ## Landed by the owner, under review 2026-08-21
@@ -10338,6 +10346,48 @@ Not covered by that probe, and left to the reviewer: the path that merely
 contains `wt-<ID>` while resolving outside the worktree, and whether the change
 survives an `add-fleet` re-run. The re-run is not academic — it failed to sync
 this very file three times tonight, and the file only landed via a manual `cp`.
+
+
+## REJECTED by `reviewer-deep` — two high findings, both introduced by this fix
+
+`maint_active()` never canonicalizes the target path, so the string glob
+`*/wt-"$id"/*` and the filesystem resolution used by
+`git -C "$(dirname "$abs")"` — and by the eventual write — disagree.
+
+**Finding 1 (high). `..` climbs out of the worktree and keeps the grant.**
+Verified by execution, project dir set to the main checkout:
+
+    .../wt-OT-147/../open-tab/.claude/hooks/parallel-cap.sh    -> ALLOW
+    .../wt-OT-147/../open-tab/.claude/agents/orchestrator.md   -> ALLOW
+    .../wt-OT-147/../open-tab/.claude/settings.json            -> ALLOW
+    .../wt-OT-147/../open-tab/CLAUDE.md                        -> ALLOW
+
+The pre-change hook denied all four. This hole is ours.
+
+**Finding 2 (high). A symlink wins the grant from anywhere on disk.** A
+directory named `wt-OT-147` in `/tmp`, holding a `.claude` symlink into the main
+checkout, allowed writes to the real hooks, agent cards and settings. It does
+not even need to be a worktree. `rev-parse --git-common-dir` returned a relative
+path, so the grant file was then read back through the attacker's own symlink.
+
+**Pre-existing, separate, also high.** The `hit` matcher (lines 92-97) is
+defeated by path spelling, with no grant at all: `.claude//hooks/...` (doubled
+slash), `./bin/doctor` (dot segment), and any absolute path to `bin/` that does
+not literally prefix-match `$ROOT`. Filed as its own task; same root cause, so
+fix it in the same pass.
+
+**Fix direction, from the reviewer:** resolve the path (`realpath` or `cd -P`)
+BEFORE the segment scan, then require the resolved path to sit under a real
+worktree root taken from `git worktree list --porcelain`, rather than
+glob-matching a string. The unanchored scan cannot be patched into sufficiency.
+
+What did hold: the grant file and both guard hooks stayed non-overridable in
+every shape tested, and a re-run of `add-fleet` does sync this file — tonight's
+three failures were timing, not installer behaviour (all three ran before the
+kit edit at 01:13, so `cmp -s` correctly skipped).
+
+Also low, and worth acting on: the kit's copy of this fix is UNCOMMITTED in the
+`agent-fleet-kit` working tree — one `git checkout` from being lost.
 
 </details>
 <details><summary>⚪ <code>OT-151</code> todo — the stop hook ignores the [awaiting owner] marker and forces continuation anyway · 0/5 criteria</summary>
@@ -10396,22 +10446,58 @@ in the kit at `../agent-fleet-kit` rather than only here, or the next
 `add-fleet` reverts it.
 
 </details>
+<details><summary>⚪ <code>OT-152</code> todo — fleet-path matcher is bypassed by path spelling, no grant needed · 0/7 criteria</summary>
+
+- app: open-tab
+- tier: builder-deep
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - .claude/hooks/protect-fleet.sh
+- blocked_reason: null
+
+
+## Found by `reviewer-deep` while reviewing OT-150. Pre-existing, not introduced there.
+
+The `hit` matcher decides whether a path is fleet infrastructure at all. It
+matches strings, so a different spelling of the same file misses it — and when
+`hit` is empty the unconditional guard-hook deny below it never runs either,
+because that check sits inside `if [ -n "$hit" ]`. No maintenance grant is
+required for any of these. Verified by executing the hook:
+
+    /…/open-tab/.claude//hooks/protect-fleet.sh   -> ALLOW   (doubled slash)
+    /…/open-tab/./bin/doctor                      -> ALLOW   (dot segment)
+    /…/wt-OT-147/../open-tab/bin/doctor           -> ALLOW   (climb-out)
+
+The last one also shows `bin/` is only protected relative to `$ROOT` — the
+absolute-suffix list has no `*/bin/*` entry at all.
+
+Same root cause as OT-150's two findings: matching on an uncanonicalized path.
+Fix both in one pass, in the kit, or the next `add-fleet` reverts it.
+
+## Acceptance criteria
+
+- [ ] the path is canonicalized (`realpath` / `cd -P`) before any matching
+- [ ] `.claude//hooks/…`, `./bin/…` and `…/wt-X/../open-tab/bin/…` all deny
+- [ ] `bin/` is protected by absolute path, not only relative to `$ROOT`
+- [ ] a nonexistent target path still matches — canonicalization must not
+      require the file to exist, or a first write to a new hook slips through
+- [ ] the grant file and both guard hooks stay non-overridable in every spelling
+- [ ] ordinary application writes inside a worktree still allow
+- [ ] verified by executing the hook against every shape above, not by reading
+
+## Note
+
+Do this together with OT-150's canonicalization fix. Splitting them means
+writing the same `realpath` logic twice and getting one of them wrong.
+
+</details>
 
 ## Recent activity
 
 ```
-2026-08-21T05:30:49Z  open-tab  SubagentStart  reviewer-deep
-2026-08-21T05:30:53Z  open-tab  SubagentStop  
-2026-08-21T05:30:53Z  open-tab  SubagentStop  
-2026-08-21T05:30:53Z  open-tab  SubagentStop  
-2026-08-21T05:30:53Z  open-tab  SubagentStop  
-2026-08-21T05:30:53Z  open-tab  SubagentStop  
-2026-08-21T05:30:53Z  open-tab  SubagentStop  
-2026-08-21T05:31:20Z  open-tab  SubagentStop  
-2026-08-21T05:31:20Z  open-tab  SubagentStop  
-2026-08-21T05:31:20Z  open-tab  SubagentStop  
-2026-08-21T05:31:20Z  open-tab  SubagentStop  
-2026-08-21T05:31:20Z  open-tab  SubagentStop  
 2026-08-21T05:31:20Z  open-tab  SubagentStop  
 2026-08-21T05:31:32Z  open-tab  SubagentStop  reviewer-deep
 2026-08-21T05:31:53Z  open-tab  SubagentStop  
@@ -10420,6 +10506,18 @@ in the kit at `../agent-fleet-kit` rather than only here, or the next
 2026-08-21T05:31:53Z  open-tab  SubagentStop  
 2026-08-21T05:31:53Z  open-tab  SubagentStop  
 2026-08-21T05:31:53Z  open-tab  SubagentStop  
+2026-08-21T05:32:25Z  open-tab  SubagentStop  
+2026-08-21T05:32:25Z  open-tab  SubagentStop  
+2026-08-21T05:32:25Z  open-tab  SubagentStop  
+2026-08-21T05:32:25Z  open-tab  SubagentStop  
+2026-08-21T05:32:25Z  open-tab  SubagentStop  
+2026-08-21T05:32:25Z  open-tab  SubagentStop  
+2026-08-21T05:32:57Z  open-tab  SubagentStop  
+2026-08-21T05:32:57Z  open-tab  SubagentStop  
+2026-08-21T05:32:57Z  open-tab  SubagentStop  
+2026-08-21T05:32:57Z  open-tab  SubagentStop  
+2026-08-21T05:32:57Z  open-tab  SubagentStop  
+2026-08-21T05:32:57Z  open-tab  SubagentStop  
 ```
 
 ---
