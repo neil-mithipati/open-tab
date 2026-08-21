@@ -1,18 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 06:38 UTC · regenerated on every task completion.
+Updated 2026-08-21 06:43 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $67.7 | $200.00 | ███░░░░░░░ 33% |
+| open-tab | $69.09 | $200.00 | ███░░░░░░░ 34% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer-deep | open-tab | 2026-08-21T06:31:41Z | 2 |
+| 🟢 reviewer-deep | open-tab | 2026-08-21T06:20:04Z | 1 |
 
 ## Blocked — needs your input
 
@@ -10684,6 +10684,47 @@ so narrowing to repo roots buys nothing and reopens the other-checkout hole.
 **Reviewer's recommendation, and mine: do not defer the install.** The candidate
 closes 20 live holes and opens none. Add the one line, then install.
 
+
+## Patched, re-reviewed: INSTALL AS-IS
+
+The builder fixed both findings and extended the harness to 96 cases. Verified
+independently by a second `reviewer-deep`, all five blocks completed:
+
+    patched candidate   95 ok / 0 fail / 1 skip
+    unpatched candidate 64 ok / 31 fail
+    installed hook      44 ok / 51 fail
+
+The skip is `wt-OT-151`, a worktree that no longer exists.
+
+**Case fix confirmed against real on-disk files.** All seven case-variant paths
+now DENY, and each satisfies `[ -f ]`, so no deny is a lucky miss on a
+nonexistent path — including a case-variant DIRECTORY component (`.Claude/`),
+the handbook, `Bin/`, and both guard hooks under the live grant. The builder
+matched on a lowercased copy rather than `shopt -s nocasematch`, because
+`nocasematch` would also have loosened the grant-side containment test. The
+reviewer accepted that reasoning.
+
+**Symlink tail resolves,** including a brand-new file behind a directory link,
+and `node_modules/.bin/../../bin/doctor` folds back and denies.
+
+**No false denials, 22/22:** app code and new app files in a worktree, ledger
+files, `docs/kanban.md`, a granted worktree's own hooks, cards, settings,
+handbook and `bin/`, `node_modules/.bin/next` and its resolved target, relative
+paths, unicode, embedded newlines, quotes, a 3000-char filename, empty path.
+`gates.json` and both guards stay denied even under the live grant.
+
+Remaining findings are filed as OT-154. None blocks the install; the reviewer's
+own recommendation is to install now and treat them as backlog.
+
+## Install, morning
+
+    cp /tmp/ot150-candidate.sh .claude/hooks/protect-fleet.sh
+    cp /tmp/ot150-candidate.sh ../agent-fleet-kit/.claude/hooks/protect-fleet.sh
+    bash /tmp/ot150-run-cases.sh .claude/hooks/protect-fleet.sh
+
+Expect 95 ok / 0 fail / 1 skip. Then commit the kit copy, or the next
+`add-fleet` reverts it.
+
 </details>
 <details><summary>✅ <code>OT-151</code> done — the stop hook ignores the [awaiting owner] marker and forces continuation anyway · 5/5 criteria</summary>
 
@@ -10939,6 +10980,47 @@ so narrowing to repo roots buys nothing and reopens the other-checkout hole.
 **Reviewer's recommendation, and mine: do not defer the install.** The candidate
 closes 20 live holes and opens none. Add the one line, then install.
 
+
+## Patched, re-reviewed: INSTALL AS-IS
+
+The builder fixed both findings and extended the harness to 96 cases. Verified
+independently by a second `reviewer-deep`, all five blocks completed:
+
+    patched candidate   95 ok / 0 fail / 1 skip
+    unpatched candidate 64 ok / 31 fail
+    installed hook      44 ok / 51 fail
+
+The skip is `wt-OT-151`, a worktree that no longer exists.
+
+**Case fix confirmed against real on-disk files.** All seven case-variant paths
+now DENY, and each satisfies `[ -f ]`, so no deny is a lucky miss on a
+nonexistent path — including a case-variant DIRECTORY component (`.Claude/`),
+the handbook, `Bin/`, and both guard hooks under the live grant. The builder
+matched on a lowercased copy rather than `shopt -s nocasematch`, because
+`nocasematch` would also have loosened the grant-side containment test. The
+reviewer accepted that reasoning.
+
+**Symlink tail resolves,** including a brand-new file behind a directory link,
+and `node_modules/.bin/../../bin/doctor` folds back and denies.
+
+**No false denials, 22/22:** app code and new app files in a worktree, ledger
+files, `docs/kanban.md`, a granted worktree's own hooks, cards, settings,
+handbook and `bin/`, `node_modules/.bin/next` and its resolved target, relative
+paths, unicode, embedded newlines, quotes, a 3000-char filename, empty path.
+`gates.json` and both guards stay denied even under the live grant.
+
+Remaining findings are filed as OT-154. None blocks the install; the reviewer's
+own recommendation is to install now and treat them as backlog.
+
+## Install, morning
+
+    cp /tmp/ot150-candidate.sh .claude/hooks/protect-fleet.sh
+    cp /tmp/ot150-candidate.sh ../agent-fleet-kit/.claude/hooks/protect-fleet.sh
+    bash /tmp/ot150-run-cases.sh .claude/hooks/protect-fleet.sh
+
+Expect 95 ok / 0 fail / 1 skip. Then commit the kit copy, or the next
+`add-fleet` reverts it.
+
 </details>
 <details><summary>⚪ <code>OT-153</code> todo — remaining cap-counting gaps found in the OT-147 review · 0/6 criteria</summary>
 
@@ -11010,17 +11092,142 @@ the log can be rotated by an agent.
 Needs a maintenance grant.
 
 </details>
+<details><summary>⚪ <code>OT-154</code> todo — leftover edges in the patched fleet guard · 0/6 criteria</summary>
+
+- app: open-tab
+- tier: builder
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - .claude/hooks/protect-fleet.sh
+- blocked_reason: null
+
+
+## From the final review of the OT-150 candidate. None blocked the install.
+
+Do these only after the owner has installed the candidate — otherwise there are
+two divergent copies of the guard in flight.
+
+1. **Medium. `*/node_modules/*` is ordered ahead of `*/bin/*`** in the
+   absolute-path case, so a path like `<checkout>/bin/node_modules/<file>` is
+   allowed when the target sits outside the session root:
+
+       ALLOW  root=wt-OT-147 -> open-tab/bin/node_modules/evil
+       ALLOW  root=wt-OT-147 -> agent-fleet-kit/bin/node_modules/evil
+       DENY   root=open-tab  -> open-tab/bin/node_modules/evil
+
+   Only the relative `bin/*` clause saves the third case. Not high: no real
+   fleet file has a `node_modules` component in its canonical path, so this
+   permits creating files in a dead subdirectory, never overwriting a hook,
+   card, script, handbook or grant file. Reorder so `*/bin/*` is tested first,
+   or scope the carve-out to a `node_modules` that is not under a `bin/`.
+
+2. **Low. Symlink loops and chains past 40 hops fail OPEN.** The builder's own
+   suite asserts the allow, so it is deliberate rather than an oversight — but
+   it contradicts the fail-closed rule everywhere else in the guard.
+   Unreachable today: the hook cuts at 41 links and Darwin's `MAXSYMLINKS` is
+   33, so every chain the kernel will actually follow is resolved and denied,
+   and the allow window contains only paths that return `ELOOP` on open. Cheap
+   to make consistent; do it so nobody has to re-derive the argument.
+
+3. **Low. The guard clause `*deny-irreversible.sh|*protect-fleet.sh` has no
+   leading `/`,** so an application file with either name is denied anywhere,
+   unconditionally.
+
+4. **Low. `*/claude.md` denies a `CLAUDE.md` at any depth,** not just the
+   repo-root handbook.
+
+## Acceptance criteria
+
+- [ ] `<checkout>/bin/node_modules/<file>` denies from any session root
+- [ ] `node_modules/.bin/next` and its resolved target still allow
+- [ ] symlink loops and over-long chains deny rather than allow
+- [ ] the two guard-hook names are matched as path components, not as suffixes
+      anywhere in a path
+- [ ] `CLAUDE.md` is protected at the repo root; a `CLAUDE.md` nested in app
+      code is not
+- [ ] the full harness still passes with no new false denials, and cases for
+      each of the above are added to it
+
+## Note
+
+Land it in the kit as well as this checkout, or the next `add-fleet` reverts it.
+That has already happened twice.
+
+</details>
+<details><summary>⚪ <code>OT-155</code> todo — the [awaiting owner] marker passes its fixtures but still fails live · 0/6 criteria</summary>
+
+- app: open-tab
+- tier: builder-deep
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - .claude/hooks/loop-until-done.sh
+- blocked_reason: null
+
+
+## OT-151 fixed the matcher and the loop still fires
+
+OT-151 is merged and its logic is right when driven with synthetic transcripts:
+a reviewer confirmed the marker as the last line exits 0, trailing whitespace
+and blank lines are tolerated, and a mid-reply mention still forces a
+continuation. All verified by execution.
+
+It does not work in a live session. Two orchestrator replies ending with
+`[awaiting owner]` as their final line — verified as the final line — were
+followed immediately by a forced continuation.
+
+So the matcher is not the bug, or not the whole bug. The fixtures and the live
+transcript differ in some way the fixtures do not model.
+
+## Where to look first
+
+`loop-until-done.sh:68-84` joins the text blocks of every assistant message in
+the transcript, then takes the last non-blank line. Two candidate explanations,
+neither confirmed:
+
+1. **A write race.** The Stop hook may run before the final assistant message is
+   flushed to the transcript JSONL, so the hook reads a transcript whose last
+   assistant text is the PREVIOUS message — which usually does not end with the
+   marker. This would make the marker work in every fixture and fail in every
+   live session, which is exactly the observed pattern.
+
+2. **Tool-call turns.** An assistant turn carrying only a `tool_use` block
+   contributes an empty string to the join. Depending on ordering that may or
+   may not be the last non-blank line, but a turn structure the fixtures do not
+   reproduce could be landing after the marker.
+
+## Acceptance criteria
+
+- [ ] the cause is identified from a REAL session transcript, not a synthetic
+      one — read the actual JSONL the hook is passed and say what the last
+      assistant text is at the moment the hook runs
+- [ ] a reply ending in the marker stops the loop in a live session, confirmed
+      by observation and not only by fixture
+- [ ] if the cause is a race, the fix does not depend on timing — polling or
+      sleeping in a Stop hook is not acceptable
+- [ ] a mid-reply mention still forces a continuation, live
+- [ ] unfinished granted work with no marker still forces a continuation, live
+- [ ] OT-151's fixtures still pass
+
+## Note
+
+The cost of this bug is not cosmetic. Every forced continuation is an
+orchestrator turn spent while genuinely blocked on the owner, and it pushes the
+orchestrator to emit filler rather than wait. It ran the whole of the 2026-08-21
+session.
+
+Needs a maintenance grant.
+
+</details>
 
 ## Recent activity
 
 ```
-2026-08-21T06:37:08Z  open-tab  SubagentStop  
-2026-08-21T06:37:08Z  open-tab  SubagentStop  
-2026-08-21T06:37:40Z  open-tab  SubagentStop  
-2026-08-21T06:37:40Z  open-tab  SubagentStop  
-2026-08-21T06:37:40Z  open-tab  SubagentStop  
-2026-08-21T06:37:40Z  open-tab  SubagentStop  
-2026-08-21T06:37:40Z  open-tab  SubagentStop  
 2026-08-21T06:37:40Z  open-tab  SubagentStop  
 2026-08-21T06:38:13Z  open-tab  SubagentStop  
 2026-08-21T06:38:13Z  open-tab  SubagentStop  
@@ -11034,6 +11241,13 @@ Needs a maintenance grant.
 2026-08-21T06:38:45Z  open-tab  SubagentStop  
 2026-08-21T06:38:45Z  open-tab  SubagentStop  
 2026-08-21T06:38:45Z  open-tab  SubagentStop  
+2026-08-21T06:38:56Z  open-tab  SubagentStop  reviewer-deep
+2026-08-21T06:43:30Z  open-tab  SubagentStop  
+2026-08-21T06:43:30Z  open-tab  SubagentStop  
+2026-08-21T06:43:30Z  open-tab  SubagentStop  
+2026-08-21T06:43:30Z  open-tab  SubagentStop  
+2026-08-21T06:43:30Z  open-tab  SubagentStop  
+2026-08-21T06:43:30Z  open-tab  SubagentStop  
 ```
 
 ---
