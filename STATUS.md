@@ -1,19 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 03:06 UTC · regenerated on every task completion.
+Updated 2026-08-21 04:31 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $40.17 | $200.00 | ██░░░░░░░░ 20% |
+| open-tab | $43.19 | $200.00 | ██░░░░░░░░ 21% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 builder-light | open-tab | 2026-08-21T02:53:24Z | 1 |
-| 🟢 builder | open-tab | 2026-08-21T03:06:17Z | 1 |
+| 🟢 builder | open-tab | 2026-08-21T04:31:21Z | 1 |
 
 ## Blocked — needs your input
 
@@ -10033,7 +10032,7 @@ rubber stamp if the reasoning is wrong.
 - app: open-tab
 - tier: builder
 - review: full
-- attempts: 0
+- attempts: 1
 - branch: task/OT-148
 - worktree: ../wt-OT-148
 - files:
@@ -10090,6 +10089,16 @@ Not fleet-protected, so this is dispatchable now.
 Do not weaken normalisation to fix finding 1. Over-aggressive normalisation
 makes genuinely different predicates compare equal, which is a false all-clear —
 the exact failure this script exists to prevent.
+
+
+## Attempt 1 — lost to the session limit, no work survived
+
+The builder terminated on an API session limit, not on anything about the task.
+Worktree was clean and no commit was made, so nothing is recoverable and the
+retry starts from scratch.
+
+Tier held at `builder`. This was infrastructure, not capability — the tier never
+got far enough to be wrong about anything.
 
 </details>
 <details><summary>⚪ <code>OT-149</code> todo — verify-trivial.sh re-fires forever on a done task whose worktree was removed · 0/4 criteria</summary>
@@ -10148,13 +10157,6 @@ treating it as an error will behave the same way.
 ## Recent activity
 
 ```
-2026-08-21T03:03:58Z  open-tab  SubagentStop  
-2026-08-21T03:03:58Z  open-tab  SubagentStop  
-2026-08-21T03:03:58Z  open-tab  SubagentStop  
-2026-08-21T03:03:58Z  open-tab  SubagentStop  
-2026-08-21T03:03:58Z  open-tab  SubagentStop  
-2026-08-21T03:03:58Z  open-tab  SubagentStop  
-2026-08-21T03:04:29Z  open-tab  SubagentStop  
 2026-08-21T03:04:29Z  open-tab  SubagentStop  
 2026-08-21T03:04:29Z  open-tab  SubagentStop  
 2026-08-21T03:04:29Z  open-tab  SubagentStop  
@@ -10168,6 +10170,13 @@ treating it as an error will behave the same way.
 2026-08-21T03:06:48Z  open-tab  SubagentStop  
 2026-08-21T03:06:48Z  open-tab  SubagentStop  
 2026-08-21T03:06:48Z  open-tab  SubagentStop  
+2026-08-21T04:31:21Z  open-tab  SubagentStart  builder
+2026-08-21T04:31:52Z  open-tab  SubagentStop  
+2026-08-21T04:31:52Z  open-tab  SubagentStop  
+2026-08-21T04:31:52Z  open-tab  SubagentStop  
+2026-08-21T04:31:52Z  open-tab  SubagentStop  
+2026-08-21T04:31:52Z  open-tab  SubagentStop  
+2026-08-21T04:31:52Z  open-tab  SubagentStop  
 ```
 
 ---
