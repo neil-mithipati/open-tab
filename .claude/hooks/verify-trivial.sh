@@ -152,6 +152,15 @@ for f in "$LEDGER"/*.md; do
     task_dir="$ROOT"
   fi
 
+  # A `done` task's worktree is removed by `bin/finish-worktree` once it merges
+  # — that is the normal end state, not a violation. Only flag a missing
+  # worktree when the task is still `in-progress`, where the diff should still
+  # exist to check. A `done` task WITH a live worktree still gets checked below,
+  # so a genuinely mislabelled task is not let through just for being `done`.
+  if [ "$st" = "done" ] && [ ! -d "$task_dir" ]; then
+    continue
+  fi
+
   out=$(check_task "$id" "$task_dir" 2>&1)
   rc=$?
   cd "$ROOT" 2>/dev/null
