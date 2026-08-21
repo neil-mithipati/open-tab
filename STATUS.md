@@ -1,18 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 02:51 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:54 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $35.06 | $200.00 | █░░░░░░░░░ 17% |
+| open-tab | $36.93 | $200.00 | █░░░░░░░░░ 18% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer | open-tab | 2026-08-21T02:47:28Z | 3 |
+| 🟢 reviewer | open-tab | 2026-08-21T02:39:41Z | 1 |
+| 🟢 builder-light | open-tab | 2026-08-21T02:53:24Z | 1 |
 
 ## Blocked — needs your input
 
@@ -9701,7 +9702,7 @@ skipped the reviewer, not correctness — the tests caught the third file the
 scope had missed, and the task could not merge until it was fixed.
 
 </details>
-<details><summary>🟢 <code>OT-145</code> in-progress — nothing detects schema drift between the repo and the live database · 0/8 criteria</summary>
+<details><summary>✅ <code>OT-145</code> done — nothing detects schema drift between the repo and the live database · 8/8 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -9713,6 +9714,7 @@ scope had missed, and the task could not merge until it was fixed.
 -   - scripts/
 -   - docs/deployment.md
 -   - package.json
+-   - src/__tests__/scripts/schemaDrift.test.ts
 - blocked_reason: null
 
 
@@ -9786,19 +9788,19 @@ policy applies to.
 
 ## Acceptance criteria
 
-- [ ] a single command reports whether the live database matches the repo, and
+- [x] a single command reports whether the live database matches the repo, and
       exits non-zero when it does not
-- [ ] the migration half detects both directions: a repo migration missing live,
+- [x] the migration half detects both directions: a repo migration missing live,
       and a recorded migration absent from the repo
-- [ ] the storage-policy half compares normalised expressions and the command
+- [x] the storage-policy half compares normalised expressions and the command
       each policy applies to, not policy names
-- [ ] an extra live policy that the repo does not declare is reported — the
+- [x] an extra live policy that the repo does not declare is reported — the
       `_1` case above must be caught
-- [ ] absent credentials, an unlinked project, or a failed query exits non-zero
+- [x] absent credentials, an unlinked project, or a failed query exits non-zero
       with a message distinguishing "could not check" from "no drift"
-- [ ] no secret is printed, logged, or written to a file on any path
-- [ ] the command is documented in `docs/deployment.md` with when to run it
-- [ ] existing tests still pass
+- [x] no secret is printed, logged, or written to a file on any path
+- [x] the command is documented in `docs/deployment.md` with when to run it
+- [x] existing tests still pass
 
 ## Prove it
 
@@ -9808,19 +9810,125 @@ parsing and normalisation are the part that can be tested without a database, an
 the `_1` extra-policy case must be one of the fixtures. Do not claim a live run
 you did not perform.
 
+
+## Review verdict — all 8 criteria PASS
+
+Gates run by the reviewer: typecheck 0 errors, lint 0 errors (1 pre-existing
+warning), 631 tests across 37 files, 56 of them new.
+
+The two criteria most likely to be wrong were both attacked properly rather than
+read:
+
+- **Expression comparison (3).** The reviewer probed the normaliser with 16
+  pairs of genuinely different predicates — regrouped booleans, NOT scope, a
+  dropped prefix clause, a changed subscript index, whitespace inside a string
+  literal, `auth.uid()` vs `auth.jwt()`, `IN` vs `NOT IN`, quoted-vs-unquoted
+  identifier case. Every pair stayed distinct. `evil.f(x)` does not collapse
+  onto `f(x)`. Casts, redundant parens, keyword case and operand order collapse
+  as intended.
+- **False all-clear (5).** Every path that could reach exit 0 was traced. Empty
+  rows, missing keys, a null result set and a non-zero CLI status all end at
+  exit 1 or 2. Parse failures throw rather than guessing. The message is
+  explicit: `RESULT: COULD NOT CHECK ... this is NOT a clean bill of health.`
+
+Secrets (6): the script never reads `.env*`, a connection string, or
+`~/.supabase` — the CLI holds the token — and it opens no file for writing at
+all. Every output path is redaction-wrapped.
+
+`.claude/gates.json`, `.claude/` and `bin/` untouched, as required.
+
+Scope note, accepted not waived: `src/__tests__/scripts/schemaDrift.test.ts`
+was outside the declared `files:` list. It is the unit test the task's own
+"Prove it" section demands and `src/__tests__/` is the repo's only test
+directory, so the file list was wrong, not the builder. Added above.
+
+## Findings, all backlog
+
+- medium — `->` and `->>` sit in `COMPARISON_OPS`, so `a = b ->> 'c'` parses as
+  `(a = b) ->> 'c'`. Unreachable today since no policy uses JSON operators, and
+  the practical direction is a false *drift* rather than a false pass, because
+  postgres deparses with explicit parens. Fix before any JSON-column policy.
+- medium — `extractQueryRows` takes the first parseable array in the output, so
+  a stray `[]` progress line ahead of the real rows yields an empty set. Always
+  ends in exit 1, never a false 0.
+- low — a `{"_tag":"Success","result":null}` envelope is read as one data row.
+- low — the ENOENT message interpolates `SUPABASE_BIN` unredacted. Owner-supplied
+  path, not a credential.
+- low — `--help` exits 0 having checked nothing, which a deploy step passing a
+  stray flag would read as green.
+
+</details>
+<details><summary>🟢 <code>OT-146</code> in-progress — token-shaped test fixture trips github push protection and blocks every push to main · 0/5 criteria</summary>
+
+- app: open-tab
+- tier: builder-light
+- review: full
+- attempts: 0
+- branch: task/OT-146
+- worktree: ../wt-OT-146
+- files:
+-   - src/__tests__/scripts/schemaDrift.test.ts
+- blocked_reason: null
+
+
+## What happened
+
+`git push origin main` is rejected:
+
+    GH013: Repository rule violations found for refs/heads/main
+    - Push cannot contain secrets
+      Supabase Personal Access Token
+        commit 57551bc, src/__tests__/scripts/schemaDrift.test.ts:93
+        commit 57551bc, src/__tests__/scripts/schemaDrift.test.ts:127
+
+## It is not a real secret
+
+The literal begins `sbp_0123` and continues in an obvious sequence, 44 chars. It
+appears in exactly one file — this test — and nowhere in `~/.supabase`, `.env*`,
+or anywhere else in the repo or on the machine. It was written by the OT-145
+builder as the input to the test proving `redactSecrets` strips a Supabase
+personal access token before anything reaches stdout.
+
+So the test is doing the right thing and GitHub is doing the right thing. The
+literal simply matches the `sbp_` pattern, and the scanner cannot know it is
+fabricated.
+
+## Fix
+
+Stop the source text from matching the scanner's pattern while keeping the value
+the test actually exercises identical at runtime. Build the string rather than
+writing it as one literal, e.g.
+
+    const FAKE_PAT = "sbp" + "_" + "0123...";
+
+Both occurrences, lines 93 and 127. The string passed to `redactSecrets` must be
+byte-for-byte what it is today — this must not weaken what the test proves. Add
+a short comment saying why it is assembled rather than inline, or the next
+person will "tidy" it back into a literal and re-block the push.
+
+Do not change `redactSecrets` itself, and do not change what the assertions
+expect.
+
+## Acceptance criteria
+
+- [ ] the runtime value passed to `redactSecrets` is unchanged at both call sites
+- [ ] no contiguous `sbp_` + token-shaped literal remains in the file's source text
+- [ ] a comment explains why the string is assembled
+- [ ] `redactSecrets` in `scripts/check-schema-drift.ts` is unmodified
+- [ ] existing tests still pass, including the two redaction assertions
+
+## Note
+
+This does NOT unblock the push by itself. Commit `57551bc` is already in main's
+history and push protection scans every commit in the range, so the fix only
+stops it recurring. Clearing the existing block is the owner's call and is
+recorded against that decision, not here.
+
 </details>
 
 ## Recent activity
 
 ```
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:48Z  open-tab  SubagentStop  reviewer
-2026-08-21T02:50:06Z  open-tab  SubagentStop  
-2026-08-21T02:50:06Z  open-tab  SubagentStop  
-2026-08-21T02:50:06Z  open-tab  SubagentStop  
-2026-08-21T02:50:06Z  open-tab  SubagentStop  
-2026-08-21T02:50:06Z  open-tab  SubagentStop  
-2026-08-21T02:50:06Z  open-tab  SubagentStop  
 2026-08-21T02:50:38Z  open-tab  SubagentStop  
 2026-08-21T02:50:38Z  open-tab  SubagentStop  
 2026-08-21T02:50:38Z  open-tab  SubagentStop  
@@ -9833,6 +9941,14 @@ you did not perform.
 2026-08-21T02:51:09Z  open-tab  SubagentStop  
 2026-08-21T02:51:09Z  open-tab  SubagentStop  
 2026-08-21T02:51:09Z  open-tab  SubagentStop  
+2026-08-21T02:51:15Z  open-tab  SubagentStop  reviewer
+2026-08-21T02:53:24Z  open-tab  SubagentStart  builder-light
+2026-08-21T02:54:33Z  open-tab  SubagentStop  
+2026-08-21T02:54:33Z  open-tab  SubagentStop  
+2026-08-21T02:54:33Z  open-tab  SubagentStop  
+2026-08-21T02:54:33Z  open-tab  SubagentStop  
+2026-08-21T02:54:33Z  open-tab  SubagentStop  
+2026-08-21T02:54:33Z  open-tab  SubagentStop  
 ```
 
 ---
