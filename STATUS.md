@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-08-21 01:20 UTC · regenerated on every task completion.
+Updated 2026-08-21 01:22 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -14,6 +14,7 @@ Updated 2026-08-21 01:20 UTC · regenerated on every task completion.
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-20T22:35:12Z | 1 |
 | reviewer | open-tab | 2026-08-21T00:06:47Z | 1 |
+| builder-light | open-tab | 2026-08-21T01:22:02Z | 1 |
 
 ## Tasks
 
@@ -63,30 +64,31 @@ Updated 2026-08-21 01:20 UTC · regenerated on every task completion.
 | `OT-141` | todo | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor — null | builder |
 | `OT-142` | **blocked** | production database is ~14 migrations behind the repo — merged code reads columns that do not exist live — >- | builder-deep |
 | `OT-143` | todo | 0026 cannot be applied by supabase db push — split the storage half out of the migration — null | builder |
+| `OT-144` | running | change the receipt image retention default from 7 days to 14 — null | builder-light |
 
 ## Recent activity
 
 ```
-2026-08-21T01:19:19Z  open-tab  SubagentStop  
-2026-08-21T01:19:19Z  open-tab  SubagentStop  
-2026-08-21T01:19:24Z  open-tab  SubagentStop  
-2026-08-21T01:19:24Z  open-tab  SubagentStop  
-2026-08-21T01:19:24Z  open-tab  SubagentStop  
-2026-08-21T01:19:24Z  open-tab  SubagentStop  
-2026-08-21T01:19:24Z  open-tab  SubagentStop  
-2026-08-21T01:19:24Z  open-tab  SubagentStop  
-2026-08-21T01:19:29Z  open-tab  SubagentStop  
-2026-08-21T01:19:29Z  open-tab  SubagentStop  
-2026-08-21T01:19:29Z  open-tab  SubagentStop  
-2026-08-21T01:19:29Z  open-tab  SubagentStop  
-2026-08-21T01:19:29Z  open-tab  SubagentStop  
-2026-08-21T01:19:29Z  open-tab  SubagentStop  
-2026-08-21T01:20:29Z  open-tab  SubagentStop  
-2026-08-21T01:20:29Z  open-tab  SubagentStop  
-2026-08-21T01:20:29Z  open-tab  SubagentStop  
-2026-08-21T01:20:29Z  open-tab  SubagentStop  
-2026-08-21T01:20:29Z  open-tab  SubagentStop  
-2026-08-21T01:20:29Z  open-tab  SubagentStop  
+2026-08-21T01:20:33Z  open-tab  SubagentStop  
+2026-08-21T01:20:40Z  open-tab  SubagentStop  
+2026-08-21T01:20:40Z  open-tab  SubagentStop  
+2026-08-21T01:20:40Z  open-tab  SubagentStop  
+2026-08-21T01:20:40Z  open-tab  SubagentStop  
+2026-08-21T01:20:40Z  open-tab  SubagentStop  
+2026-08-21T01:20:40Z  open-tab  SubagentStop  
+2026-08-21T01:20:50Z  open-tab  SubagentStop  
+2026-08-21T01:20:50Z  open-tab  SubagentStop  
+2026-08-21T01:20:50Z  open-tab  SubagentStop  
+2026-08-21T01:20:50Z  open-tab  SubagentStop  
+2026-08-21T01:20:50Z  open-tab  SubagentStop  
+2026-08-21T01:20:50Z  open-tab  SubagentStop  
+2026-08-21T01:22:02Z  open-tab  SubagentStart  builder-light
+2026-08-21T01:22:19Z  open-tab  SubagentStop  
+2026-08-21T01:22:19Z  open-tab  SubagentStop  
+2026-08-21T01:22:19Z  open-tab  SubagentStop  
+2026-08-21T01:22:19Z  open-tab  SubagentStop  
+2026-08-21T01:22:19Z  open-tab  SubagentStop  
+2026-08-21T01:22:19Z  open-tab  SubagentStop  
 ```
 
 ---
