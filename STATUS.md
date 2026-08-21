@@ -1,18 +1,16 @@
 # Agent status
 
-Updated 2026-08-21 12:56 UTC · regenerated on every task completion.
+Updated 2026-08-21 12:58 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $90.91 | $200.00 | ████░░░░░░ 45% |
+| open-tab | $91.65 | $200.00 | ████░░░░░░ 45% |
 
 ## Agents
 
-| Role | Lane | Started | Running |
-|---|---|---|---|
-| 🟢 reviewer-deep | open-tab | 2026-08-21T12:37:59Z | 1 |
+Idle — no agents currently running.
 
 ## Blocked — needs your input
 
@@ -11331,22 +11329,70 @@ prompt sent it to re-run four ephemeral scratchpad scripts before reasoning
 about the criteria. Retried at the same tier with a narrowed prompt.
 
 </details>
+<details><summary>⚪ <code>OT-156</code> todo — loop hook can't tell an absent last_assistant_message from an empty one · 0/6 criteria</summary>
+
+- app: open-tab
+- tier: builder
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - .claude/hooks/loop-until-done.sh
+- blocked_reason: null
+
+
+## Two findings from `reviewer-deep`'s adversarial pass on OT-155
+
+Neither blocked that merge. Both are in the file OT-155 landed.
+
+**medium.** `jq -r '.last_assistant_message // ""'` collapses three cases into
+one: field absent, field null, field empty string. All become `""` and all fall
+through to the transcript scan. If the harness ever emits an empty or null field
+on a turn where the transcript's last 80 lines still hold a marker from an
+earlier `[awaiting owner]` turn, the hook exits 0 and silently strands unfinished
+granted work. Reviewer verified this with cases 05 and 06 of its matrix — a
+no-marker reply exits 0. Not a regression; main behaved the same way.
+
+Fix: gate the fallback on `jq -e 'has("last_assistant_message")'` rather than on
+emptiness. An empty or null field means the reply genuinely had no text, which is
+not a marker — do not fall back.
+
+**low.** If a CLI upgrade drops `last_assistant_message`, the hook degrades to
+the pre-fix transcript scan. That is the safe direction — forced continuations,
+not stranded work — but it fails silently, with no signal that the fix stopped
+working.
+
+Fix: emit a `LOOP_VERBOSE` diagnostic when the field is absent.
+
+## Notes for whoever picks this up
+
+Needs a maintenance grant: add `OT-156` to `maintenance` in the main checkout's
+`.claude/gates.json`. Only the owner can do that. The grant activates on the
+write target path now (OT-150), so it works for a dispatched subagent.
+
+Not `builder-light` despite being two one-line changes — the light boundary hook
+rejects anything under `.claude/`, so it would bounce straight back to `builder`.
+
+Do not regress OT-155. Its six criteria are the floor: marker last line stops the
+loop live, mid-reply mention still continues, unfinished work with no marker
+still continues, no polling or sleeping, and OT-151's ten transcript-only
+fixtures still exercise the fallback path.
+
+## Acceptance criteria
+
+- [ ] fallback runs only when `last_assistant_message` is absent from the payload, not when it is null or empty
+- [ ] a no-marker reply with a stale marker in the transcript forces a continuation
+- [ ] an absent field emits a `LOOP_VERBOSE` diagnostic naming the missing field
+- [ ] the diagnostic is silent when `LOOP_VERBOSE` is unset
+- [ ] all six OT-155 acceptance criteria still hold, re-verified not assumed
+- [ ] OT-151's ten transcript-only fixtures still pass
+
+</details>
 
 ## Recent activity
 
 ```
-2026-08-21T12:52:26Z  open-tab  SubagentStop  
-2026-08-21T12:52:26Z  open-tab  SubagentStop  
-2026-08-21T12:52:41Z  open-tab  SubagentStop  
-2026-08-21T12:52:41Z  open-tab  SubagentStop  
-2026-08-21T12:52:41Z  open-tab  SubagentStop  
-2026-08-21T12:52:41Z  open-tab  SubagentStop  
-2026-08-21T12:52:41Z  open-tab  SubagentStop  
-2026-08-21T12:52:41Z  open-tab  SubagentStop  
-2026-08-21T12:52:54Z  open-tab  SubagentStop  
-2026-08-21T12:52:54Z  open-tab  SubagentStop  
-2026-08-21T12:52:54Z  open-tab  SubagentStop  
-2026-08-21T12:52:54Z  open-tab  SubagentStop  
 2026-08-21T12:52:54Z  open-tab  SubagentStop  
 2026-08-21T12:52:54Z  open-tab  SubagentStop  
 2026-08-21T12:56:40Z  open-tab  SubagentStop  
@@ -11355,6 +11401,18 @@ about the criteria. Retried at the same tier with a narrowed prompt.
 2026-08-21T12:56:40Z  open-tab  SubagentStop  
 2026-08-21T12:56:40Z  open-tab  SubagentStop  
 2026-08-21T12:56:40Z  open-tab  SubagentStop  
+2026-08-21T12:57:12Z  open-tab  SubagentStop  
+2026-08-21T12:57:12Z  open-tab  SubagentStop  
+2026-08-21T12:57:12Z  open-tab  SubagentStop  
+2026-08-21T12:57:12Z  open-tab  SubagentStop  
+2026-08-21T12:57:12Z  open-tab  SubagentStop  
+2026-08-21T12:57:12Z  open-tab  SubagentStop  
+2026-08-21T12:58:32Z  open-tab  SubagentStop  
+2026-08-21T12:58:32Z  open-tab  SubagentStop  
+2026-08-21T12:58:32Z  open-tab  SubagentStop  
+2026-08-21T12:58:32Z  open-tab  SubagentStop  
+2026-08-21T12:58:32Z  open-tab  SubagentStop  
+2026-08-21T12:58:32Z  open-tab  SubagentStop  
 ```
 
 ---
