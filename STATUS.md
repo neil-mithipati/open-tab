@@ -1,18 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 12:42 UTC · regenerated on every task completion.
+Updated 2026-08-21 12:44 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $85.92 | $200.00 | ████░░░░░░ 42% |
+| open-tab | $86.48 | $200.00 | ████░░░░░░ 43% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer-deep | open-tab | 2026-08-21T12:37:59Z | 2 |
+| 🟢 reviewer-deep | open-tab | 2026-08-21T12:44:12Z | 3 |
 
 ## Blocked — needs your input
 
@@ -11323,31 +11323,38 @@ Re-run scripts (ephemeral scratchpad):
 (set HOOK= to compare hooks), .../scratchpad/livetest/run.sh,
 .../scratchpad/monotonic.py, .../scratchpad/runhook.sh
 
+## Review attempt 1 aborted
+
+reviewer-deep terminated after 35 tool calls without emitting a result block.
+No verdict, no findings. Read as a budget failure, not a capability one — the
+prompt sent it to re-run four ephemeral scratchpad scripts before reasoning
+about the criteria. Retried at the same tier with a narrowed prompt.
+
 </details>
 
 ## Recent activity
 
 ```
-2026-08-21T12:41:58Z  open-tab  SubagentStop  
-2026-08-21T12:41:58Z  open-tab  SubagentStop  
-2026-08-21T12:42:13Z  open-tab  SubagentStop  
-2026-08-21T12:42:13Z  open-tab  SubagentStop  
-2026-08-21T12:42:13Z  open-tab  SubagentStop  
-2026-08-21T12:42:13Z  open-tab  SubagentStop  
-2026-08-21T12:42:13Z  open-tab  SubagentStop  
-2026-08-21T12:42:13Z  open-tab  SubagentStop  
-2026-08-21T12:42:30Z  open-tab  SubagentStop  
-2026-08-21T12:42:30Z  open-tab  SubagentStop  
-2026-08-21T12:42:30Z  open-tab  SubagentStop  
-2026-08-21T12:42:30Z  open-tab  SubagentStop  
-2026-08-21T12:42:30Z  open-tab  SubagentStop  
-2026-08-21T12:42:30Z  open-tab  SubagentStop  
 2026-08-21T12:42:45Z  open-tab  SubagentStop  
-2026-08-21T12:42:45Z  open-tab  SubagentStop  
-2026-08-21T12:42:45Z  open-tab  SubagentStop  
-2026-08-21T12:42:45Z  open-tab  SubagentStop  
-2026-08-21T12:42:45Z  open-tab  SubagentStop  
-2026-08-21T12:42:45Z  open-tab  SubagentStop  
+2026-08-21T12:43:03Z  open-tab  SubagentStop  
+2026-08-21T12:43:03Z  open-tab  SubagentStop  
+2026-08-21T12:43:03Z  open-tab  SubagentStop  
+2026-08-21T12:43:03Z  open-tab  SubagentStop  
+2026-08-21T12:43:03Z  open-tab  SubagentStop  
+2026-08-21T12:43:03Z  open-tab  SubagentStop  
+2026-08-21T12:43:17Z  open-tab  SubagentStop  
+2026-08-21T12:43:17Z  open-tab  SubagentStop  
+2026-08-21T12:43:17Z  open-tab  SubagentStop  
+2026-08-21T12:43:17Z  open-tab  SubagentStop  
+2026-08-21T12:43:17Z  open-tab  SubagentStop  
+2026-08-21T12:43:17Z  open-tab  SubagentStop  
+2026-08-21T12:44:12Z  open-tab  SubagentStart  reviewer-deep
+2026-08-21T12:44:18Z  open-tab  SubagentStop  
+2026-08-21T12:44:18Z  open-tab  SubagentStop  
+2026-08-21T12:44:18Z  open-tab  SubagentStop  
+2026-08-21T12:44:18Z  open-tab  SubagentStop  
+2026-08-21T12:44:18Z  open-tab  SubagentStop  
+2026-08-21T12:44:18Z  open-tab  SubagentStop  
 ```
 
 ---
