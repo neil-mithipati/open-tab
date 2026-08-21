@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 06:08 UTC · regenerated on every task completion.
+Updated 2026-08-21 06:09 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $54.42 | $200.00 | ██░░░░░░░░ 27% |
+| open-tab | $54.92 | $200.00 | ██░░░░░░░░ 27% |
 
 ## Agents
 
@@ -14,7 +14,7 @@ Updated 2026-08-21 06:08 UTC · regenerated on every task completion.
 |---|---|---|---|
 | 🟢 builder | open-tab | 2026-08-21T05:52:18Z | 1 |
 | 🟢 reviewer | open-tab | 2026-08-21T05:59:57Z | 1 |
-| 🟢 reviewer-deep | open-tab | 2026-08-21T06:07:39Z | 4 |
+| 🟢 reviewer-deep | open-tab | 2026-08-21T06:07:39Z | 3 |
 
 ## Blocked — needs your input
 
@@ -10548,6 +10548,60 @@ narrowing it to repo roots would reopen the "another checkout's bin/" case.
 
 Expect 53/53. Then commit the kit copy, or the next `add-fleet` reverts it.
 
+
+## reviewer-deep verdict: install WITH a named change
+
+Candidate confirmed 53/53 independently. The installed hook fails **20** cases,
+not the 17 the builder reported — the three it missed are guard-file cases
+(`gates.json` and `CLAUDE.md` reached from a worktree) that ALLOW today. What is
+installed is worse than this file previously recorded.
+
+**Blocking finding (high) — case-variant spelling defeats every deny, including
+the never-overridable one.** This volume is case-insensitive APFS, and bash's
+`pwd -P` does not correct case (zsh's does, which is why an interactive spot
+check misleads). Verified by execution, each path confirmed with `[ -f ]` to
+open the REAL file:
+
+    ALLOW  open-tab/.claude/Gates.json                  <- the real grant file
+    ALLOW  open-tab/.Claude/gates.json                  <- the real grant file
+    ALLOW  open-tab/Claude.md                           <- the real handbook
+    ALLOW  open-tab/.claude/Agents/reviewer.md
+    ALLOW  open-tab/Bin/doctor
+    ALLOW  wt-OT-150/.claude/hooks/Protect-Fleet.sh     <- under a grant
+    ALLOW  wt-OT-150/.claude/hooks/Deny-Irreversible.sh <- under a grant
+    DENY   wt-OT-150/.claude/hooks/protect-fleet.sh     (lowercase, correct)
+
+One letter of case lets a granted agent rewrite the grant file and both guard
+hooks — the override widening itself, which is precisely the invariant the
+unconditional deny exists to hold. Pre-existing: the installed hook allows the
+same. Fails OT-150 criteria 3 and 4 and OT-152 criterion 5.
+
+Fix is one line: `shopt -s nocasematch` above the deny `case` blocks, or match
+on a lowercased copy. Over-denying on a case-sensitive volume is harmless;
+under-denying here is not.
+
+**Medium — a symlink as the FINAL path component is not resolved.**
+`canon_path` stops at the deepest existing *directory*, so `<dir>/link ->
+.claude/hooks/log-event.sh` allows and a write lands on the real file. Symlink-
+to-directory in the tail IS caught. Fix: after the walk, if `[ -L "$p" ]`,
+resolve and re-canon.
+
+**What held.** The never-overridable deny denies in every other spelling —
+trailing slash, doubled slash, interior `..`, a `/tmp` copy, a session rooted in
+the worktree, a nonexistent target, through a granted worktree. Moving it out of
+`if [ -n "$hit" ]` is correct and is what closes the doubled-slash case. `..`
+above `/` returns `/` without crashing. An unset or bogus `CLAUDE_PROJECT_DIR`
+fails closed. No false denials: app code, ledger files, new files under a
+granted `.claude/`, and a granted worktree's own hooks and cards all allow.
+
+**The `*/bin/*` judgement call: keep it.** The builder's `node_modules/.bin`
+concern is wrong — `*/bin/*` needs the literal `/bin/`, and `/.bin/` is not it,
+verified in both a checkout and a worktree. Only the repo-root `bin/` matches,
+so narrowing to repo roots buys nothing and reopens the other-checkout hole.
+
+**Reviewer's recommendation, and mine: do not defer the install.** The candidate
+closes 20 live holes and opens none. Add the one line, then install.
+
 </details>
 <details><summary>✅ <code>OT-151</code> done — the stop hook ignores the [awaiting owner] marker and forces continuation anyway · 5/5 criteria</summary>
 
@@ -10749,31 +10803,85 @@ narrowing it to repo roots would reopen the "another checkout's bin/" case.
 
 Expect 53/53. Then commit the kit copy, or the next `add-fleet` reverts it.
 
+
+## reviewer-deep verdict: install WITH a named change
+
+Candidate confirmed 53/53 independently. The installed hook fails **20** cases,
+not the 17 the builder reported — the three it missed are guard-file cases
+(`gates.json` and `CLAUDE.md` reached from a worktree) that ALLOW today. What is
+installed is worse than this file previously recorded.
+
+**Blocking finding (high) — case-variant spelling defeats every deny, including
+the never-overridable one.** This volume is case-insensitive APFS, and bash's
+`pwd -P` does not correct case (zsh's does, which is why an interactive spot
+check misleads). Verified by execution, each path confirmed with `[ -f ]` to
+open the REAL file:
+
+    ALLOW  open-tab/.claude/Gates.json                  <- the real grant file
+    ALLOW  open-tab/.Claude/gates.json                  <- the real grant file
+    ALLOW  open-tab/Claude.md                           <- the real handbook
+    ALLOW  open-tab/.claude/Agents/reviewer.md
+    ALLOW  open-tab/Bin/doctor
+    ALLOW  wt-OT-150/.claude/hooks/Protect-Fleet.sh     <- under a grant
+    ALLOW  wt-OT-150/.claude/hooks/Deny-Irreversible.sh <- under a grant
+    DENY   wt-OT-150/.claude/hooks/protect-fleet.sh     (lowercase, correct)
+
+One letter of case lets a granted agent rewrite the grant file and both guard
+hooks — the override widening itself, which is precisely the invariant the
+unconditional deny exists to hold. Pre-existing: the installed hook allows the
+same. Fails OT-150 criteria 3 and 4 and OT-152 criterion 5.
+
+Fix is one line: `shopt -s nocasematch` above the deny `case` blocks, or match
+on a lowercased copy. Over-denying on a case-sensitive volume is harmless;
+under-denying here is not.
+
+**Medium — a symlink as the FINAL path component is not resolved.**
+`canon_path` stops at the deepest existing *directory*, so `<dir>/link ->
+.claude/hooks/log-event.sh` allows and a write lands on the real file. Symlink-
+to-directory in the tail IS caught. Fix: after the walk, if `[ -L "$p" ]`,
+resolve and re-canon.
+
+**What held.** The never-overridable deny denies in every other spelling —
+trailing slash, doubled slash, interior `..`, a `/tmp` copy, a session rooted in
+the worktree, a nonexistent target, through a granted worktree. Moving it out of
+`if [ -n "$hit" ]` is correct and is what closes the doubled-slash case. `..`
+above `/` returns `/` without crashing. An unset or bogus `CLAUDE_PROJECT_DIR`
+fails closed. No false denials: app code, ledger files, new files under a
+granted `.claude/`, and a granted worktree's own hooks and cards all allow.
+
+**The `*/bin/*` judgement call: keep it.** The builder's `node_modules/.bin`
+concern is wrong — `*/bin/*` needs the literal `/bin/`, and `/.bin/` is not it,
+verified in both a checkout and a worktree. Only the repo-root `bin/` matches,
+so narrowing to repo roots buys nothing and reopens the other-checkout hole.
+
+**Reviewer's recommendation, and mine: do not defer the install.** The candidate
+closes 20 live holes and opens none. Add the one line, then install.
+
 </details>
 
 ## Recent activity
 
 ```
-2026-08-21T06:07:06Z  open-tab  SubagentStop  
-2026-08-21T06:07:31Z  open-tab  SubagentStop  
-2026-08-21T06:07:31Z  open-tab  SubagentStop  
-2026-08-21T06:07:31Z  open-tab  SubagentStop  
-2026-08-21T06:07:31Z  open-tab  SubagentStop  
-2026-08-21T06:07:31Z  open-tab  SubagentStop  
-2026-08-21T06:07:31Z  open-tab  SubagentStop  
-2026-08-21T06:07:39Z  open-tab  SubagentStart  reviewer-deep
-2026-08-21T06:08:04Z  open-tab  SubagentStop  
-2026-08-21T06:08:04Z  open-tab  SubagentStop  
-2026-08-21T06:08:04Z  open-tab  SubagentStop  
-2026-08-21T06:08:04Z  open-tab  SubagentStop  
-2026-08-21T06:08:04Z  open-tab  SubagentStop  
-2026-08-21T06:08:04Z  open-tab  SubagentStop  
 2026-08-21T06:08:11Z  open-tab  SubagentStop  
-2026-08-21T06:08:11Z  open-tab  SubagentStop  
-2026-08-21T06:08:11Z  open-tab  SubagentStop  
-2026-08-21T06:08:11Z  open-tab  SubagentStop  
-2026-08-21T06:08:11Z  open-tab  SubagentStop  
-2026-08-21T06:08:11Z  open-tab  SubagentStop  
+2026-08-21T06:08:36Z  open-tab  SubagentStop  
+2026-08-21T06:08:36Z  open-tab  SubagentStop  
+2026-08-21T06:08:36Z  open-tab  SubagentStop  
+2026-08-21T06:08:36Z  open-tab  SubagentStop  
+2026-08-21T06:08:36Z  open-tab  SubagentStop  
+2026-08-21T06:08:36Z  open-tab  SubagentStop  
+2026-08-21T06:08:40Z  open-tab  SubagentStop  reviewer-deep
+2026-08-21T06:08:42Z  open-tab  SubagentStop  
+2026-08-21T06:08:42Z  open-tab  SubagentStop  
+2026-08-21T06:08:42Z  open-tab  SubagentStop  
+2026-08-21T06:08:42Z  open-tab  SubagentStop  
+2026-08-21T06:08:42Z  open-tab  SubagentStop  
+2026-08-21T06:08:42Z  open-tab  SubagentStop  
+2026-08-21T06:09:14Z  open-tab  SubagentStop  
+2026-08-21T06:09:14Z  open-tab  SubagentStop  
+2026-08-21T06:09:14Z  open-tab  SubagentStop  
+2026-08-21T06:09:14Z  open-tab  SubagentStop  
+2026-08-21T06:09:14Z  open-tab  SubagentStop  
+2026-08-21T06:09:14Z  open-tab  SubagentStop  
 ```
 
 ---
