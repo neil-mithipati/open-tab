@@ -1,18 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 05:30 UTC · regenerated on every task completion.
+Updated 2026-08-21 05:31 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $18.93 | $200.00 | ░░░░░░░░░░ 9% |
+| open-tab | $19.93 | $200.00 | ░░░░░░░░░░ 9% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer-deep | open-tab | 2026-08-21T05:30:49Z | 2 |
+| 🟢 reviewer-deep | open-tab | 2026-08-21T05:30:49Z | 1 |
 
 ## Tasks
 
@@ -10340,23 +10340,66 @@ survives an `add-fleet` re-run. The re-run is not academic — it failed to sync
 this very file three times tonight, and the file only landed via a manual `cp`.
 
 </details>
+<details><summary>⚪ <code>OT-151</code> todo — the stop hook ignores the [awaiting owner] marker and forces continuation anyway · 0/5 criteria</summary>
+
+- app: open-tab
+- tier: builder
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - .claude/hooks/loop-until-done.sh
+- blocked_reason: null
+
+
+## What happens
+
+The handbook promises that a reply ending in `[awaiting owner]` stops the loop:
+"The stop hook honors that marker and will not force a continuation, so the wait
+is real." It does not. Observed repeatedly on 2026-08-21 — replies ending with
+the marker on its own final line were followed immediately by another forced
+continuation with no stderr output.
+
+Every one of those costs an orchestrator turn, and the whole point of the marker
+is that a question to the owner ends the turn. Without it the orchestrator is
+pushed to keep producing filler while genuinely blocked on an answer.
+
+## Why it compounds
+
+The forced continuation is silent by design, so it is indistinguishable from
+"there is unfinished granted work" — which is exactly the state the orchestrator
+is in while waiting. The loop cannot tell waiting-on-owner from
+work-left-to-do, and the marker was the mechanism that was supposed to
+distinguish them.
+
+Related in shape to OT-149: a hook treating a normal end state as an unresolved
+condition, re-firing forever because nothing can clear it.
+
+## Acceptance criteria
+
+- [ ] a final assistant message whose last line is `[awaiting owner]` stops
+      cleanly, with no forced continuation
+- [ ] trailing whitespace or a trailing newline after the marker does not defeat
+      the match
+- [ ] the marker is only honoured as the LAST line, so a mention of it mid-reply
+      does not silently disable the loop
+- [ ] unfinished granted work with no marker still forces a continuation — the
+      loop is not defanged, only scoped
+- [ ] verified by running the hook against both cases with real transcript
+      input, not by reading it
+
+## Note
+
+Needs a maintenance grant (`.claude/hooks/`), and per OT-150 the fix should land
+in the kit at `../agent-fleet-kit` rather than only here, or the next
+`add-fleet` reverts it.
+
+</details>
 
 ## Recent activity
 
 ```
-2026-08-21T05:29:57Z  open-tab  SubagentStop  
-2026-08-21T05:29:57Z  open-tab  SubagentStop  
-2026-08-21T05:29:57Z  open-tab  SubagentStop  
-2026-08-21T05:29:57Z  open-tab  SubagentStop  
-2026-08-21T05:30:01Z  open-tab  SubagentStop  builder-deep
-2026-08-21T05:30:04Z  open-tab  SubagentStop  builder-deep
-2026-08-21T05:30:08Z  open-tab  SubagentStop  builder-deep
-2026-08-21T05:30:21Z  open-tab  SubagentStop  
-2026-08-21T05:30:21Z  open-tab  SubagentStop  
-2026-08-21T05:30:21Z  open-tab  SubagentStop  
-2026-08-21T05:30:21Z  open-tab  SubagentStop  
-2026-08-21T05:30:21Z  open-tab  SubagentStop  
-2026-08-21T05:30:21Z  open-tab  SubagentStop  
 2026-08-21T05:30:49Z  open-tab  SubagentStart  reviewer-deep
 2026-08-21T05:30:53Z  open-tab  SubagentStop  
 2026-08-21T05:30:53Z  open-tab  SubagentStop  
@@ -10364,6 +10407,19 @@ this very file three times tonight, and the file only landed via a manual `cp`.
 2026-08-21T05:30:53Z  open-tab  SubagentStop  
 2026-08-21T05:30:53Z  open-tab  SubagentStop  
 2026-08-21T05:30:53Z  open-tab  SubagentStop  
+2026-08-21T05:31:20Z  open-tab  SubagentStop  
+2026-08-21T05:31:20Z  open-tab  SubagentStop  
+2026-08-21T05:31:20Z  open-tab  SubagentStop  
+2026-08-21T05:31:20Z  open-tab  SubagentStop  
+2026-08-21T05:31:20Z  open-tab  SubagentStop  
+2026-08-21T05:31:20Z  open-tab  SubagentStop  
+2026-08-21T05:31:32Z  open-tab  SubagentStop  reviewer-deep
+2026-08-21T05:31:53Z  open-tab  SubagentStop  
+2026-08-21T05:31:53Z  open-tab  SubagentStop  
+2026-08-21T05:31:53Z  open-tab  SubagentStop  
+2026-08-21T05:31:53Z  open-tab  SubagentStop  
+2026-08-21T05:31:53Z  open-tab  SubagentStop  
+2026-08-21T05:31:53Z  open-tab  SubagentStop  
 ```
 
 ---
