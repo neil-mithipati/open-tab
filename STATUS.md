@@ -1,19 +1,20 @@
 # Agent status
 
-Updated 2026-08-21 00:10 UTC · regenerated on every task completion.
+Updated 2026-08-21 00:14 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $114.02 | $125.00 | █████████░ 91% |
+| open-tab | $115.86 | $200.00 | █████░░░░░ 57% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | builder-deep | open-tab | 2026-08-20T22:35:12Z | 1 |
-| reviewer | open-tab | 2026-08-21T00:06:47Z | 2 |
+| reviewer | open-tab | 2026-08-21T00:06:47Z | 1 |
+| builder | open-tab | 2026-08-21T00:13:38Z | 1 |
 
 ## Tasks
 
@@ -55,24 +56,16 @@ Updated 2026-08-21 00:10 UTC · regenerated on every task completion.
 | `OT-133` | done | a late claim is destroyed by the item re-mint when the claimer IS in the payload — null | builder-deep |
 | `OT-134` | done | a transient gemini outage permanently burns a receipt's only parse — no retry affordance — null | builder-deep |
 | `OT-135` | done | migrate receipt parser to gemini-2.5-flash-lite with schema enforced as config — null | builder |
-| `OT-136` | running | arithmetic validation on parsed receipts, money as integer cents end to end — null | builder-deep |
+| `OT-136` | done | arithmetic validation on parsed receipts, money as integer cents end to end — null | builder-deep |
 | `OT-137` | done | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming — null | builder-deep |
 | `OT-138` | **blocked** | three live fail-opens in parallel-cap.sh let an uncapped dispatch through — >- | builder-deep |
-| `OT-139` | running | lock down receipt image storage — private bucket, RLS, signed URLs, retention job — >- | builder-deep |
+| `OT-139` | done | lock down receipt image storage — private bucket, RLS, signed URLs, retention job — null | builder-deep |
 | `OT-140` | **blocked** | client-side image downscale and EXIF orientation normalization before upload — >- | builder |
 | `OT-141` | todo | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-21T00:09:57Z  open-tab  SubagentStop  
-2026-08-21T00:09:57Z  open-tab  SubagentStop  
-2026-08-21T00:10:03Z  open-tab  SubagentStop  
-2026-08-21T00:10:03Z  open-tab  SubagentStop  
-2026-08-21T00:10:03Z  open-tab  SubagentStop  
-2026-08-21T00:10:03Z  open-tab  SubagentStop  
-2026-08-21T00:10:03Z  open-tab  SubagentStop  
-2026-08-21T00:10:03Z  open-tab  SubagentStop  
 2026-08-21T00:10:06Z  open-tab  SubagentStop  
 2026-08-21T00:10:06Z  open-tab  SubagentStop  
 2026-08-21T00:10:06Z  open-tab  SubagentStop  
@@ -85,6 +78,14 @@ Updated 2026-08-21 00:10 UTC · regenerated on every task completion.
 2026-08-21T00:10:28Z  open-tab  SubagentStop  
 2026-08-21T00:10:28Z  open-tab  SubagentStop  
 2026-08-21T00:10:28Z  open-tab  SubagentStop  
+2026-08-21T00:10:43Z  open-tab  SubagentStop  reviewer
+2026-08-21T00:13:38Z  open-tab  SubagentStart  builder
+2026-08-21T00:14:10Z  open-tab  SubagentStop  
+2026-08-21T00:14:10Z  open-tab  SubagentStop  
+2026-08-21T00:14:10Z  open-tab  SubagentStop  
+2026-08-21T00:14:10Z  open-tab  SubagentStop  
+2026-08-21T00:14:10Z  open-tab  SubagentStop  
+2026-08-21T00:14:10Z  open-tab  SubagentStop  
 ```
 
 ---
