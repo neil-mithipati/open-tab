@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 02:50 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:51 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $34.17 | $200.00 | █░░░░░░░░░ 17% |
+| open-tab | $35.06 | $200.00 | █░░░░░░░░░ 17% |
 
 ## Agents
 
@@ -7919,7 +7919,7 @@ is checked the day it lands.
   assert something true about a file no database runs.
 
 </details>
-<details><summary>🟢 <code>OT-138</code> in-progress — three live fail-opens in parallel-cap.sh let an uncapped dispatch through · 8/10 criteria</summary>
+<details><summary>✅ <code>OT-138</code> done — three live fail-opens in parallel-cap.sh let an uncapped dispatch through · 10/10 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -8062,12 +8062,12 @@ hostile ids and must stay true.
 - [x] `deny()` denies when jq exits non-zero after printing a partial document
 - [x] the stderr live-agent inventory is restored, prints `agent_id:type:age:idle=`
       per counted agent, and cannot corrupt the hook's stdout JSON decision
-- [ ] all four OT-127 heartbeat fixtures still behave as before: stale heartbeat
+- [x] all four OT-127 heartbeat fixtures still behave as before: stale heartbeat
       excludes, fresh heartbeat on a 40-min-old start still counts, no heartbeat
       falls back to 3600s, empty-`agent_type` stop frees its slot
 - [x] the jam fixture `.claude/state/evidence/events-jam-20260819T2039Z.jsonl`
       still ALLOWs
-- [ ] a genuinely long-running `builder-deep` is still counted live throughout —
+- [x] a genuinely long-running `builder-deep` is still counted live throughout —
       the criterion that matters most; a fix failing here is worse than the bug
 
 ## Prove it
@@ -8278,6 +8278,47 @@ restored to 755 and verified in the same run.
 Finding 2 is the one I would look at first — not because it is the worst, but
 because a cap that wedges is the failure the owner notices, and it points at the
 event writer rather than the hook.
+
+
+## Review verdict — criteria 6 and 8 PASS. All ten now pass.
+
+Verified by executing the hook at `69e991b` against fixtures and diffing every
+decision against the `ot-127-recovered` reference. Controls were included so a
+blanket-allow could not masquerade as a pass: the stale-heartbeat fixture with a
+fresh heartbeat denies, and the empty-`agent_type` fixture without its stop
+record denies.
+
+Criterion 8, the one the task file calls the most important, holds: a
+`builder-deep` with heartbeats continuing is counted live at 60s, 5m, 15m, 30m,
+40m, 50m, 57m and 3599s, and at 2h/6h/12h once `STALE_SECS` is raised. The
+`warn_live_inventory` path fires on those denies without a `set -u` abort — it
+renders `3600s`/`900s`/`86400s` from the branch's real variable names — and the
+deny JSON still reaches stdout. That abort was the fail-open this task existed
+to close.
+
+## Two more findings, neither introduced by this task
+
+4. **Medium. A builder-deep ages out at one hour even with live heartbeats.**
+   With the default `STALE_SECS=3600` a fresh heartbeat can only shorten the
+   window, never extend it past the start cutoff, so an hour-plus builder-deep
+   stops being counted — the cap stops capping the most expensive agents on a
+   plausible path. Confirmed identical to the OT-127 reference at 3700s, 7200s
+   and 21600s, so this port did not introduce it.
+
+5. **Low. Off-by-one at exactly age 3600s.** OT-138 uses `($now - $e) < $stale`
+   where the reference used an inclusive `>= cutoff_epoch`, so at exactly 3600s
+   OT-138 allows and the reference denies. `git diff ea21e1e..HEAD` shows the
+   expression removed and re-added byte-identical at a new indentation, so it is
+   pre-existing on main. One second on an hour window.
+
+Finding 4 is the substantive one, and it is worth stating plainly: this task
+closed five fail-opens and the cap still has a hole for exactly the agent tier
+that costs the most. It is smaller than what was fixed and it is not a
+regression, but it should not be filed and forgotten.
+
+Scope confirmed on the diff: `.claude/hooks/parallel-cap.sh` and
+`.claude/settings.json` only. No test file was touched, so nothing was weakened
+to make a criterion pass.
 
 </details>
 <details><summary>✅ <code>OT-139</code> done — lock down receipt image storage — private bucket, RLS, signed URLs, retention job · 6/6 criteria</summary>
@@ -9177,7 +9218,7 @@ Show the extended sweep failing against the pre-fix file, then passing after.
 That is the criterion that stops this recurring.
 
 </details>
-<details><summary>🔴 <code>OT-142</code> blocked — production database is ~14 migrations behind the repo — merged code reads columns that do not exist live · 0/6 criteria — >-</summary>
+<details><summary>🔴 <code>OT-142</code> blocked — production database is ~14 migrations behind the repo — merged code reads columns that do not exist live · 2/6 criteria — >-</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -9321,12 +9362,12 @@ migration apply is not work to rush at midnight.
 
 ## Acceptance criteria
 
-- [ ] the live migration state is established and written down here
+- [x] the live migration state is established and written down here
 - [ ] the gap between repo migrations and live schema is enumerated per table,
       not just for `receipts`
 - [ ] a remediation order is decided and recorded, including whether any
       migration is unsafe to apply against existing production rows
-- [ ] migrations are applied to production in order, up to and including 0026
+- [x] migrations are applied to production in order, up to and including 0026
 - [ ] the dashboard policy steps in `ledger/OT-139.md` are completed afterwards
 - [ ] a check exists that would catch this drift next time, rather than relying
       on a migration happening to fail
@@ -9359,6 +9400,67 @@ Remaining criteria and who owns each:
 The first three criteria are satisfied by the findings recorded above, but stay
 unchecked: no reviewer has verified them, and this file is not going to start
 checking its own boxes on the strength of its own prose.
+
+
+## Verified from here — migrations are good, one policy is not
+
+`supabase migration list --linked` now reports all 26 migrations present both
+locally and remotely, `0001` through `0026`. The reset and the re-push worked,
+and `schema_migrations` is populated, so drift can no longer go untracked
+silently. Those two criteria are checked on that evidence, not on anyone's
+say-so.
+
+The bucket is correct: `receipt-images`, `public = false`. The stray `_1` policy
+row is gone.
+
+## P0 — the live INSERT policy is missing both of its ownership checks
+
+Live, queried directly:
+
+    receipt_images_insert_own 13hfyy5_0 | INSERT | with_check:
+      (bucket_id = 'receipt-images'::text)
+
+Declared, `supabase/storage-policies.sql:110-116`:
+
+    with check (
+      bucket_id = 'receipt-images'
+      and (storage.foldername(name))[1] = auth.uid()::text
+      and public.receipt_creator_id(public.receipt_image_receipt_id(name)) = auth.uid()
+    )
+
+Two of the three conjuncts are absent live. The live policy checks only that the
+upload is going into the right bucket. Any authenticated user can therefore
+write any object anywhere in it, including into another user's folder and under
+a name carrying a victim's receipt id.
+
+That is precisely the attack OT-139's pglite proof recorded as blocked —
+"stranger writes into owner folder -> RLS violation". It is blocked in the SQL
+we declare and open in the database we run.
+
+The SELECT and DELETE policies are correct: both carry the full folder-plus-
+ownership test, matching the declared expressions.
+
+Cause is almost certainly transcription. The dashboard's INSERT form takes a
+WITH CHECK expression in a field labelled "policy definition", and someone
+entering three conjuncts by hand into a single-line field kept the first.
+
+## Fix, owner-side
+
+No agent can do this: `storage.objects` is owned by `supabase_storage_admin`, so
+neither the CLI nor the SQL editor can alter the policy. In the dashboard, edit
+`receipt_images_insert_own` and replace its expression with the three-conjunct
+WITH CHECK above, exactly as written in `supabase/storage-policies.sql`. Then
+re-run the policy query to confirm all three conjuncts are present.
+
+Criterion 5 stays unchecked until that is done.
+
+## What this says about OT-145
+
+The drift check was dispatched on the argument that drift would recur. It
+recurred before the check had even been reviewed, in the half of the schema that
+no migration tool can apply and no gate can see, and it went unnoticed through a
+build, a review and a merge. The first real query against the live database
+found a hole in the control the whole task was about.
 
 </details>
 <details><summary>✅ <code>OT-143</code> done — 0026 cannot be applied by supabase db push — split the storage half out of the migration · 5/5 criteria</summary>
@@ -9711,18 +9813,6 @@ you did not perform.
 ## Recent activity
 
 ```
-2026-08-21T02:49:02Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
-2026-08-21T02:49:34Z  open-tab  SubagentStop  
 2026-08-21T02:49:34Z  open-tab  SubagentStop  
 2026-08-21T02:49:48Z  open-tab  SubagentStop  reviewer
 2026-08-21T02:50:06Z  open-tab  SubagentStop  
@@ -9731,6 +9821,18 @@ you did not perform.
 2026-08-21T02:50:06Z  open-tab  SubagentStop  
 2026-08-21T02:50:06Z  open-tab  SubagentStop  
 2026-08-21T02:50:06Z  open-tab  SubagentStop  
+2026-08-21T02:50:38Z  open-tab  SubagentStop  
+2026-08-21T02:50:38Z  open-tab  SubagentStop  
+2026-08-21T02:50:38Z  open-tab  SubagentStop  
+2026-08-21T02:50:38Z  open-tab  SubagentStop  
+2026-08-21T02:50:38Z  open-tab  SubagentStop  
+2026-08-21T02:50:38Z  open-tab  SubagentStop  
+2026-08-21T02:51:09Z  open-tab  SubagentStop  
+2026-08-21T02:51:09Z  open-tab  SubagentStop  
+2026-08-21T02:51:09Z  open-tab  SubagentStop  
+2026-08-21T02:51:09Z  open-tab  SubagentStop  
+2026-08-21T02:51:09Z  open-tab  SubagentStop  
+2026-08-21T02:51:09Z  open-tab  SubagentStop  
 ```
 
 ---
