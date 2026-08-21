@@ -1,18 +1,16 @@
 # Agent status
 
-Updated 2026-08-21 05:39 UTC · regenerated on every task completion.
+Updated 2026-08-21 05:40 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $30.46 | $200.00 | █░░░░░░░░░ 15% |
+| open-tab | $30.95 | $200.00 | █░░░░░░░░░ 15% |
 
 ## Agents
 
-| Role | Lane | Started | Running |
-|---|---|---|---|
-| 🟢 reviewer-deep | open-tab | 2026-08-21T05:30:49Z | 1 |
+Idle — no agents currently running.
 
 ## Blocked — needs your input
 
@@ -10498,19 +10496,6 @@ writing the same `realpath` logic twice and getting one of them wrong.
 ## Recent activity
 
 ```
-2026-08-21T05:38:51Z  open-tab  SubagentStop  
-2026-08-21T05:38:51Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
 2026-08-21T05:38:58Z  open-tab  SubagentStop  
 2026-08-21T05:39:12Z  open-tab  SubagentStop  
 2026-08-21T05:39:12Z  open-tab  SubagentStop  
@@ -10518,6 +10503,19 @@ writing the same `realpath` logic twice and getting one of them wrong.
 2026-08-21T05:39:12Z  open-tab  SubagentStop  
 2026-08-21T05:39:12Z  open-tab  SubagentStop  
 2026-08-21T05:39:12Z  open-tab  SubagentStop  
+2026-08-21T05:39:18Z  open-tab  SubagentStop  
+2026-08-21T05:39:18Z  open-tab  SubagentStop  
+2026-08-21T05:39:18Z  open-tab  SubagentStop  
+2026-08-21T05:39:18Z  open-tab  SubagentStop  
+2026-08-21T05:39:18Z  open-tab  SubagentStop  
+2026-08-21T05:39:18Z  open-tab  SubagentStop  
+2026-08-21T05:39:23Z  open-tab  SubagentStop  
+2026-08-21T05:39:23Z  open-tab  SubagentStop  
+2026-08-21T05:39:23Z  open-tab  SubagentStop  
+2026-08-21T05:39:23Z  open-tab  SubagentStop  
+2026-08-21T05:39:23Z  open-tab  SubagentStop  
+2026-08-21T05:39:23Z  open-tab  SubagentStop  
+2026-08-21T05:40:18Z  open-tab  SubagentStop  reviewer-deep
 ```
 
 ---
