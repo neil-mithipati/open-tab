@@ -268,4 +268,17 @@ describe("nothing outside the helper can reach an unbound storage path", () => {
     );
     expect(callers.map((c) => c.path)).toContain("src/app/receipts/[id]/page.tsx");
   });
+
+  // The hole this closes: a call site can inline the same marker-and-slice
+  // logic as extractStoragePath without ever writing that name, and the rule
+  // above would not see it. Naming the marker string catches the copy
+  // regardless of what the surrounding code calls itself.
+  it("no file but the helper parses the receipt-images marker inline", () => {
+    for (const f of files) {
+      if (f.path === HELPER) continue;
+      expect(`${f.path}: ${f.code.includes("/receipt-images/")}`).toBe(
+        `${f.path}: false`
+      );
+    }
+  });
 });

@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ParticipantBubble } from "@/components/friends/ParticipantBubble";
 import { UsernameAutocomplete } from "@/components/friends/UsernameAutocomplete";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { boundStoragePath } from "@/lib/storage";
 import {
   formatDate,
   computeEqualCharges,
@@ -402,18 +403,14 @@ export function ReceiptSplitStep({
     const supabase = getSupabaseBrowserClient();
     const { data: receipt } = await supabase
       .from("receipts")
-      .select("image_url")
+      .select("id, created_by, image_url")
       .eq("id", state.receiptId)
       .single();
-    if (receipt?.image_url) {
-      try {
-        const pathname = new URL(receipt.image_url).pathname;
-        const marker = "/receipt-images/";
-        const idx = pathname.indexOf(marker);
-        if (idx !== -1) {
-          await supabase.storage.from("receipt-images").remove([pathname.slice(idx + marker.length)]);
-        }
-      } catch {}
+    if (receipt) {
+      const path = boundStoragePath(receipt);
+      if (path) {
+        await supabase.storage.from("receipt-images").remove([path]);
+      }
     }
     await supabase.from("receipts").delete().eq("id", state.receiptId);
     reset();
