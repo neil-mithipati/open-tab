@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 04:54 UTC · regenerated on every task completion.
+Updated 2026-08-21 04:59 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $3.9 | $200.00 | ░░░░░░░░░░ 1% |
+| open-tab | $5.07 | $200.00 | ░░░░░░░░░░ 2% |
 
 ## Agents
 
@@ -8320,6 +8320,21 @@ Scope confirmed on the diff: `.claude/hooks/parallel-cap.sh` and
 `.claude/settings.json` only. No test file was touched, so nothing was weakened
 to make a criterion pass.
 
+
+## Superseded by the newer kit hook — owner decision, 2026-08-21
+
+The owner chose the newer `parallel-cap.sh` (the one that sources
+`liveness.sh`) over this branch. `task/OT-138` was never merged; its commit
+`69e991b` is preserved as tag `ot-138-superseded` and the worktree is removed.
+
+The guards this task added are NOT in the version now on disk: the jq-missing
+deny, the positive-integer limit checks, the ancestor-searchability loop, the
+readable-file check, the corruption tallies, and `is_count`. The newer hook
+replaces them with `[ -z "$counts" ] && exit 0` and a coerce-to-zero on an
+unparseable count — both allow. Porting them onto the liveness.sh version is
+OT-147's job. Recover the reference implementation with
+`git show ot-138-superseded:.claude/hooks/parallel-cap.sh`.
+
 </details>
 <details><summary>✅ <code>OT-139</code> done — lock down receipt image storage — private bucket, RLS, signed URLs, retention job · 6/6 criteria</summary>
 
@@ -9218,7 +9233,7 @@ Show the extended sweep failing against the pre-fix file, then passing after.
 That is the criterion that stops this recurring.
 
 </details>
-<details><summary>🔴 <code>OT-142</code> blocked — production database is ~14 migrations behind the repo — merged code reads columns that do not exist live · 2/6 criteria — needs the owner to run the schema_migrations query against production and decide the remediation path. no agent can see the live database, so the gap cannot be measured from here. this blocks the go-live, not just this task.</summary>
+<details><summary>🔴 <code>OT-142</code> blocked — production database is ~14 migrations behind the repo — merged code reads columns that do not exist live · 4/6 criteria — needs the owner to run the schema_migrations query against production and decide the remediation path. no agent can see the live database, so the gap cannot be measured from here. this blocks the go-live, not just this task.</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -9368,8 +9383,8 @@ migration apply is not work to rush at midnight.
 - [ ] a remediation order is decided and recorded, including whether any
       migration is unsafe to apply against existing production rows
 - [x] migrations are applied to production in order, up to and including 0026
-- [ ] the dashboard policy steps in `ledger/OT-139.md` are completed afterwards
-- [ ] a check exists that would catch this drift next time, rather than relying
+- [x] the dashboard policy steps in `ledger/OT-139.md` are completed afterwards
+- [x] a check exists that would catch this drift next time, rather than relying
       on a migration happening to fail
 
 ## Note
@@ -9461,6 +9476,27 @@ recurred before the check had even been reviewed, in the half of the schema that
 no migration tool can apply and no gate can see, and it went unnoticed through a
 build, a review and a merge. The first real query against the live database
 found a hole in the control the whole task was about.
+
+
+## The INSERT policy is fixed — owner-verified 2026-08-21
+
+`pg_policies` on `storage.objects`, pasted by the owner, now shows all three
+conjuncts on `receipt_images_insert_own`:
+
+    (bucket_id = 'receipt-images') AND ((storage.foldername(name))[1] = auth.uid()::text)
+    AND (receipt_creator_id(receipt_image_receipt_id(name)) = auth.uid())
+
+That matches `supabase/storage-policies.sql:112-116`. The P0 above is closed.
+`with_check` reads null for the SELECT and DELETE rows, which is correct — those
+carry their test in `qual` (USING), not WITH CHECK, and both were verified
+against the declared expressions earlier in this file.
+
+Drift detection landed too: OT-145 merged the check, OT-148 hardened it.
+
+Criteria 2 and 3 (per-table gap enumeration, remediation ordering) are moot —
+the owner's schema reset and full `db push` replaced reconciliation entirely.
+They stay unchecked rather than being claimed as satisfied by a route that was
+abandoned.
 
 </details>
 <details><summary>✅ <code>OT-143</code> done — 0026 cannot be applied by supabase db push — split the storage half out of the migration · 5/5 criteria</summary>
@@ -10026,8 +10062,24 @@ against each, paste the table. Finding 3 is the one to be most careful with —
 extending the live window is exactly the direction that turns a cap into a
 rubber stamp if the reasoning is wrong.
 
+
+## Scope confirmed against the live file, 2026-08-21
+
+The owner kept the newer `liveness.sh`-based `parallel-cap.sh` and discarded
+`task/OT-138` (tag `ot-138-superseded`). So this task now owns porting all of
+OT-138's guards forward, not just the four originally filed: jq-missing deny,
+positive-integer limit checks, ancestor-searchability loop, readable-file
+check, corruption tallies, `is_count`, and `warn_live_inventory`. Two live
+fail-opens to remove: `[ -z "$counts" ] && exit 0`, and the
+`case "$total" in ''|*[!0-9]*) total=0` coercion.
+
+Reference implementation: `git show ot-138-superseded:.claude/hooks/parallel-cap.sh`.
+Do not copy it wholesale — it predates liveness.sh and counts differently.
+
+Still blocked on the maintenance grant.
+
 </details>
-<details><summary>🟢 <code>OT-148</code> in-progress — robustness gaps in the schema drift check · 0/7 criteria</summary>
+<details><summary>✅ <code>OT-148</code> done — robustness gaps in the schema drift check · 7/7 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -10072,17 +10124,17 @@ Not fleet-protected, so this is dispatchable now.
 
 ## Acceptance criteria
 
-- [ ] `->` and `->>` parse with correct precedence, with a test covering
+- [x] `->` and `->>` parse with correct precedence, with a test covering
       `a = b ->> 'c'`
-- [ ] `extractQueryRows` selects the actual result rows rather than the first
+- [x] `extractQueryRows` selects the actual result rows rather than the first
       parseable array, with a test where a stray `[]` precedes them
-- [ ] a null `result` envelope is not read as a data row
-- [ ] the ENOENT message redacts, consistent with every other output path
-- [ ] `--help` and any unrecognised flag exit non-zero, or print and exit in a
+- [x] a null `result` envelope is not read as a data row
+- [x] the ENOENT message redacts, consistent with every other output path
+- [x] `--help` and any unrecognised flag exit non-zero, or print and exit in a
       way no deploy step can mistake for a clean check
-- [ ] the 16 different-predicate pairs the reviewer probed still compare as
+- [x] the 16 different-predicate pairs the reviewer probed still compare as
       distinct, and the `_1` extra-policy fixture still reports exactly one drift
-- [ ] existing tests still pass
+- [x] existing tests still pass
 
 ## Note
 
@@ -10113,6 +10165,19 @@ fixes and leaving 93 lines of uncommitted test additions in the worktree. Tests
 pass locally there (78/78). Budget failure, not capability: tier held at
 `builder`. The retry builds on the existing worktree rather than restarting —
 it finishes the remaining criteria, commits, runs gates, and reports.
+
+
+## Reviewed and passed — `reviewer`, attempt 3
+
+All seven criteria verified with file:line evidence. Normalisation was not
+weakened: the only change is `->`/`->>` moving from `COMPARISON_OPS` to a new
+`JSON_OPS` tier above `PREC_CMP`; `renderCanonical`, `stripPublicSchema`,
+`COMMUTATIVE_OPS` and `flattenSameOp` are untouched. The 16 different-predicate
+pairs still compare distinct (16/16), and the `_1` extra-policy fixture still
+reports exactly one drift.
+
+Gates from the worktree: typecheck pass, lint pass, tests pass (37 files, 653
+tests). Scope confined to the two declared files. Commits `4691b63`, `6ae846c`.
 
 </details>
 <details><summary>🔴 <code>OT-149</code> blocked — verify-trivial.sh re-fires forever on a done task whose worktree was removed · 0/4 criteria — maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.</summary>
@@ -10171,26 +10236,26 @@ treating it as an error will behave the same way.
 ## Recent activity
 
 ```
-2026-08-21T04:54:04Z  open-tab  SubagentStop  
-2026-08-21T04:54:24Z  open-tab  SubagentStop  
-2026-08-21T04:54:24Z  open-tab  SubagentStop  
-2026-08-21T04:54:24Z  open-tab  SubagentStop  
-2026-08-21T04:54:24Z  open-tab  SubagentStop  
-2026-08-21T04:54:24Z  open-tab  SubagentStop  
-2026-08-21T04:54:24Z  open-tab  SubagentStop  
-2026-08-21T04:54:26Z  open-tab  SubagentStop  
-2026-08-21T04:54:26Z  open-tab  SubagentStop  
-2026-08-21T04:54:26Z  open-tab  SubagentStop  
-2026-08-21T04:54:26Z  open-tab  SubagentStop  
-2026-08-21T04:54:26Z  open-tab  SubagentStop  
-2026-08-21T04:54:26Z  open-tab  SubagentStop  
-2026-08-21T04:54:36Z  open-tab  SubagentStop  
-2026-08-21T04:54:36Z  open-tab  SubagentStop  
-2026-08-21T04:54:36Z  open-tab  SubagentStop  
-2026-08-21T04:54:36Z  open-tab  SubagentStop  
-2026-08-21T04:54:36Z  open-tab  SubagentStop  
-2026-08-21T04:54:36Z  open-tab  SubagentStop  
-2026-08-21T04:54:48Z  open-tab  SubagentStop  reviewer
+2026-08-21T04:55:15Z  open-tab  SubagentStop  
+2026-08-21T04:55:15Z  open-tab  SubagentStop  
+2026-08-21T04:55:17Z  open-tab  SubagentStop  
+2026-08-21T04:55:17Z  open-tab  SubagentStop  
+2026-08-21T04:55:17Z  open-tab  SubagentStop  
+2026-08-21T04:55:17Z  open-tab  SubagentStop  
+2026-08-21T04:55:17Z  open-tab  SubagentStop  
+2026-08-21T04:55:17Z  open-tab  SubagentStop  
+2026-08-21T04:55:19Z  open-tab  SubagentStop  
+2026-08-21T04:55:19Z  open-tab  SubagentStop  
+2026-08-21T04:55:19Z  open-tab  SubagentStop  
+2026-08-21T04:55:19Z  open-tab  SubagentStop  
+2026-08-21T04:55:19Z  open-tab  SubagentStop  
+2026-08-21T04:55:19Z  open-tab  SubagentStop  
+2026-08-21T04:59:57Z  open-tab  SubagentStop  
+2026-08-21T04:59:57Z  open-tab  SubagentStop  
+2026-08-21T04:59:57Z  open-tab  SubagentStop  
+2026-08-21T04:59:57Z  open-tab  SubagentStop  
+2026-08-21T04:59:57Z  open-tab  SubagentStop  
+2026-08-21T04:59:57Z  open-tab  SubagentStop  
 ```
 
 ---
