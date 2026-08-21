@@ -1,19 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 06:14 UTC · regenerated on every task completion.
+Updated 2026-08-21 06:15 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $58.65 | $200.00 | ██░░░░░░░░ 29% |
+| open-tab | $59.64 | $200.00 | ██░░░░░░░░ 29% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
+| 🟢 reviewer-deep | open-tab | 2026-08-21T05:56:59Z | 2 |
 | 🟢 reviewer | open-tab | 2026-08-21T05:59:57Z | 1 |
-| 🟢 reviewer-deep | open-tab | 2026-08-21T06:07:39Z | 3 |
 | 🟢 builder-deep | open-tab | 2026-08-21T06:09:35Z | 1 |
 
 ## Blocked — needs your input
@@ -9996,7 +9996,7 @@ but an instruction not to echo a secret did not hold, and that is worth knowing
 before a review ever runs against a real one.
 
 </details>
-<details><summary>🟢 <code>OT-147</code> in-progress — four fail-opens remain in parallel-cap.sh after OT-138 · 0/6 criteria</summary>
+<details><summary>✅ <code>OT-147</code> done — four fail-opens remain in parallel-cap.sh after OT-138 · 5/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -10057,15 +10057,15 @@ what remains.
 
 ## Acceptance criteria
 
-- [ ] partial corruption (non-zero content lines, some but not all records lost)
+- [x] partial corruption (non-zero content lines, some but not all records lost)
       denies rather than counting low
-- [ ] a single intact non-agent JSON object no longer disarms the guard
-- [ ] a builder-deep with live heartbeats stays counted past the start cutoff
-- [ ] duplicate `SubagentStart` records with identical `agent_id` and `ts` count
+- [x] a single intact non-agent JSON object no longer disarms the guard
+- [x] a builder-deep with live heartbeats stays counted past the start cutoff
+- [x] duplicate `SubagentStart` records with identical `agent_id` and `ts` count
       once, and the cause in `log-event.sh` is identified and fixed if that is
       where the duplication originates
 - [ ] the jam fixture's timestamps are rebased so it tests pairing again
-- [ ] every OT-138 criterion still passes — re-run its fixtures, do not assume
+- [x] every OT-138 criterion still passes — re-run its fixtures, do not assume
 
 ## Prove it
 
@@ -10190,6 +10190,54 @@ Tier held at `builder-deep`. Attempt 1 was not a capability failure — every
 guard it ported holds under 24 fixtures. It was scoped out of the file holding
 the bug. Attempt 2 keeps the existing worktree and the `6dd3061` commit and
 builds on them rather than restarting.
+
+
+## Attempt 2 reviewed and passed — merged
+
+`reviewer-deep`, full two-pass, everything measured by execution. Safe to merge
+as-is. Five of six criteria pass; criterion 5 (rebase the jam fixture) stays
+unchecked — the fixture is untracked and lives only in the main checkout, out of
+scope, and accepted as such.
+
+**The load-bearing check held.** An old `liveness.sh` that never sets
+`LIVE_STATUS`, sourced into the new `parallel-cap.sh`, DENIES on every fixture —
+1 builder, 3 reviewers, idle fleet — and still denies with `LIVE_STATUS=ok`
+exported hostilely into the environment. The seeding runs before the source, so
+the fix is not decorative.
+
+Torn line now denies (was allow). The non-agent-object fixture denies. Duplicate
+records dedup to 3 and 6 exactly. Heartbeat-alive agents stay counted past the
+start cutoff. Absent, empty and whitespace-only logs still allow, so a fresh
+checkout is not wedged.
+
+**Adversarial pass found no high.** No input produced an allow on an unknown
+count. Glob, 5000-char, newline, quote and `$(touch)` agent_ids all counted
+correctly with no file created; the heartbeat id array rejects anything outside
+`[A-Za-z0-9_-]` before it becomes JSON text. Every liveness failure mode denies
+with a distinct message. A 50k-line log runs in 0.48s, so there is no
+timeout-into-allow.
+
+**Display surfaces agree with enforcement now.** `bin/dashboard`,
+`statusline.sh` and `status-page.sh` all report the same live counts, while
+enforcement additionally denies on the corruption — the intended asymmetry, and
+the opposite of the old behaviour where a torn line made every surface show an
+idle fleet.
+
+**Judgement call (a), settled: "any lost line denies" is right, and it is
+recoverable.** The deny names the file, both counts, the first five bad line
+numbers, and both remedies. The reviewer also corrected a premise this file had
+wrong: torn lines are NOT routine. `log-event.sh:114` is a single short append,
+atomic under `O_APPEND` below `PIPE_BUF`, so a torn line means a crash, a full
+disk, or hand-editing. And `.claude/state/` is not fleet-protected, so an
+orchestrator can rotate the log itself without a grant. The wedge clears without
+waking the owner.
+
+**Judgement call (b), settled: fail-closed and bounded.** Measured at the
+boundaries — 899s counted / 901s freed with heartbeats enabled, 3599s / 3601s
+without. A dead agent frees its slot in 15 minutes, or an hour with no
+heartbeats. At the boundary it stays counted, the safe direction.
+
+Remaining findings, none blocking, filed as OT-153.
 
 </details>
 <details><summary>✅ <code>OT-148</code> done — robustness gaps in the schema drift check · 7/7 criteria</summary>
@@ -10862,26 +10910,26 @@ closes 20 live holes and opens none. Add the one line, then install.
 ## Recent activity
 
 ```
-2026-08-21T06:13:43Z  open-tab  SubagentStop  
-2026-08-21T06:13:43Z  open-tab  SubagentStop  
-2026-08-21T06:14:00Z  open-tab  SubagentStop  
-2026-08-21T06:14:00Z  open-tab  SubagentStop  
-2026-08-21T06:14:00Z  open-tab  SubagentStop  
-2026-08-21T06:14:00Z  open-tab  SubagentStop  
-2026-08-21T06:14:00Z  open-tab  SubagentStop  
-2026-08-21T06:14:00Z  open-tab  SubagentStop  
-2026-08-21T06:14:15Z  open-tab  SubagentStop  
-2026-08-21T06:14:15Z  open-tab  SubagentStop  
-2026-08-21T06:14:15Z  open-tab  SubagentStop  
-2026-08-21T06:14:15Z  open-tab  SubagentStop  
-2026-08-21T06:14:15Z  open-tab  SubagentStop  
-2026-08-21T06:14:15Z  open-tab  SubagentStop  
-2026-08-21T06:14:32Z  open-tab  SubagentStop  
-2026-08-21T06:14:32Z  open-tab  SubagentStop  
-2026-08-21T06:14:32Z  open-tab  SubagentStop  
-2026-08-21T06:14:32Z  open-tab  SubagentStop  
-2026-08-21T06:14:32Z  open-tab  SubagentStop  
-2026-08-21T06:14:32Z  open-tab  SubagentStop  
+2026-08-21T06:14:47Z  open-tab  SubagentStop  
+2026-08-21T06:15:03Z  open-tab  SubagentStop  
+2026-08-21T06:15:03Z  open-tab  SubagentStop  
+2026-08-21T06:15:03Z  open-tab  SubagentStop  
+2026-08-21T06:15:03Z  open-tab  SubagentStop  
+2026-08-21T06:15:03Z  open-tab  SubagentStop  
+2026-08-21T06:15:03Z  open-tab  SubagentStop  
+2026-08-21T06:15:19Z  open-tab  SubagentStop  
+2026-08-21T06:15:19Z  open-tab  SubagentStop  
+2026-08-21T06:15:19Z  open-tab  SubagentStop  
+2026-08-21T06:15:19Z  open-tab  SubagentStop  
+2026-08-21T06:15:19Z  open-tab  SubagentStop  
+2026-08-21T06:15:19Z  open-tab  SubagentStop  
+2026-08-21T06:15:20Z  open-tab  SubagentStop  reviewer-deep
+2026-08-21T06:15:51Z  open-tab  SubagentStop  
+2026-08-21T06:15:51Z  open-tab  SubagentStop  
+2026-08-21T06:15:51Z  open-tab  SubagentStop  
+2026-08-21T06:15:51Z  open-tab  SubagentStop  
+2026-08-21T06:15:51Z  open-tab  SubagentStop  
+2026-08-21T06:15:51Z  open-tab  SubagentStop  
 ```
 
 ---
