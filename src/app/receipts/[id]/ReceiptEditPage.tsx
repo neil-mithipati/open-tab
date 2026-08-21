@@ -6,6 +6,7 @@ import { useReceiptEditFlow } from "@/hooks/useReceiptEditFlow";
 import { ReceiptSplitStep } from "@/components/receipt/ReceiptSplitStep";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { computeEqualCharges, computeItemCharges } from "@/lib/utils";
+import { itemsSubtotalCents } from "@/lib/money";
 import { persistAndShare } from "@/lib/receiptShare";
 import { saveReceiptState } from "@/app/actions/saveReceipt";
 import { refreshUserCaches } from "@/app/actions/cache";
@@ -39,13 +40,14 @@ export function ReceiptEditPage({ seed }: Props) {
   // Mirror the recipient charge cards shown in ReceiptSplitStep, so the Done
   // button can highlight once every recipient has been marked paid.
   const anyItemsAssigned = items.some((item) => (assignments[item.clientId] ?? []).length >= 1);
-  const liveItemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
+  // Integer cents, like everything else on the flow state.
+  const liveItemSubtotal = itemsSubtotalCents(items);
   const liveTotal = total ?? liveItemSubtotal + (tax ?? 0) + (tip ?? 0);
   const recipientCharges =
     splitMode === "equal" && nonOwnerParticipants.length >= 1
       ? computeEqualCharges(liveTotal, participants, merchantName, items)
       : splitMode === "by_item" && anyItemsAssigned && nonOwnerParticipants.length >= 1
-        ? computeItemCharges(items, assignments, participants, liveItemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt).filter((c) => c.amount > 0)
+        ? computeItemCharges(items, assignments, participants, liveItemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt).filter((c) => c.amountCents > 0)
         : [];
   const allPaid = recipientCharges.length > 0 && recipientCharges.every((c) => paidClientIds.has(c.participant.clientId));
 
@@ -70,15 +72,15 @@ export function ReceiptEditPage({ seed }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { showToast("Session expired. Sign in again.", "error"); return; }
 
-      const itemSubtotal = items.reduce((s, it) => s + it.price * it.quantity, 0);
-      const totalAmount = total ?? itemSubtotal + (tax ?? 0) + (tip ?? 0);
+      const itemSubtotalCents = itemsSubtotalCents(items);
+      const totalCents = total ?? itemSubtotalCents + (tax ?? 0) + (tip ?? 0);
 
       // Compute charges only if split is complete
       let computed: ComputedCharge[] = [];
       if (splitMode === "equal" && nonOwnerParticipants.length >= 1) {
-        computed = computeEqualCharges(totalAmount, participants, merchantName, items);
+        computed = computeEqualCharges(totalCents, participants, merchantName, items);
       } else if (splitMode === "by_item" && allItemsAssigned && nonOwnerParticipants.length >= 1) {
-        computed = computeItemCharges(items, assignments, participants, itemSubtotal, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
+        computed = computeItemCharges(items, assignments, participants, itemSubtotalCents, tax ?? 0, tip ?? 0, merchantName, dateOfReceipt);
       }
 
       // Manual mode: clicking Done finalizes the check (→ closed).
@@ -95,7 +97,7 @@ export function ReceiptEditPage({ seed }: Props) {
           // claim made on it since this page rendered survives (0023).
           dbId: item.dbId,
           name: item.name,
-          price: item.price,
+          priceCents: item.price,
           quantity: item.quantity,
         })),
         participants: participants.map((p) => ({
@@ -108,7 +110,7 @@ export function ReceiptEditPage({ seed }: Props) {
         assignments,
         charges: computed.map((c) => ({
           participantClientId: c.participant.clientId,
-          amount: c.amount,
+          amountCents: c.amountCents,
           venmoLink: c.venmoLink,
           paidAt: paidClientIds.has(c.participant.clientId) ? new Date().toISOString() : null,
         })),
@@ -116,10 +118,10 @@ export function ReceiptEditPage({ seed }: Props) {
           status,
           splitMode,
           merchantName,
-          subtotal: Math.round(itemSubtotal * 100) / 100,
-          tax,
-          tip,
-          total: Math.round(totalAmount * 100) / 100,
+          subtotalCents: itemSubtotalCents,
+          taxCents: tax,
+          tipCents: tip,
+          totalCents,
         },
       });
       if (saved.error) { showToast(saved.error, "error"); return; }

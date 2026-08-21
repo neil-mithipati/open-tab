@@ -70,7 +70,9 @@ vi.mock("@/lib/supabase/client", () => {
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "open_tab_receipt_flow";
+// Bumped when money moved to integer cents — a draft under the old key is
+// dollars and must not be restored into a cents-reading build.
+const STORAGE_KEY = "open_tab_receipt_flow_v2";
 
 const ownerParticipant: FlowParticipant = {
   clientId: "owner-1",
@@ -81,8 +83,9 @@ const ownerParticipant: FlowParticipant = {
   isOwner: true,
 };
 
+// Integer cents: a $12 burger.
 const defaultItems: EditableItem[] = [
-  { clientId: "item-1", name: "Burger", price: 12.0, quantity: 1 },
+  { clientId: "item-1", name: "Burger", price: 1200, quantity: 1 },
 ];
 
 function seedFlowState(overrides: Partial<Omit<ReceiptFlowState, "imageFile">> = {}) {
@@ -93,10 +96,10 @@ function seedFlowState(overrides: Partial<Omit<ReceiptFlowState, "imageFile">> =
     mimeType: null,
     merchantName: "Test Cafe",
     dateOfReceipt: "2025-05-24",
-    subtotal: 12,
+    subtotal: 1200,
     tax: 0,
     tip: 0,
-    total: 12,
+    total: 1200,
     items: defaultItems,
     participants: [ownerParticipant],
     splitMode: "equal",

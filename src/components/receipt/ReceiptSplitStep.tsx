@@ -11,19 +11,27 @@ import { ParticipantBubble } from "@/components/friends/ParticipantBubble";
 import { UsernameAutocomplete } from "@/components/friends/UsernameAutocomplete";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
-  formatCurrency,
   formatDate,
   computeEqualCharges,
   computeItemCharges,
   buildVenmoNote,
 } from "@/lib/utils";
+import {
+  centsInputValue,
+  formatCents,
+  itemsSubtotalCents,
+  lineTotalCents,
+  parseAmountCents,
+  roundCents,
+} from "@/lib/money";
+import { reconcileReceipt, type ReconcileField } from "@/lib/reconcile";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import type { Profile, FlowParticipant, ComputedCharge, FriendGroup } from "@/types";
 import { VenmoIcon } from "@/components/ui/VenmoIcon";
 import { addFriendByUsername } from "@/lib/friends";
 import { groupToParticipants, mapGroupRows } from "@/lib/friendGroups";
 import { buildVenmoLinks } from "@/lib/venmo/deepLink";
-import { parseQuantity, parseAmount } from "@/lib/receiptValidation";
+import { parseQuantity } from "@/lib/receiptValidation";
 import { Users2, Check } from "lucide-react";
 
 type Flow = ReturnType<typeof useReceiptFlow>;
@@ -55,7 +63,9 @@ function LiveChargeCard({
             const assignees = assignments[item.clientId] ?? [];
             return {
               item,
-              perPersonAmount: (item.price * item.quantity) / assignees.length,
+              // Fractional cents; a display-only figure, so it is rounded
+              // here and never fed back into the split.
+              perPersonCents: roundCents(lineTotalCents(item) / assignees.length),
               shared: assignees.length > 1,
             };
           })
@@ -72,7 +82,7 @@ function LiveChargeCard({
   function openVenmo() {
     const { venmoLink, venmoAppLink } = buildVenmoLinks({
       recipientUsername: charge.participant.venmoUsername,
-      amount: charge.amount,
+      amountCents: charge.amountCents,
       note,
       // Owner is collecting from this friend → request money (charge), not pay.
       txn: "charge",
@@ -127,25 +137,25 @@ function LiveChargeCard({
       {/* Read-only charge breakdown */}
       {splitMode === "by_item" && breakdown.length > 0 ? (
         <div className="flex flex-col gap-1.5 pt-1 border-t border-white/8">
-          {breakdown.map(({ item, perPersonAmount, shared }) => (
+          {breakdown.map(({ item, perPersonCents, shared }) => (
             <div key={item.clientId} className="flex justify-between text-xs text-secondary">
               <span className="truncate">
                 {item.name}
                 {item.quantity > 1 && ` ×${item.quantity}`}
                 {shared && " (shared)"}
               </span>
-              <span className="flex-shrink-0 ml-2">{formatCurrency(perPersonAmount)}</span>
+              <span className="flex-shrink-0 ml-2">{formatCents(perPersonCents)}</span>
             </div>
           ))}
           <div className="flex justify-between text-sm font-semibold text-primary pt-1.5 border-t border-white/8">
             <span>Total</span>
-            <span>{formatCurrency(charge.amount)}</span>
+            <span>{formatCents(charge.amountCents)}</span>
           </div>
         </div>
       ) : (
         <div className="flex justify-between text-sm pt-1 border-t border-white/8">
           <span className="text-secondary">Even split</span>
-          <span className="font-semibold text-primary">{formatCurrency(charge.amount)}</span>
+          <span className="font-semibold text-primary">{formatCents(charge.amountCents)}</span>
         </div>
       )}
     </GlassCard>
@@ -156,13 +166,14 @@ function LiveChargeCard({
 
 function OwnerChargeCard({
   participant,
-  amount,
+  amountCents,
   splitMode,
   items,
   assignments,
 }: {
   participant: FlowParticipant;
-  amount: number;
+  /** Integer cents. */
+  amountCents: number;
   splitMode: "equal" | "by_item";
   items: ReturnType<typeof useReceiptFlow>["state"]["items"];
   assignments: Record<string, string[]>;
@@ -176,7 +187,9 @@ function OwnerChargeCard({
             const assignees = assignments[item.clientId] ?? [];
             return {
               item,
-              perPersonAmount: (item.price * item.quantity) / assignees.length,
+              // Fractional cents; a display-only figure, so it is rounded
+              // here and never fed back into the split.
+              perPersonCents: roundCents(lineTotalCents(item) / assignees.length),
               shared: assignees.length > 1,
             };
           })
@@ -199,25 +212,25 @@ function OwnerChargeCard({
 
       {splitMode === "by_item" && breakdown.length > 0 ? (
         <div className="flex flex-col gap-1.5 pt-1 border-t border-white/8">
-          {breakdown.map(({ item, perPersonAmount, shared }) => (
+          {breakdown.map(({ item, perPersonCents, shared }) => (
             <div key={item.clientId} className="flex justify-between text-xs text-secondary">
               <span className="truncate">
                 {item.name}
                 {item.quantity > 1 && ` ×${item.quantity}`}
                 {shared && " (shared)"}
               </span>
-              <span className="flex-shrink-0 ml-2">{formatCurrency(perPersonAmount)}</span>
+              <span className="flex-shrink-0 ml-2">{formatCents(perPersonCents)}</span>
             </div>
           ))}
           <div className="flex justify-between text-sm font-semibold text-primary pt-1.5 border-t border-white/8">
             <span>Total</span>
-            <span>{formatCurrency(amount)}</span>
+            <span>{formatCents(amountCents)}</span>
           </div>
         </div>
       ) : (
         <div className="flex justify-between text-sm pt-1 border-t border-white/8">
           <span className="text-secondary">Even split</span>
-          <span className="font-semibold text-primary">{formatCurrency(amount)}</span>
+          <span className="font-semibold text-primary">{formatCents(amountCents)}</span>
         </div>
       )}
     </GlassCard>
@@ -584,73 +597,90 @@ export function ReceiptSplitStep({
     setItemQuery("");
   }
 
+  // Every edit below re-derives the subtotal and the total from the line
+  // items, in whole cents. That is also what clears a reconciliation flag: the
+  // moment the user touches any money field the three numbers agree by
+  // construction, so the warning goes away because the receipt now adds up,
+  // not because it was dismissed.
   function handleItemUpdate(clientId: string, field: "price" | "quantity", raw: string) {
     const newItems = state.items.map((it) => {
       if (it.clientId !== clientId) return it;
-      if (field === "price") return { ...it, price: parseAmount(raw) };
+      if (field === "price") return { ...it, price: parseAmountCents(raw) };
       if (field === "quantity") return { ...it, quantity: parseQuantity(raw) };
       return it;
     });
     update("items", newItems);
-    const newSubtotal = Math.round(newItems.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
+    const newSubtotal = itemsSubtotalCents(newItems);
     update("subtotal", newSubtotal);
-    update("total", Math.round((newSubtotal + (state.tax ?? 0) + (state.tip ?? 0)) * 100) / 100);
+    update("total", newSubtotal + (state.tax ?? 0) + (state.tip ?? 0));
   }
 
   function handleTaxUpdate(raw: string) {
-    const tax = parseAmount(raw);
+    const tax = parseAmountCents(raw);
     update("tax", tax);
-    const subtotal = Math.round(state.items.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
-    update("total", Math.round((subtotal + tax + (state.tip ?? 0)) * 100) / 100);
+    const subtotal = itemsSubtotalCents(state.items);
+    update("subtotal", subtotal);
+    update("total", subtotal + tax + (state.tip ?? 0));
   }
 
   function handleTipUpdate(raw: string) {
-    const tip = parseAmount(raw);
+    const tip = parseAmountCents(raw);
     update("tip", tip);
-    const subtotal = Math.round(state.items.reduce((s, it) => s + it.price * it.quantity, 0) * 100) / 100;
-    update("total", Math.round((subtotal + (state.tax ?? 0) + tip) * 100) / 100);
+    const subtotal = itemsSubtotalCents(state.items);
+    update("subtotal", subtotal);
+    update("total", subtotal + (state.tax ?? 0) + tip);
   }
 
   const anyItemsAssigned =
     state.items.some((item) => (state.assignments[item.clientId] ?? []).length >= 1);
 
+  // Integer cents, all of it.
+  const itemSubtotalCents = itemsSubtotalCents(state.items);
   const total =
-    state.total ??
-    state.items.reduce((s, it) => s + it.price * it.quantity, 0) +
-      (state.tax ?? 0) +
-      (state.tip ?? 0);
+    state.total ?? itemSubtotalCents + (state.tax ?? 0) + (state.tip ?? 0);
+
+  // Does the parse add up? Same check, same 2¢ tolerance and same integer
+  // arithmetic the server ran after the parse — re-run here against the live
+  // state so the flags track what the user is looking at rather than a
+  // snapshot taken before they started editing.
+  const reconciliation = reconcileReceipt({
+    items: state.items,
+    subtotalCents: state.subtotal,
+    taxCents: state.tax,
+    tipCents: state.tip,
+    totalCents: state.total,
+  });
+  const flagged = new Set<ReconcileField>(reconciliation.flagged);
 
   const liveCharges: ComputedCharge[] = (() => {
     if (state.splitMode === "equal" && nonOwnerParticipants.length >= 1) {
       return computeEqualCharges(total, state.participants, state.merchantName, state.items);
     }
     if (state.splitMode === "by_item" && anyItemsAssigned && nonOwnerParticipants.length >= 1) {
-      const subtotal = state.items.reduce((s, it) => s + it.price * it.quantity, 0);
-      return computeItemCharges(state.items, state.assignments, state.participants, subtotal, state.tax ?? 0, state.tip ?? 0, state.merchantName, state.dateOfReceipt)
-        .filter((c) => c.amount > 0);
+      return computeItemCharges(state.items, state.assignments, state.participants, itemSubtotalCents, state.tax ?? 0, state.tip ?? 0, state.merchantName, state.dateOfReceipt)
+        .filter((c) => c.amountCents > 0);
     }
     return [];
   })();
 
   const ownerParticipant = state.participants.find((p) => p.isOwner);
-  const ownerAmount = (() => {
+  const ownerAmountCents = (() => {
     if (!ownerParticipant || liveCharges.length === 0) return null;
     if (state.splitMode === "equal") {
-      return Math.round((total / state.participants.length) * 100) / 100;
+      return roundCents(total / state.participants.length);
     }
     if (state.splitMode === "by_item") {
-      const subtotal = state.items.reduce((s, it) => s + it.price * it.quantity, 0);
-      const taxRate = subtotal > 0 ? (state.tax ?? 0) / subtotal : 0;
-      const tipRate = subtotal > 0 ? (state.tip ?? 0) / subtotal : 0;
-      let itemSubtotal = 0;
+      const taxRate = itemSubtotalCents > 0 ? (state.tax ?? 0) / itemSubtotalCents : 0;
+      const tipRate = itemSubtotalCents > 0 ? (state.tip ?? 0) / itemSubtotalCents : 0;
+      let ownerItemCents = 0;
       for (const item of state.items) {
         const assignees = state.assignments[item.clientId] ?? [];
         if (assignees.includes(ownerParticipant.clientId) && assignees.length > 0) {
-          itemSubtotal += (item.price * item.quantity) / assignees.length;
+          ownerItemCents += lineTotalCents(item) / assignees.length;
         }
       }
-      const amount = Math.round(itemSubtotal * (1 + taxRate + tipRate) * 100) / 100;
-      return amount > 0 ? amount : null;
+      const amountCents = roundCents(ownerItemCents * (1 + taxRate + tipRate));
+      return amountCents > 0 ? amountCents : null;
     }
     return null;
   })();
@@ -758,9 +788,9 @@ export function ReceiptSplitStep({
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={item.price}
+                      value={centsInputValue(item.price)}
                       onChange={(e) => handleItemUpdate(item.clientId, "price", e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))}
-                      className="w-14 text-sm text-right font-medium text-primary bg-transparent outline-none"
+                      className={`w-14 text-sm text-right font-medium bg-transparent outline-none ${flagged.has("items") ? "text-amber-300" : "text-primary"}`}
                     />
                   </div>
                 </div>
@@ -807,8 +837,12 @@ export function ReceiptSplitStep({
         <div className="px-4 py-3 flex flex-col gap-1.5">
           {state.subtotal !== null && (
             <div className="flex justify-between text-sm">
-              <span className="text-secondary">Subtotal</span>
-              <span className="text-primary">{formatCurrency(state.subtotal)}</span>
+              <span className={flagged.has("subtotal") ? "text-amber-300" : "text-secondary"}>
+                Subtotal
+              </span>
+              <span className={flagged.has("subtotal") ? "text-amber-300 font-medium" : "text-primary"}>
+                {formatCents(state.subtotal)}
+              </span>
             </div>
           )}
           <div className="flex justify-between items-center text-sm">
@@ -818,7 +852,7 @@ export function ReceiptSplitStep({
               <input
                 type="text"
                 inputMode="decimal"
-                value={state.tax ?? 0}
+                value={centsInputValue(state.tax ?? 0)}
                 onChange={(e) => handleTaxUpdate(e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))}
                 className="w-16 text-sm text-right text-primary bg-transparent outline-none"
               />
@@ -831,16 +865,42 @@ export function ReceiptSplitStep({
               <input
                 type="text"
                 inputMode="decimal"
-                value={state.tip ?? 0}
+                value={centsInputValue(state.tip ?? 0)}
                 onChange={(e) => handleTipUpdate(e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))}
                 className="w-16 text-sm text-right text-primary bg-transparent outline-none"
               />
             </div>
           </div>
           <div className="flex justify-between pt-1 border-t border-white/8 mt-0.5">
-            <span className="font-bold text-primary">Total</span>
-            <span className="font-bold text-primary text-lg">{formatCurrency(total)}</span>
+            <span className={`font-bold ${flagged.has("total") ? "text-amber-300" : "text-primary"}`}>
+              Total
+            </span>
+            <span className={`font-bold text-lg ${flagged.has("total") ? "text-amber-300" : "text-primary"}`}>
+              {formatCents(total)}
+            </span>
           </div>
+
+          {/* The receipt does not add up. Said here, next to the numbers it is
+              about, rather than as a modal that has to be dismissed: the
+              suspect fields are highlighted above and fixing any one of them
+              clears this. Nothing is blocked — the user is the one who can see
+              the paper — but the total behind every Venmo charge on this
+              screen is one they have now been shown to be wrong. */}
+          {!reconciliation.ok && (
+            <div className="mt-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2">
+              <p className="text-xs font-semibold text-amber-300">
+                These numbers don&apos;t add up
+              </p>
+              {reconciliation.issues.map((issue) => (
+                <p key={issue.check} className="text-[11px] text-amber-200/90 mt-0.5">
+                  {issue.message}
+                </p>
+              ))}
+              <p className="text-[11px] text-amber-200/70 mt-1">
+                Check them against the receipt before sending charges.
+              </p>
+            </div>
+          )}
         </div>
       </GlassCard>
 
@@ -855,13 +915,13 @@ export function ReceiptSplitStep({
       </motion.div>
 
       {/* Live charge cards */}
-      {(liveCharges.length > 0 || ownerAmount != null) && (
+      {(liveCharges.length > 0 || ownerAmountCents != null) && (
         <div className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold text-primary">Charges</h2>
-          {ownerParticipant && ownerAmount != null && (
+          {ownerParticipant && ownerAmountCents != null && (
             <OwnerChargeCard
               participant={ownerParticipant}
-              amount={ownerAmount}
+              amountCents={ownerAmountCents}
               splitMode={state.splitMode}
               items={state.items}
               assignments={state.assignments}

@@ -54,12 +54,14 @@ describe("saveReceiptState", () => {
     expect(payload().p_receipt_id).toBe("r1");
   });
 
-  it("maps items to snake_case rows, numbering sort_order by position", async () => {
+  // The action takes integer cents and writes dollars: the columns are
+  // numeric(10,2). That conversion is the assertion here.
+  it("maps items to snake_case rows in dollars, numbering sort_order by position", async () => {
     await saveReceiptState(
       input({
         items: [
-          { clientId: "i1", name: "Toast", price: 9.5, quantity: 2 },
-          { clientId: "i2", name: "Coffee", price: 4, quantity: 1 },
+          { clientId: "i1", name: "Toast", priceCents: 950, quantity: 2 },
+          { clientId: "i2", name: "Coffee", priceCents: 400, quantity: 1 },
         ],
       })
     );
@@ -112,7 +114,7 @@ describe("saveReceiptState", () => {
   it("flattens the assignment map into one row per claim", async () => {
     await saveReceiptState(
       input({
-        items: [{ clientId: "i1", name: "Toast", price: 9.5, quantity: 1 }],
+        items: [{ clientId: "i1", name: "Toast", priceCents: 950, quantity: 1 }],
         participants: [
           { clientId: "p1", venmoUsername: "alice", displayName: "Alice", isOwner: false },
           { clientId: "p2", venmoUsername: "bob", displayName: "Bob", isOwner: false },
@@ -130,7 +132,7 @@ describe("saveReceiptState", () => {
   it("drops assignments pointing at an item or participant that is gone", async () => {
     await saveReceiptState(
       input({
-        items: [{ clientId: "i1", name: "Toast", price: 9.5, quantity: 1 }],
+        items: [{ clientId: "i1", name: "Toast", priceCents: 950, quantity: 1 }],
         participants: [
           { clientId: "p1", venmoUsername: "alice", displayName: "Alice", isOwner: false },
         ],
@@ -152,7 +154,7 @@ describe("saveReceiptState", () => {
         charges: [
           {
             participantClientId: "p1",
-            amount: 12.34,
+            amountCents: 1234,
             venmoLink: "venmo://paycharge",
             paidAt: "2026-08-18T00:00:00.000Z",
           },
@@ -173,14 +175,14 @@ describe("saveReceiptState", () => {
   it("folds a repeated Venmo username into one participant and re-points their claims", async () => {
     await saveReceiptState(
       input({
-        items: [{ clientId: "i1", name: "Toast", price: 9.5, quantity: 1 }],
+        items: [{ clientId: "i1", name: "Toast", priceCents: 950, quantity: 1 }],
         participants: [
           { clientId: "p1", venmoUsername: "Alice", displayName: "Alice", isOwner: true },
           { clientId: "p2", venmoUsername: "alice", displayName: "alice", isOwner: false },
         ],
         assignments: { i1: ["p2"] },
         charges: [
-          { participantClientId: "p2", amount: 5, venmoLink: null, paidAt: null },
+          { participantClientId: "p2", amountCents: 500, venmoLink: null, paidAt: null },
         ],
       })
     );
@@ -209,10 +211,10 @@ describe("saveReceiptState", () => {
           status: "closed",
           splitMode: "by_item",
           merchantName: "Blue Bottle",
-          subtotal: 13.5,
-          tax: null,
-          tip: 2,
-          total: 15.5,
+          subtotalCents: 1350,
+          taxCents: null,
+          tipCents: 200,
+          totalCents: 1550,
         },
       })
     );

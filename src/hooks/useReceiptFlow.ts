@@ -6,6 +6,10 @@ import { generateClientId } from "@/lib/utils";
 
 export type Step = "capture" | "scanning" | "split";
 
+// All money on this state is INTEGER CENTS — see the note in src/types.
+// It arrives that way from /api/receipts/parse and from the seed the receipt
+// page builds, and it leaves that way into the split arithmetic and the Venmo
+// links. Nothing here holds a dollar.
 export interface ReceiptFlowState {
   step: Step;
   receiptId: string | null;
@@ -14,9 +18,13 @@ export interface ReceiptFlowState {
   mimeType: string | null;
   merchantName: string | null;
   dateOfReceipt: string | null;
+  /** Integer cents. */
   subtotal: number | null;
+  /** Integer cents. */
   tax: number | null;
+  /** Integer cents. */
   tip: number | null;
+  /** Integer cents. */
   total: number | null;
   items: EditableItem[];
   participants: FlowParticipant[];
@@ -24,7 +32,11 @@ export interface ReceiptFlowState {
   assignments: Record<string, string[]>; // itemClientId → participantClientIds[]
 }
 
-const STORAGE_KEY = "open_tab_receipt_flow";
+// Bumped when money moved from dollars to cents. A draft saved by the
+// previous build holds dollars, and restoring it under the new reading would
+// turn $42.10 into 42¢ — silently, on a real charge. A new key means those
+// drafts are simply not found.
+const STORAGE_KEY = "open_tab_receipt_flow_v2";
 
 const INITIAL: ReceiptFlowState = {
   step: "capture",

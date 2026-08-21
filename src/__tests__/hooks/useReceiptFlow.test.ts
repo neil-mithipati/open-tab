@@ -171,7 +171,7 @@ describe("useReceiptFlow", () => {
   describe("sessionStorage persistence", () => {
     it("restores state from sessionStorage on mount", () => {
       sessionStorage.setItem(
-        "open_tab_receipt_flow",
+        "open_tab_receipt_flow_v2",
         JSON.stringify({ step: "split", merchantName: "Restored Cafe" })
       );
       const { result } = renderHook(() => useReceiptFlow());

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
-import { parseReceiptImage } from "@/lib/gemini/parseReceipt";
+import { parseReceiptImage, parsedReceiptCentsSchema } from "@/lib/gemini/parseReceipt";
+import { fromCents, fromCentsOrNull } from "@/lib/money";
+import { reconcileReceipt } from "@/lib/reconcile";
 import { extractStoragePath } from "@/lib/storage";
 import { isParseRateLimited, PARSE_LIMIT_PER_HOUR } from "@/lib/rateLimit";
 
@@ -68,9 +70,11 @@ function ownStoragePath(userId: string, receipt: StoredReceipt): string | null {
 //
 // parsed_at (0020) is the authoritative one: the route stamps it before the
 // model call, so it covers the parses that produced nothing — an all-nulls
-// result off a blank image, the EMPTY fallback when Gemini's reply fails
-// JSON.parse, a thrown error returning 500 — which is exactly the set that
-// left no other trace and so replayed forever off one upload.
+// result off a blank image, a reply that fails JSON.parse, a thrown error
+// returning 500, a result that failed validation or did not reconcile — which
+// is exactly the set that leaves no other trace and so replayed forever off
+// one upload. Since validation and reconciliation write nothing, they depend
+// on this stamp entirely.
 //
 // The parsed-data checks below stay because parsed_at backfills to null: rows
 // parsed before 0020 shipped have data but no stamp, and this is what still
@@ -286,9 +290,9 @@ const TRANSIENT_NETWORK_CODES = new Set([
 // function does not recognise consumes the parse exactly as it did before.
 //
 // Note what is not here. A parse that SUCCEEDED and returned nothing useful
-// never reaches this function at all: it does not throw, so the route returns
-// 200 with the empty result and the claim stands. That is the hole 0020 exists
-// to cover and no retry is granted for it.
+// reaches this function only as a ReceiptParseError, which is not transient by
+// any of the tests above: the model ran and was paid for, so the claim stands
+// and no retry is granted. That is the hole 0020 exists to cover.
 function isTransientModelFailure(err: unknown): boolean {
   if (typeof err !== "object" || err === null) return false;
   const e = err as { name?: unknown; message?: unknown; status?: unknown; code?: unknown; cause?: unknown };
@@ -513,6 +517,57 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "parse_failed" }, { status: 500 });
   }
 
+  // Validate the model's output before it can reach a single write. This runs
+  // even though parseReceiptImage already validated its own reply, because
+  // this — not that — is the function that writes to the database, and a
+  // caller that trusts its input is one refactor away from writing whatever it
+  // was handed. It is also what catches the all-nulls result that used to be
+  // returned when the reply failed JSON.parse.
+  const validated = parsedReceiptCentsSchema.safeParse(parsed);
+  if (!validated.success) {
+    console.error(
+      `[parse] model output for receipt ${receipt.id} failed validation, nothing written: ${validated.error.issues
+        .map((i) => `${i.path.join(".") || "(root)"} ${i.message}`)
+        .join("; ")}`
+    );
+    // The parse is spent either way — the model ran and was paid for. The
+    // receipt row and its image stay, so CaptureStep drops the user on the
+    // manual editor with the tab intact, which is what it already does for
+    // every other non-429 failure.
+    return NextResponse.json({ error: "parse_failed" }, { status: 500 });
+  }
+
+  // Does it add up? Two integer-cent checks with a 2¢ tolerance — see
+  // src/lib/reconcile.ts. A receipt that does not reconcile is NOT persisted
+  // as clean: the numbers come back in the response so the user lands on the
+  // edit screen looking at them, but nothing is written, because a stored
+  // total is one the split step will happily turn into a Venmo charge without
+  // anyone having checked it.
+  const reconciliation = reconcileReceipt({
+    items: parsed.items,
+    subtotalCents: parsed.subtotal,
+    taxCents: parsed.tax,
+    tipCents: parsed.tip,
+    totalCents: parsed.total,
+  });
+
+  if (!reconciliation.ok) {
+    console.warn(
+      `[parse] receipt ${receipt.id} does not reconcile, nothing persisted: ${reconciliation.issues
+        .map((i) => `${i.check} off by ${i.deltaCents}¢`)
+        .join("; ")}`
+    );
+    return NextResponse.json({
+      success: true,
+      data: parsed,
+      reconciliation: {
+        ok: false,
+        flagged: reconciliation.flagged,
+        issues: reconciliation.issues,
+      },
+    });
+  }
+
   // write parsed data back to db. Logged, not surfaced to the caller: the
   // parsed data returned below is what CaptureStep actually reads to fill the
   // split step, so a write-back failure here does not stop the user from
@@ -520,15 +575,17 @@ export async function POST(request: Request) {
   // notices the log. Failing the response instead would burn the receipt's
   // one already-claimed parse on a persistence bug the user cannot retry
   // their way out of.
+  //
+  // Cents → dollars happens here and only here: the columns are numeric(10,2).
   const { error: writeBackError } = await service
     .from("receipts")
     .update({
       merchant_name: parsed.merchant_name,
       date_of_receipt: parsed.date_of_receipt,
-      subtotal: parsed.subtotal,
-      tax: parsed.tax,
-      tip: parsed.tip,
-      total: parsed.total,
+      subtotal: fromCentsOrNull(parsed.subtotal),
+      tax: fromCentsOrNull(parsed.tax),
+      tip: fromCentsOrNull(parsed.tip),
+      total: fromCentsOrNull(parsed.total),
       status: "open",
     })
     .eq("id", receipt.id);
@@ -544,7 +601,7 @@ export async function POST(request: Request) {
       parsed.items.map((item, i) => ({
         receipt_id: receipt.id,
         name: item.name,
-        price: item.price,
+        price: fromCents(item.price),
         quantity: item.quantity,
         sort_order: i,
       }))

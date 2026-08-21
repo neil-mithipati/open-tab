@@ -12,6 +12,7 @@ import {
   formatCurrency,
   buildVenmoNote,
 } from "@/lib/utils";
+import { formatCents, toCents, toCentsOrNull } from "@/lib/money";
 import {
   getSharedReceipt,
   getClaimCharges,
@@ -58,12 +59,14 @@ export function ClaimOwnerView({ shareUrl, initial, initialCharges, imageUrl }: 
   }
 
   // Amounts each non-owner owes — same computation the server persisted.
+  // SharedReceipt mirrors numeric(10,2) columns, so its money is dollars; the
+  // split arithmetic is integer cents. This is that boundary.
   const computed: ComputedCharge[] = useMemo(() => {
     const items: EditableItem[] = receipt.items.map((it) => ({
       clientId: it.id,
       dbId: it.id,
       name: it.name,
-      price: it.price,
+      price: toCents(it.price),
       quantity: it.quantity,
     }));
     const participants: FlowParticipant[] = receipt.participants.map((p) => ({
@@ -78,8 +81,8 @@ export function ClaimOwnerView({ shareUrl, initial, initialCharges, imageUrl }: 
       items,
       receipt.assignments,
       participants,
-      receipt.tax ?? 0,
-      receipt.tip ?? 0,
+      toCents(receipt.tax ?? 0),
+      toCents(receipt.tip ?? 0),
       receipt.owner.venmo_username ?? "",
       receipt.merchant_name,
       receipt.date_of_receipt
@@ -328,14 +331,22 @@ function CollectBody({
 
   // Owner is the first user in the list, showing what they claimed for themselves.
   const ownerParticipant = receipt.participants.find((p) => p.is_owner);
-  const subtotal = receipt.items.reduce((s, it) => s + it.price * it.quantity, 0);
-  const total = receipt.total ?? subtotal + (receipt.tax ?? 0) + (receipt.tip ?? 0);
+  // Dollars in, cents from here — the subtraction below has to happen in the
+  // same units the charges were allocated in or the owner's share absorbs a
+  // rounding difference that isn't real.
+  const subtotalCents = receipt.items.reduce(
+    (s, it) => s + toCents(it.price) * it.quantity,
+    0
+  );
+  const totalCents =
+    toCentsOrNull(receipt.total) ??
+    subtotalCents + toCents(receipt.tax ?? 0) + toCents(receipt.tip ?? 0);
   // The bill splits exhaustively across everyone, so the owner's own share is
   // whatever isn't owed by the friends.
-  const nonOwnerSum = computed.reduce((s, c) => s + c.amount, 0);
-  const ownerShare = Math.max(0, Math.round((total - nonOwnerSum) * 100) / 100);
+  const nonOwnerCents = computed.reduce((s, c) => s + c.amountCents, 0);
+  const ownerShareCents = Math.max(0, totalCents - nonOwnerCents);
 
-  const owed = computed.filter((c) => c.amount > 0);
+  const owed = computed.filter((c) => c.amountCents > 0);
 
   return (
     <>
@@ -348,7 +359,7 @@ function CollectBody({
           <CollectRow
             name={ownerParticipant.display_name}
             venmoUsername={ownerParticipant.venmo_username}
-            amount={ownerShare}
+            amountCents={ownerShareCents}
             youTag
             claimedItems={claimedItemsFor(ownerParticipant.id)}
             expanded={expandedIds.has(ownerParticipant.id)}
@@ -364,7 +375,7 @@ function CollectBody({
           );
           const remind = buildVenmoLinks({
             recipientUsername: c.participant.venmoUsername,
-            amount: c.amount,
+            amountCents: c.amountCents,
             note,
             txn: "charge",
           });
@@ -373,7 +384,7 @@ function CollectBody({
               key={pid}
               name={c.participant.displayName}
               venmoUsername={c.participant.venmoUsername}
-              amount={c.amount}
+              amountCents={c.amountCents}
               claimedItems={claimedItemsFor(pid)}
               expanded={expandedIds.has(pid)}
               onToggle={() => toggleExpanded(pid)}
@@ -422,7 +433,7 @@ function CollectBody({
 function CollectRow({
   name,
   venmoUsername,
-  amount,
+  amountCents,
   claimedItems,
   expanded,
   onToggle,
@@ -431,7 +442,8 @@ function CollectRow({
 }: {
   name: string;
   venmoUsername: string;
-  amount: number;
+  /** Integer cents. */
+  amountCents: number;
   claimedItems: SharedReceipt["items"];
   expanded: boolean;
   onToggle: () => void;
@@ -458,7 +470,7 @@ function CollectRow({
               className={`w-3.5 h-3.5 text-tertiary flex-shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
             />
           </button>
-          <p className="text-sm text-secondary">{formatCurrency(amount)}</p>
+          <p className="text-sm text-secondary">{formatCents(amountCents)}</p>
         </div>
         {action}
       </div>

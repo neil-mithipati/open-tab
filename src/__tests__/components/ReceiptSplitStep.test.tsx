@@ -138,9 +138,11 @@ const ownerParticipant: FlowParticipant = {
   isOwner: true,
 };
 
+// Integer cents — the unit of every money field on the flow state. See the
+// note in src/types and the rounding rule in src/lib/money.ts. $12 and $8.
 const defaultItems: EditableItem[] = [
-  { clientId: "item-1", name: "Burger", price: 12.0, quantity: 1 },
-  { clientId: "item-2", name: "Fries", price: 8.0, quantity: 1 },
+  { clientId: "item-1", name: "Burger", price: 1200, quantity: 1 },
+  { clientId: "item-2", name: "Fries", price: 800, quantity: 1 },
 ];
 
 function makeDefaultState(overrides: Partial<ReceiptFlowState> = {}): ReceiptFlowState {
@@ -152,10 +154,12 @@ function makeDefaultState(overrides: Partial<ReceiptFlowState> = {}): ReceiptFlo
     mimeType: null,
     merchantName: "Test Cafe",
     dateOfReceipt: "2025-05-24",
-    subtotal: 20,
-    tax: 2,
-    tip: 4,
-    total: 26,
+    // $20 + $2 + $4 = $26, and the items sum to the subtotal, so this fixture
+    // reconciles: no field is flagged unless a test makes it disagree.
+    subtotal: 2000,
+    tax: 200,
+    tip: 400,
+    total: 2600,
     items: defaultItems,
     participants: [ownerParticipant],
     splitMode: "equal",
@@ -463,5 +467,61 @@ describe("ReceiptSplitStep — Itemize mode", () => {
     await user.type(await screen.findByPlaceholderText(/who had this/i), "alice");
     await user.click(await screen.findByText("Add @alice"));
     expect(await screen.findByRole("heading", { name: /charges/i })).toBeInTheDocument();
+  });
+});
+
+// ─── Reconciliation (OT-136) ──────────────────────────────────────────────────
+// The parse route refuses to persist a receipt that does not add up and sends
+// the user here instead. The same check re-runs against the live flow state,
+// so the flags track what is on screen rather than a snapshot taken before the
+// user started editing.
+
+describe("ReceiptSplitStep — the receipt does not add up", () => {
+  it("says nothing when the numbers agree", async () => {
+    await renderSplitStep();
+
+    expect(screen.queryByText(/don't add up/i)).not.toBeInTheDocument();
+  });
+
+  it("warns, and names both numbers, when the total is wrong", async () => {
+    // Items and subtotal agree at $20; $20 + $2 + $4 is $26, not $30.
+    await renderSplitStep(makeDefaultState({ total: 3000 }));
+
+    expect(screen.getByText(/don't add up/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/comes to \$26\.00, but the total reads \$30\.00/i)
+    ).toBeInTheDocument();
+  });
+
+  it("warns when the line items miss the subtotal", async () => {
+    await renderSplitStep(makeDefaultState({ subtotal: 2400, total: 3000 }));
+
+    expect(
+      screen.getByText(/items add up to \$20\.00, but the subtotal reads \$24\.00/i)
+    ).toBeInTheDocument();
+  });
+
+  it("highlights the discrepant fields and leaves the others alone", async () => {
+    await renderSplitStep(makeDefaultState({ total: 3000 }));
+
+    // The failing check is subtotal + tax + tip vs total, so those two labels
+    // are the suspect ones. Amber is the flag.
+    expect(screen.getByText("Subtotal")).toHaveClass("text-amber-300");
+    expect(screen.getByText("Total")).toHaveClass("text-amber-300");
+    expect(screen.getByText("Tax")).not.toHaveClass("text-amber-300");
+  });
+
+  it("clears the warning once the user corrects a number", async () => {
+    const { user } = await renderSplitStep(makeDefaultState({ total: 3000 }));
+
+    // Any money edit re-derives the subtotal and the total from the lines, so
+    // the three numbers agree by construction from here on. The warning goes
+    // because the receipt now adds up, not because it was dismissed.
+    const tax = screen.getByDisplayValue("2");
+    await user.clear(tax);
+    await user.type(tax, "3");
+
+    await waitFor(() => expect(screen.queryByText(/don't add up/i)).not.toBeInTheDocument());
+    expect(screen.getByText("$27.00")).toBeInTheDocument();
   });
 });

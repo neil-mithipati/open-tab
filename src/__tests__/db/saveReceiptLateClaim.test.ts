@@ -653,7 +653,7 @@ describe("migration 0023", () => {
 
 const base = {
   receiptId: "r1",
-  items: [] as { clientId: string; dbId?: string | null; name: string; price: number; quantity: number }[],
+  items: [] as { clientId: string; dbId?: string | null; name: string; priceCents: number; quantity: number }[],
   participants: [],
   assignments: {},
   charges: [],
@@ -674,7 +674,7 @@ describe("saveReceiptState sends the item's row id", () => {
   it("passes the db id through as the item's id", async () => {
     await saveReceiptState({
       ...base,
-      items: [{ clientId: "i1", dbId: ID_A, name: "Toast", price: 9.5, quantity: 1 }],
+      items: [{ clientId: "i1", dbId: ID_A, name: "Toast", priceCents: 950, quantity: 1 }],
     });
 
     expect(payload().p_items).toEqual([
@@ -685,7 +685,7 @@ describe("saveReceiptState sends the item's row id", () => {
   it("omits the key entirely for an item that has no row yet", async () => {
     await saveReceiptState({
       ...base,
-      items: [{ clientId: "i1", name: "Toast", price: 9.5, quantity: 1 }],
+      items: [{ clientId: "i1", name: "Toast", priceCents: 950, quantity: 1 }],
     });
 
     expect(payload().p_items[0]).not.toHaveProperty("id");
@@ -694,7 +694,7 @@ describe("saveReceiptState sends the item's row id", () => {
   it("drops an id that is not a uuid rather than failing the whole save", async () => {
     await saveReceiptState({
       ...base,
-      items: [{ clientId: "i1", dbId: "not-a-uuid", name: "Toast", price: 9.5, quantity: 1 }],
+      items: [{ clientId: "i1", dbId: "not-a-uuid", name: "Toast", priceCents: 950, quantity: 1 }],
     });
 
     expect(payload().p_items[0]).not.toHaveProperty("id");
@@ -704,9 +704,9 @@ describe("saveReceiptState sends the item's row id", () => {
     await saveReceiptState({
       ...base,
       items: [
-        { clientId: "i1", dbId: ID_A, name: "Toast", price: 9.5, quantity: 1 },
-        { clientId: "i2", dbId: ID_A, name: "Toast", price: 9.5, quantity: 1 },
-        { clientId: "i3", dbId: ID_B, name: "Fries", price: 6, quantity: 1 },
+        { clientId: "i1", dbId: ID_A, name: "Toast", priceCents: 950, quantity: 1 },
+        { clientId: "i2", dbId: ID_A, name: "Toast", priceCents: 950, quantity: 1 },
+        { clientId: "i3", dbId: ID_B, name: "Fries", priceCents: 600, quantity: 1 },
       ],
     });
 
