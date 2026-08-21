@@ -1,16 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 04:46 UTC · regenerated on every task completion.
+Updated 2026-08-21 04:51 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $1.67 | $200.00 | ░░░░░░░░░░ 0% |
+| open-tab | $0.57 | $200.00 | ░░░░░░░░░░ 0% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| 🟢 builder | open-tab | 2026-08-21T04:51:15Z | 1 |
 
 ## Blocked — needs your input
 
@@ -10032,7 +10034,7 @@ rubber stamp if the reasoning is wrong.
 - app: open-tab
 - tier: builder
 - review: full
-- attempts: 2
+- attempts: 3
 - branch: task/OT-148
 - worktree: ../wt-OT-148
 - files:
@@ -10105,6 +10107,15 @@ got far enough to be wrong about anything.
 Fresh session. Worktree `../wt-OT-148` confirmed clean at main HEAD, so this
 starts from scratch as attempt 1 intended. Tier held at `builder`.
 
+
+## Attempt 3 dispatched
+
+Attempt 2 died mid-session again, after committing `4691b63` with the script
+fixes and leaving 93 lines of uncommitted test additions in the worktree. Tests
+pass locally there (78/78). Budget failure, not capability: tier held at
+`builder`. The retry builds on the existing worktree rather than restarting —
+it finishes the remaining criteria, commits, runs gates, and reports.
+
 </details>
 <details><summary>🔴 <code>OT-149</code> blocked — verify-trivial.sh re-fires forever on a done task whose worktree was removed · 0/4 criteria — maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.</summary>
 
@@ -10162,26 +10173,13 @@ treating it as an error will behave the same way.
 ## Recent activity
 
 ```
-2026-08-21T04:46:15Z  open-tab  SubagentStop  
-2026-08-21T04:46:15Z  open-tab  SubagentStop  
-2026-08-21T04:46:19Z  open-tab  SubagentStop  
-2026-08-21T04:46:19Z  open-tab  SubagentStop  
-2026-08-21T04:46:19Z  open-tab  SubagentStop  
-2026-08-21T04:46:19Z  open-tab  SubagentStop  
-2026-08-21T04:46:19Z  open-tab  SubagentStop  
-2026-08-21T04:46:19Z  open-tab  SubagentStop  
-2026-08-21T04:46:22Z  open-tab  SubagentStop  
-2026-08-21T04:46:22Z  open-tab  SubagentStop  
-2026-08-21T04:46:22Z  open-tab  SubagentStop  
-2026-08-21T04:46:22Z  open-tab  SubagentStop  
-2026-08-21T04:46:22Z  open-tab  SubagentStop  
-2026-08-21T04:46:22Z  open-tab  SubagentStop  
-2026-08-21T04:46:26Z  open-tab  SubagentStop  
-2026-08-21T04:46:26Z  open-tab  SubagentStop  
-2026-08-21T04:46:26Z  open-tab  SubagentStop  
-2026-08-21T04:46:26Z  open-tab  SubagentStop  
-2026-08-21T04:46:26Z  open-tab  SubagentStop  
-2026-08-21T04:46:26Z  open-tab  SubagentStop  
+2026-08-21T04:51:15Z  open-tab  SubagentStart  builder
+2026-08-21T04:51:34Z  open-tab  SubagentStop  
+2026-08-21T04:51:34Z  open-tab  SubagentStop  
+2026-08-21T04:51:34Z  open-tab  SubagentStop  
+2026-08-21T04:51:34Z  open-tab  SubagentStop  
+2026-08-21T04:51:34Z  open-tab  SubagentStop  
+2026-08-21T04:51:34Z  open-tab  SubagentStop  
 ```
 
 ---
