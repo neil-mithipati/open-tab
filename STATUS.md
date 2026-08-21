@@ -1,16 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 11:54 UTC · regenerated on every task completion.
+Updated 2026-08-21 12:38 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $82.29 | $200.00 | ████░░░░░░ 41% |
+| open-tab | $82.44 | $200.00 | ████░░░░░░ 41% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| 🟢 reviewer-deep | open-tab | 2026-08-21T12:37:59Z | 2 |
 
 ## Blocked — needs your input
 
@@ -11326,14 +11328,6 @@ Re-run scripts (ephemeral scratchpad):
 ## Recent activity
 
 ```
-2026-08-21T11:49:23Z  open-tab  SubagentStop  
-2026-08-21T11:49:54Z  open-tab  SubagentStop  
-2026-08-21T11:49:54Z  open-tab  SubagentStop  
-2026-08-21T11:49:54Z  open-tab  SubagentStop  
-2026-08-21T11:49:54Z  open-tab  SubagentStop  
-2026-08-21T11:49:54Z  open-tab  SubagentStop  
-2026-08-21T11:49:54Z  open-tab  SubagentStop  
-2026-08-21T11:50:26Z  open-tab  SubagentStop  
 2026-08-21T11:50:26Z  open-tab  SubagentStop  
 2026-08-21T11:50:26Z  open-tab  SubagentStop  
 2026-08-21T11:50:26Z  open-tab  SubagentStop  
@@ -11346,6 +11340,14 @@ Re-run scripts (ephemeral scratchpad):
 2026-08-21T11:54:23Z  open-tab  SubagentStop  
 2026-08-21T11:54:23Z  open-tab  SubagentStop  
 2026-08-21T11:54:23Z  open-tab  SubagentStop  
+2026-08-21T12:37:46Z  open-tab  SubagentStart  reviewer-deep
+2026-08-21T12:37:59Z  open-tab  SubagentStart  reviewer-deep
+2026-08-21T12:38:04Z  open-tab  SubagentStop  
+2026-08-21T12:38:04Z  open-tab  SubagentStop  
+2026-08-21T12:38:04Z  open-tab  SubagentStop  
+2026-08-21T12:38:04Z  open-tab  SubagentStop  
+2026-08-21T12:38:04Z  open-tab  SubagentStop  
+2026-08-21T12:38:04Z  open-tab  SubagentStop  
 ```
 
 ---
