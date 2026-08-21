@@ -1,18 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 02:09 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:10 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $7.93 | $200.00 | ░░░░░░░░░░ 3% |
+| open-tab | $8.43 | $200.00 | ░░░░░░░░░░ 4% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | 🟢 reviewer-light | open-tab | 2026-08-21T02:06:48Z | 1 |
+| 🟢 builder | open-tab | 2026-08-21T02:09:49Z | 1 |
 
 ## Blocked — needs your input
 
@@ -9223,12 +9224,14 @@ drift again the moment it is fixed. That check is the real deliverable.
 - app: open-tab
 - tier: builder
 - review: full
-- attempts: 0
+- attempts: 1
 - branch: task/OT-143
 - worktree: ../wt-OT-143
 - files:
 -   - supabase/migrations/0026_receipt_image_storage_lockdown.sql
--   - docs/
+-   - supabase/storage-policies.sql
+-   - docs/deployment.md
+-   - src/__tests__/db/storagePolicySql.test.ts
 - blocked_reason: null
 
 
@@ -9328,6 +9331,27 @@ project, which no agent can reach — so state plainly what was verified locally
 and what still needs the owner to confirm. Do not claim a green push that was
 never run.
 
+
+## Attempt 1 — blocked on scope, resolved by widening it
+
+Split done: `public.` half stays in `0026`, storage half moved to
+`supabase/storage-policies.sql` with the procedure in `docs/deployment.md`.
+Typecheck and lint pass. Tests fail on one file, 541/542 otherwise green.
+
+`src/__tests__/db/storagePolicySql.test.ts` hardcodes that `0026` contains the
+bucket insert, the RLS-enable line, and all three policies. That is precisely
+what this task moves out, so the test is asserting the defect. It sat outside
+the declared file scope, so the builder correctly stopped rather than editing it.
+
+Scope widened to include that test file. It should assert against
+`supabase/storage-policies.sql` for the three policy expressions and the bucket
+privacy row, and against `0026` only for the `public.` objects. Do not delete
+the test — the expression assertions are the versioned check that the policies
+did not silently change, and that value survives the move.
+
+Tier held at `builder`: this was a scope gap in the task file, not a reasoning
+failure. Retry continues in the existing `../wt-OT-143`; do not redo the split.
+
 </details>
 <details><summary>✅ <code>OT-144</code> done — change the receipt image retention default from 7 days to 14 · 4/4 criteria</summary>
 
@@ -9425,26 +9449,26 @@ scope had missed, and the task could not merge until it was fixed.
 ## Recent activity
 
 ```
-2026-08-21T02:08:51Z  open-tab  SubagentStop  builder
-2026-08-21T02:08:54Z  open-tab  SubagentStop  
-2026-08-21T02:08:54Z  open-tab  SubagentStop  
-2026-08-21T02:08:54Z  open-tab  SubagentStop  
-2026-08-21T02:08:54Z  open-tab  SubagentStop  
-2026-08-21T02:08:54Z  open-tab  SubagentStop  
-2026-08-21T02:08:54Z  open-tab  SubagentStop  
-2026-08-21T02:08:56Z  open-tab  SubagentStop  builder
-2026-08-21T02:09:00Z  open-tab  SubagentStop  builder
-2026-08-21T02:09:01Z  open-tab  SubagentStop  
-2026-08-21T02:09:01Z  open-tab  SubagentStop  
-2026-08-21T02:09:01Z  open-tab  SubagentStop  
-2026-08-21T02:09:01Z  open-tab  SubagentStop  
-2026-08-21T02:09:01Z  open-tab  SubagentStop  
-2026-08-21T02:09:01Z  open-tab  SubagentStop  
-2026-08-21T02:09:04Z  open-tab  SubagentStop  builder
-2026-08-21T02:09:07Z  open-tab  SubagentStop  builder
-2026-08-21T02:09:11Z  open-tab  SubagentStop  builder
-2026-08-21T02:09:15Z  open-tab  SubagentStop  builder
 2026-08-21T02:09:19Z  open-tab  SubagentStop  builder
+2026-08-21T02:09:26Z  open-tab  SubagentStop  
+2026-08-21T02:09:26Z  open-tab  SubagentStop  
+2026-08-21T02:09:26Z  open-tab  SubagentStop  
+2026-08-21T02:09:26Z  open-tab  SubagentStop  
+2026-08-21T02:09:26Z  open-tab  SubagentStop  
+2026-08-21T02:09:26Z  open-tab  SubagentStop  
+2026-08-21T02:09:49Z  open-tab  SubagentStart  builder
+2026-08-21T02:09:57Z  open-tab  SubagentStop  
+2026-08-21T02:09:57Z  open-tab  SubagentStop  
+2026-08-21T02:09:57Z  open-tab  SubagentStop  
+2026-08-21T02:09:57Z  open-tab  SubagentStop  
+2026-08-21T02:09:57Z  open-tab  SubagentStop  
+2026-08-21T02:09:57Z  open-tab  SubagentStop  
+2026-08-21T02:10:21Z  open-tab  SubagentStop  
+2026-08-21T02:10:21Z  open-tab  SubagentStop  
+2026-08-21T02:10:21Z  open-tab  SubagentStop  
+2026-08-21T02:10:21Z  open-tab  SubagentStop  
+2026-08-21T02:10:21Z  open-tab  SubagentStop  
+2026-08-21T02:10:21Z  open-tab  SubagentStop  
 ```
 
 ---
