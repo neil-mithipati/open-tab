@@ -1,22 +1,23 @@
 # Agent status
 
-Updated 2026-08-21 05:17 UTC · regenerated on every task completion.
+Updated 2026-08-21 05:19 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $8.02 | $200.00 | ░░░░░░░░░░ 4% |
+| open-tab | $9.58 | $200.00 | ░░░░░░░░░░ 4% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| 🟢 builder-deep | open-tab | 2026-08-21T05:18:52Z | 1 |
+| 🟢 builder | open-tab | 2026-08-21T05:19:04Z | 1 |
 
 ## Blocked — needs your input
 
 > [!CAUTION]
-> 🔴 **Blocked `OT-147`** — maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.
-> 🔴 **Blocked `OT-149`** — maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.
 > 🔴 **Blocked `OT-150`** — the guard hooks are outside every maintenance grant by design, so no agent can make this change. owner applies it upstream in the kit and re-runs add-fleet.
 
 ## Tasks
@@ -9993,18 +9994,18 @@ but an instruction not to echo a secret did not hold, and that is worth knowing
 before a review ever runs against a real one.
 
 </details>
-<details><summary>🔴 <code>OT-147</code> blocked — four fail-opens remain in parallel-cap.sh after OT-138 · 0/6 criteria — maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.</summary>
+<details><summary>🟢 <code>OT-147</code> in-progress — four fail-opens remain in parallel-cap.sh after OT-138 · 0/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
 - review: full
 - attempts: 0
-- branch: null
-- worktree: null
+- branch: task/OT-147
+- worktree: ../wt-OT-147
 - files:
 -   - .claude/hooks/parallel-cap.sh
 -   - .claude/hooks/log-event.sh
-- blocked_reason: maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.
+- blocked_reason: null
 
 
 ## Needs a maintenance grant before dispatch
@@ -10085,6 +10086,15 @@ Reference implementation: `git show ot-138-superseded:.claude/hooks/parallel-cap
 Do not copy it wholesale — it predates liveness.sh and counts differently.
 
 Still blocked on the maintenance grant.
+
+
+## Grant active, dispatched 2026-08-21
+
+The owner landed the option-A `maint_active()` (keys off the write target's
+`wt-<ID>` segment, not the session root) and listed OT-147 and OT-149 under
+`maintenance`. Probed before dispatch: a write into `wt-OT-147/.claude/` allows,
+the same write into an ungranted worktree denies, and a write to the main
+checkout's `.claude/` denies. Worktree `../wt-OT-147`.
 
 </details>
 <details><summary>✅ <code>OT-148</code> done — robustness gaps in the schema drift check · 7/7 criteria</summary>
@@ -10188,17 +10198,17 @@ Gates from the worktree: typecheck pass, lint pass, tests pass (37 files, 653
 tests). Scope confined to the two declared files. Commits `4691b63`, `6ae846c`.
 
 </details>
-<details><summary>🔴 <code>OT-149</code> blocked — verify-trivial.sh re-fires forever on a done task whose worktree was removed · 0/4 criteria — maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.</summary>
+<details><summary>🟢 <code>OT-149</code> in-progress — verify-trivial.sh re-fires forever on a done task whose worktree was removed · 0/4 criteria</summary>
 
 - app: open-tab
 - tier: builder
 - review: full
 - attempts: 0
-- branch: null
-- worktree: null
+- branch: task/OT-149
+- worktree: ../wt-OT-149
 - files:
 -   - .claude/hooks/verify-trivial.sh
-- blocked_reason: maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree.
+- blocked_reason: null
 
 
 ## Needs a maintenance grant before dispatch
@@ -10238,6 +10248,15 @@ of our own tooling.
 Check whether the same shape exists in the other state hooks before fixing only
 this one. A `done`-with-no-worktree case is a normal end state and any hook
 treating it as an error will behave the same way.
+
+
+## Grant active, dispatched 2026-08-21
+
+The owner landed the option-A `maint_active()` (keys off the write target's
+`wt-<ID>` segment, not the session root) and listed OT-147 and OT-149 under
+`maintenance`. Probed before dispatch: a write into `wt-OT-149/.claude/` allows,
+the same write into an ungranted worktree denies, and a write to the main
+checkout's `.claude/` denies. Worktree `../wt-OT-149`.
 
 </details>
 <details><summary>🔴 <code>OT-150</code> blocked — maintenance grant never activates for a dispatched subagent · 0/6 criteria — the guard hooks are outside every maintenance grant by design, so no agent can make this change. owner applies it upstream in the kit and re-runs add-fleet.</summary>
@@ -10302,26 +10321,26 @@ third.
 ## Recent activity
 
 ```
-2026-08-21T05:17:24Z  open-tab  SubagentStop  
-2026-08-21T05:17:24Z  open-tab  SubagentStop  
-2026-08-21T05:17:25Z  open-tab  SubagentStop  
-2026-08-21T05:17:25Z  open-tab  SubagentStop  
-2026-08-21T05:17:25Z  open-tab  SubagentStop  
-2026-08-21T05:17:25Z  open-tab  SubagentStop  
-2026-08-21T05:17:25Z  open-tab  SubagentStop  
-2026-08-21T05:17:25Z  open-tab  SubagentStop  
-2026-08-21T05:17:27Z  open-tab  SubagentStop  
-2026-08-21T05:17:27Z  open-tab  SubagentStop  
-2026-08-21T05:17:27Z  open-tab  SubagentStop  
-2026-08-21T05:17:27Z  open-tab  SubagentStop  
-2026-08-21T05:17:27Z  open-tab  SubagentStop  
-2026-08-21T05:17:27Z  open-tab  SubagentStop  
-2026-08-21T05:17:29Z  open-tab  SubagentStop  
-2026-08-21T05:17:29Z  open-tab  SubagentStop  
-2026-08-21T05:17:29Z  open-tab  SubagentStop  
-2026-08-21T05:17:29Z  open-tab  SubagentStop  
-2026-08-21T05:17:29Z  open-tab  SubagentStop  
-2026-08-21T05:17:29Z  open-tab  SubagentStop  
+2026-08-21T05:17:58Z  open-tab  SubagentStop  
+2026-08-21T05:17:58Z  open-tab  SubagentStop  
+2026-08-21T05:17:58Z  open-tab  SubagentStop  
+2026-08-21T05:17:58Z  open-tab  SubagentStop  
+2026-08-21T05:17:58Z  open-tab  SubagentStop  
+2026-08-21T05:17:58Z  open-tab  SubagentStop  
+2026-08-21T05:18:00Z  open-tab  SubagentStop  
+2026-08-21T05:18:00Z  open-tab  SubagentStop  
+2026-08-21T05:18:00Z  open-tab  SubagentStop  
+2026-08-21T05:18:00Z  open-tab  SubagentStop  
+2026-08-21T05:18:00Z  open-tab  SubagentStop  
+2026-08-21T05:18:00Z  open-tab  SubagentStop  
+2026-08-21T05:18:52Z  open-tab  SubagentStart  builder-deep
+2026-08-21T05:19:04Z  open-tab  SubagentStart  builder
+2026-08-21T05:19:24Z  open-tab  SubagentStop  
+2026-08-21T05:19:24Z  open-tab  SubagentStop  
+2026-08-21T05:19:24Z  open-tab  SubagentStop  
+2026-08-21T05:19:24Z  open-tab  SubagentStop  
+2026-08-21T05:19:24Z  open-tab  SubagentStop  
+2026-08-21T05:19:24Z  open-tab  SubagentStop  
 ```
 
 ---
