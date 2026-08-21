@@ -1,19 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 02:13 UTC · regenerated on every task completion.
+Updated 2026-08-21 02:14 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $10.41 | $200.00 | ░░░░░░░░░░ 5% |
+| open-tab | $12.02 | $200.00 | ░░░░░░░░░░ 6% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | 🟢 reviewer-light | open-tab | 2026-08-21T02:06:48Z | 1 |
-| 🟢 publisher | open-tab | 2026-08-21T02:13:30Z | 1 |
+| 🟢 publisher | open-tab | 2026-08-21T02:14:18Z | 2 |
 
 ## Blocked — needs your input
 
@@ -9219,7 +9219,7 @@ current gate set compares repo migrations to a live database, so this could
 drift again the moment it is fixed. That check is the real deliverable.
 
 </details>
-<details><summary>🟢 <code>OT-143</code> in-progress — 0026 cannot be applied by supabase db push — split the storage half out of the migration · 0/5 criteria</summary>
+<details><summary>✅ <code>OT-143</code> done — 0026 cannot be applied by supabase db push — split the storage half out of the migration · 5/5 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -9315,14 +9315,14 @@ not be in a path that `db push` executes.
 
 ## Acceptance criteria
 
-- [ ] `supabase db push` applies `0026` (or its successor) cleanly against a
+- [x] `supabase db push` applies `0026` (or its successor) cleanly against a
       hosted project with no ownership error
-- [ ] the three storage policy expressions and the bucket privacy setting live
+- [x] the three storage policy expressions and the bucket privacy setting live
       in a versioned file, not only in a ledger entry or a chat log
-- [ ] the apply procedure for the storage half is documented where a deployer
+- [x] the apply procedure for the storage half is documented where a deployer
       will find it, with the dependency on the `public.` half stated
-- [ ] the `public.` half still creates everything the policies reference
-- [ ] existing tests still pass
+- [x] the `public.` half still creates everything the policies reference
+- [x] existing tests still pass
 
 ## Prove it
 
@@ -9351,6 +9351,18 @@ did not silently change, and that value survives the move.
 
 Tier held at `builder`: this was a scope gap in the task file, not a reasoning
 failure. Retry continues in the existing `../wt-OT-143`; do not redo the split.
+
+## Review verdict, attempt 2
+
+All five criteria pass. Policy expressions in `supabase/storage-policies.sql`
+confirmed byte-identical to pre-split `0026` — no predicate widened or altered.
+The rewritten test still asserts full expressions, so the drift check survived
+the move. Gates re-run by the reviewer: 574/574 tests, typecheck and lint clean.
+
+Caveat on criterion 1: verified by statement-by-statement inspection only.
+Nothing left in `0026` touches `storage.objects` or `storage.buckets`, so the
+`42501` cannot recur — but no agent can reach a hosted project, so the green
+`db push` is still owner-confirmed, not observed. Feeds OT-142.
 
 </details>
 <details><summary>✅ <code>OT-144</code> done — change the receipt image retention default from 7 days to 14 · 4/4 criteria</summary>
@@ -9449,26 +9461,26 @@ scope had missed, and the task could not merge until it was fixed.
 ## Recent activity
 
 ```
-2026-08-21T02:13:44Z  open-tab  SubagentStop  
-2026-08-21T02:13:46Z  open-tab  SubagentStop  
-2026-08-21T02:13:46Z  open-tab  SubagentStop  
-2026-08-21T02:13:46Z  open-tab  SubagentStop  
-2026-08-21T02:13:46Z  open-tab  SubagentStop  
-2026-08-21T02:13:46Z  open-tab  SubagentStop  
-2026-08-21T02:13:46Z  open-tab  SubagentStop  
-2026-08-21T02:13:50Z  open-tab  SubagentStop  
-2026-08-21T02:13:50Z  open-tab  SubagentStop  
-2026-08-21T02:13:50Z  open-tab  SubagentStop  
-2026-08-21T02:13:50Z  open-tab  SubagentStop  
-2026-08-21T02:13:50Z  open-tab  SubagentStop  
-2026-08-21T02:13:50Z  open-tab  SubagentStop  
-2026-08-21T02:13:53Z  open-tab  SubagentStop  reviewer-light
-2026-08-21T02:13:55Z  open-tab  SubagentStop  
-2026-08-21T02:13:55Z  open-tab  SubagentStop  
-2026-08-21T02:13:55Z  open-tab  SubagentStop  
-2026-08-21T02:13:55Z  open-tab  SubagentStop  
-2026-08-21T02:13:55Z  open-tab  SubagentStop  
-2026-08-21T02:13:55Z  open-tab  SubagentStop  
+2026-08-21T02:14:50Z  open-tab  SubagentStop  
+2026-08-21T02:14:50Z  open-tab  SubagentStop  
+2026-08-21T02:14:51Z  open-tab  SubagentStop  
+2026-08-21T02:14:51Z  open-tab  SubagentStop  
+2026-08-21T02:14:51Z  open-tab  SubagentStop  
+2026-08-21T02:14:51Z  open-tab  SubagentStop  
+2026-08-21T02:14:51Z  open-tab  SubagentStop  
+2026-08-21T02:14:51Z  open-tab  SubagentStop  
+2026-08-21T02:14:53Z  open-tab  SubagentStop  
+2026-08-21T02:14:53Z  open-tab  SubagentStop  
+2026-08-21T02:14:53Z  open-tab  SubagentStop  
+2026-08-21T02:14:53Z  open-tab  SubagentStop  
+2026-08-21T02:14:53Z  open-tab  SubagentStop  
+2026-08-21T02:14:53Z  open-tab  SubagentStop  
+2026-08-21T02:14:57Z  open-tab  SubagentStop  
+2026-08-21T02:14:57Z  open-tab  SubagentStop  
+2026-08-21T02:14:57Z  open-tab  SubagentStop  
+2026-08-21T02:14:57Z  open-tab  SubagentStop  
+2026-08-21T02:14:57Z  open-tab  SubagentStop  
+2026-08-21T02:14:57Z  open-tab  SubagentStop  
 ```
 
 ---
