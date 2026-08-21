@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 11:41 UTC · regenerated on every task completion.
+Updated 2026-08-21 11:42 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $74.96 | $200.00 | ███░░░░░░░ 37% |
+| open-tab | $75.31 | $200.00 | ███░░░░░░░ 37% |
 
 ## Agents
 
@@ -11231,18 +11231,6 @@ being missed. Confirms OT-151's matcher fix did not close it.
 ## Recent activity
 
 ```
-2026-08-21T11:40:47Z  open-tab  SubagentStop  
-2026-08-21T11:40:47Z  open-tab  SubagentStop  
-2026-08-21T11:41:19Z  open-tab  SubagentStop  
-2026-08-21T11:41:19Z  open-tab  SubagentStop  
-2026-08-21T11:41:19Z  open-tab  SubagentStop  
-2026-08-21T11:41:19Z  open-tab  SubagentStop  
-2026-08-21T11:41:19Z  open-tab  SubagentStop  
-2026-08-21T11:41:19Z  open-tab  SubagentStop  
-2026-08-21T11:41:31Z  open-tab  SubagentStop  
-2026-08-21T11:41:31Z  open-tab  SubagentStop  
-2026-08-21T11:41:31Z  open-tab  SubagentStop  
-2026-08-21T11:41:31Z  open-tab  SubagentStop  
 2026-08-21T11:41:31Z  open-tab  SubagentStop  
 2026-08-21T11:41:31Z  open-tab  SubagentStop  
 2026-08-21T11:41:52Z  open-tab  SubagentStop  
@@ -11251,6 +11239,18 @@ being missed. Confirms OT-151's matcher fix did not close it.
 2026-08-21T11:41:52Z  open-tab  SubagentStop  
 2026-08-21T11:41:52Z  open-tab  SubagentStop  
 2026-08-21T11:41:52Z  open-tab  SubagentStop  
+2026-08-21T11:42:24Z  open-tab  SubagentStop  
+2026-08-21T11:42:24Z  open-tab  SubagentStop  
+2026-08-21T11:42:24Z  open-tab  SubagentStop  
+2026-08-21T11:42:24Z  open-tab  SubagentStop  
+2026-08-21T11:42:24Z  open-tab  SubagentStop  
+2026-08-21T11:42:24Z  open-tab  SubagentStop  
+2026-08-21T11:42:57Z  open-tab  SubagentStop  
+2026-08-21T11:42:57Z  open-tab  SubagentStop  
+2026-08-21T11:42:57Z  open-tab  SubagentStop  
+2026-08-21T11:42:57Z  open-tab  SubagentStop  
+2026-08-21T11:42:57Z  open-tab  SubagentStop  
+2026-08-21T11:42:57Z  open-tab  SubagentStop  
 ```
 
 ---
