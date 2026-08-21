@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 13:11 UTC · regenerated on every task completion.
+Updated 2026-08-21 13:12 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $96.62 | $200.00 | ████░░░░░░ 48% |
+| open-tab | $96.88 | $200.00 | ████░░░░░░ 48% |
 
 ## Agents
 
@@ -11403,18 +11403,6 @@ fixtures still exercise the fallback path.
 ## Recent activity
 
 ```
-2026-08-21T13:10:17Z  open-tab  SubagentStop  
-2026-08-21T13:10:17Z  open-tab  SubagentStop  
-2026-08-21T13:10:49Z  open-tab  SubagentStop  
-2026-08-21T13:10:49Z  open-tab  SubagentStop  
-2026-08-21T13:10:49Z  open-tab  SubagentStop  
-2026-08-21T13:10:49Z  open-tab  SubagentStop  
-2026-08-21T13:10:49Z  open-tab  SubagentStop  
-2026-08-21T13:10:49Z  open-tab  SubagentStop  
-2026-08-21T13:11:21Z  open-tab  SubagentStop  
-2026-08-21T13:11:21Z  open-tab  SubagentStop  
-2026-08-21T13:11:21Z  open-tab  SubagentStop  
-2026-08-21T13:11:21Z  open-tab  SubagentStop  
 2026-08-21T13:11:21Z  open-tab  SubagentStop  
 2026-08-21T13:11:21Z  open-tab  SubagentStop  
 2026-08-21T13:11:54Z  open-tab  SubagentStop  
@@ -11423,6 +11411,18 @@ fixtures still exercise the fallback path.
 2026-08-21T13:11:54Z  open-tab  SubagentStop  
 2026-08-21T13:11:54Z  open-tab  SubagentStop  
 2026-08-21T13:11:54Z  open-tab  SubagentStop  
+2026-08-21T13:12:26Z  open-tab  SubagentStop  
+2026-08-21T13:12:26Z  open-tab  SubagentStop  
+2026-08-21T13:12:26Z  open-tab  SubagentStop  
+2026-08-21T13:12:26Z  open-tab  SubagentStop  
+2026-08-21T13:12:26Z  open-tab  SubagentStop  
+2026-08-21T13:12:26Z  open-tab  SubagentStop  
+2026-08-21T13:12:58Z  open-tab  SubagentStop  
+2026-08-21T13:12:58Z  open-tab  SubagentStop  
+2026-08-21T13:12:58Z  open-tab  SubagentStop  
+2026-08-21T13:12:58Z  open-tab  SubagentStop  
+2026-08-21T13:12:58Z  open-tab  SubagentStop  
+2026-08-21T13:12:58Z  open-tab  SubagentStop  
 ```
 
 ---
