@@ -56,36 +56,60 @@ active=$(printf '%s' "$input"  | jq -r '.stop_hook_active // false' 2>/dev/null)
 #
 # is a legitimate stop, always. The loop counter resets: the next owner
 # message starts a fresh chain, not a continuation of this one.
+#
+# READ THE REPLY FROM THE PAYLOAD, NOT THE TRANSCRIPT. The Stop payload carries
+# the reply itself in `last_assistant_message` — the harness builds it in memory
+# from the message it has just produced, before any file is touched. That is the
+# only source that is guaranteed to exist at the moment this hook runs.
+#
+# The transcript JSONL is not. It is written asynchronously, and its tail is not
+# a reliable picture of what was just said: across 32 real session transcripts in
+# ~/.claude/projects, assistant entries appear in the file carrying timestamps up
+# to 35 SECONDS earlier than the entry written on the line above them. Order in
+# the file is not order in time, and presence in the file is not guaranteed at
+# any given instant. That is what defeated the previous fix (OT-151): its matcher
+# was correct and passed every synthetic transcript, but live it kept reading a
+# file whose last flushed assistant text was the message BEFORE the one ending in
+# the marker — so the marker was never there to match. Replaying that matcher
+# against the same transcripts once they were complete on disk exits 0 every
+# time, which is exactly the fixtures-pass/production-fails signature.
+#
+# The fix is not to wait for the file. Sleeping or polling in a Stop hook trades
+# one race for a slower one. It is to stop reading the file at all when the
+# harness has already handed us the text.
+last_reply=$(printf '%s' "$input" | jq -r '.last_assistant_message // ""' 2>/dev/null)
+
+# Fallback, only for a harness that does not send the field (and for the
+# SubagentStop-on-interrupt path, which omits it): the old transcript scan.
+# The transcript logs one JSONL line per content BLOCK, not per turn — a single
+# reply that ends in text after a tool call is split across several
+# assistant-typed lines. Picking only the single most-recent non-empty entry
+# could pick a stray trailing block — a lone newline, an empty string — that
+# shadows the marker sitting in the block right before it. Concatenate every
+# text block from every assistant entry in the window instead, in order.
 tp=$(printf '%s' "$input" | jq -r '.transcript_path // ""' 2>/dev/null)
-if [ -n "$tp" ] && [ -f "$tp" ]; then
-  # The transcript logs one JSONL line per content BLOCK, not per turn — a
-  # single reply that ends in text after a tool call is split across several
-  # assistant-typed lines. Picking only the single most-recent non-empty
-  # entry (the old approach) could pick a stray trailing block — a lone
-  # newline, an empty string — that shadows the marker sitting in the block
-  # right before it. Concatenate every text block from every assistant entry
-  # in the window instead, in order, then look at the actual last non-blank
-  # line of that combined text.
-  last_text=$(tail -80 "$tp" 2>/dev/null | jq -rs '
+if [ -z "$last_reply" ] && [ -n "$tp" ] && [ -f "$tp" ]; then
+  last_reply=$(tail -80 "$tp" 2>/dev/null | jq -rs '
     [.[] | select(.type == "assistant")
      | (.message.content // [])
      | map(select(.type == "text") | .text) | join("\n")]
     | join("\n")
   ' 2>/dev/null)
-  # Trim trailing whitespace per line, then take the last line that is not
-  # entirely blank. This is what makes trailing whitespace/newlines after the
-  # marker harmless while still requiring the marker to be the LAST thing
-  # said — a mid-reply mention followed by more text lands on that later
-  # line, not the marker line, and correctly fails the match.
-  last_line=$(printf '%s' "$last_text" | awk '
-    { line = $0; gsub(/[ \t\r]+$/, "", line); gsub(/^[ \t\r]+/, "", line)
-      if (line != "") last = line }
-    END { print last }
-  ')
-  if [ "$last_line" = "[awaiting owner]" ]; then
-    rm -f "$STATE/.loop-${session}.count" "$STATE/loop-note" 2>/dev/null
-    exit 0
-  fi
+fi
+
+# Trim whitespace per line, then take the last line that is not entirely blank.
+# This is what makes trailing whitespace/newlines after the marker harmless
+# while still requiring the marker to be the LAST thing said — a mid-reply
+# mention followed by more text lands on that later line, not the marker line,
+# and correctly fails the match.
+last_line=$(printf '%s' "$last_reply" | awk '
+  { line = $0; gsub(/[ \t\r]+$/, "", line); gsub(/^[ \t\r]+/, "", line)
+    if (line != "") last = line }
+  END { print last }
+')
+if [ "$last_line" = "[awaiting owner]" ]; then
+  rm -f "$STATE/.loop-${session}.count" "$STATE/loop-note" 2>/dev/null
+  exit 0
 fi
 
 counter="$STATE/.loop-${session}.count"
