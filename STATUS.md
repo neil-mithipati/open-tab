@@ -1,21 +1,22 @@
 # Agent status
 
-Updated 2026-08-21 11:25 UTC · regenerated on every task completion.
+Updated 2026-08-21 11:34 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $69.51 | $200.00 | ███░░░░░░░ 34% |
+| open-tab | $70.58 | $200.00 | ███░░░░░░░ 35% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| 🟢 builder-deep | open-tab | 2026-08-21T11:33:54Z | 2 |
 
 ## Blocked — needs your input
 
 > [!CAUTION]
-> 🔴 **Blocked `OT-150`** — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.
 > 🔴 **Blocked `OT-152`** — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.
 
 ## Tasks
@@ -10450,7 +10451,7 @@ one file was correct.
 Gates: typecheck pass, lint pass, tests 653/653. Commit `07ca02c`.
 
 </details>
-<details><summary>🔴 <code>OT-150</code> blocked — maintenance grant never activates for a dispatched subagent · 4/4 criteria — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.</summary>
+<details><summary>✅ <code>OT-150</code> done — maintenance grant never activates for a dispatched subagent · 4/4 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -10460,10 +10461,7 @@ Gates: typecheck pass, lint pass, tests 653/653. Commit `07ca02c`.
 - worktree: null
 - files:
 -   - .claude/hooks/protect-fleet.sh
-- blocked_reason: >-
--   fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent
--   can install it: protect-fleet.sh is never-overridable in both guards, which
--   is itself an acceptance criterion here. owner copies it in.
+- blocked_reason: null
 
 
 ## The defect
@@ -11020,14 +11018,14 @@ Expect 95 ok / 0 fail / 1 skip. Then commit the kit copy, or the next
 `add-fleet` reverts it.
 
 </details>
-<details><summary>⚪ <code>OT-153</code> todo — remaining cap-counting gaps found in the OT-147 review · 0/6 criteria</summary>
+<details><summary>🟢 <code>OT-153</code> in-progress — remaining cap-counting gaps found in the OT-147 review · 0/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
 - review: full
 - attempts: 0
-- branch: null
-- worktree: null
+- branch: task/OT-153
+- worktree: ../wt-OT-153
 - files:
 -   - .claude/hooks/liveness.sh
 -   - .claude/hooks/parallel-cap.sh
@@ -11155,14 +11153,14 @@ Land it in the kit as well as this checkout, or the next `add-fleet` reverts it.
 That has already happened twice.
 
 </details>
-<details><summary>⚪ <code>OT-155</code> todo — the [awaiting owner] marker passes its fixtures but still fails live · 0/6 criteria</summary>
+<details><summary>🟢 <code>OT-155</code> in-progress — the [awaiting owner] marker passes its fixtures but still fails live · 0/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
 - review: full
 - attempts: 0
-- branch: null
-- worktree: null
+- branch: task/OT-155
+- worktree: ../wt-OT-155
 - files:
 -   - .claude/hooks/loop-until-done.sh
 - blocked_reason: null
@@ -11221,31 +11219,38 @@ session.
 
 Needs a maintenance grant.
 
+## Recurrence 2026-08-21, post-OT-151
+
+Fired again on a status reply ending in the exact marker line, with no
+stderr output from the hook. Nothing was in-progress in the ledger at the
+time, so the trigger was not unfinished granted work — it was the marker
+being missed. Confirms OT-151's matcher fix did not close it.
+
 </details>
 
 ## Recent activity
 
 ```
-2026-08-21T06:38:13Z  open-tab  SubagentStop  
-2026-08-21T06:38:45Z  open-tab  SubagentStop  
-2026-08-21T06:38:45Z  open-tab  SubagentStop  
-2026-08-21T06:38:45Z  open-tab  SubagentStop  
-2026-08-21T06:38:45Z  open-tab  SubagentStop  
-2026-08-21T06:38:45Z  open-tab  SubagentStop  
-2026-08-21T06:38:45Z  open-tab  SubagentStop  
-2026-08-21T06:38:56Z  open-tab  SubagentStop  reviewer-deep
-2026-08-21T06:43:30Z  open-tab  SubagentStop  
-2026-08-21T06:43:30Z  open-tab  SubagentStop  
-2026-08-21T06:43:30Z  open-tab  SubagentStop  
-2026-08-21T06:43:30Z  open-tab  SubagentStop  
-2026-08-21T06:43:30Z  open-tab  SubagentStop  
-2026-08-21T06:43:30Z  open-tab  SubagentStop  
-2026-08-21T11:25:53Z  open-tab  SubagentStop  
-2026-08-21T11:25:53Z  open-tab  SubagentStop  
-2026-08-21T11:25:53Z  open-tab  SubagentStop  
-2026-08-21T11:25:53Z  open-tab  SubagentStop  
-2026-08-21T11:25:53Z  open-tab  SubagentStop  
-2026-08-21T11:25:53Z  open-tab  SubagentStop  
+2026-08-21T11:26:25Z  open-tab  SubagentStop  
+2026-08-21T11:26:25Z  open-tab  SubagentStop  
+2026-08-21T11:26:25Z  open-tab  SubagentStop  
+2026-08-21T11:26:25Z  open-tab  SubagentStop  
+2026-08-21T11:26:25Z  open-tab  SubagentStop  
+2026-08-21T11:26:25Z  open-tab  SubagentStop  
+2026-08-21T11:26:40Z  open-tab  SubagentStop  
+2026-08-21T11:26:40Z  open-tab  SubagentStop  
+2026-08-21T11:26:40Z  open-tab  SubagentStop  
+2026-08-21T11:26:40Z  open-tab  SubagentStop  
+2026-08-21T11:26:40Z  open-tab  SubagentStop  
+2026-08-21T11:26:40Z  open-tab  SubagentStop  
+2026-08-21T11:33:47Z  open-tab  SubagentStart  builder-deep
+2026-08-21T11:33:54Z  open-tab  SubagentStart  builder-deep
+2026-08-21T11:34:18Z  open-tab  SubagentStop  
+2026-08-21T11:34:18Z  open-tab  SubagentStop  
+2026-08-21T11:34:18Z  open-tab  SubagentStop  
+2026-08-21T11:34:18Z  open-tab  SubagentStop  
+2026-08-21T11:34:18Z  open-tab  SubagentStop  
+2026-08-21T11:34:18Z  open-tab  SubagentStop  
 ```
 
 ---
