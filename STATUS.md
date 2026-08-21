@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 00:37 UTC · regenerated on every task completion.
+Updated 2026-08-21 00:45 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $135.71 | $200.00 | ██████░░░░ 67% |
+| open-tab | $135.84 | $200.00 | ██████░░░░ 67% |
 
 ## Agents
 
@@ -62,16 +62,11 @@ Updated 2026-08-21 00:37 UTC · regenerated on every task completion.
 | `OT-140` | **blocked** | client-side image downscale and EXIF orientation normalization before upload — >- | builder |
 | `OT-141` | todo | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor — null | builder |
 | `OT-142` | **blocked** | production database is ~14 migrations behind the repo — merged code reads columns that do not exist live — >- | builder-deep |
+| `OT-143` | todo | 0026 cannot be applied by supabase db push — split the storage half out of the migration — null | builder |
 
 ## Recent activity
 
 ```
-2026-08-21T00:35:05Z  open-tab  SubagentStop  
-2026-08-21T00:35:05Z  open-tab  SubagentStop  
-2026-08-21T00:35:06Z  open-tab  SubagentStop  
-2026-08-21T00:35:06Z  open-tab  SubagentStop  
-2026-08-21T00:35:06Z  open-tab  SubagentStop  
-2026-08-21T00:35:06Z  open-tab  SubagentStop  
 2026-08-21T00:35:06Z  open-tab  SubagentStop  
 2026-08-21T00:35:06Z  open-tab  SubagentStop  
 2026-08-21T00:35:08Z  open-tab  SubagentStop  
@@ -86,6 +81,12 @@ Updated 2026-08-21 00:37 UTC · regenerated on every task completion.
 2026-08-21T00:37:49Z  open-tab  SubagentStop  
 2026-08-21T00:37:49Z  open-tab  SubagentStop  
 2026-08-21T00:37:49Z  open-tab  SubagentStop  
+2026-08-21T00:45:00Z  open-tab  SubagentStop  
+2026-08-21T00:45:00Z  open-tab  SubagentStop  
+2026-08-21T00:45:00Z  open-tab  SubagentStop  
+2026-08-21T00:45:00Z  open-tab  SubagentStop  
+2026-08-21T00:45:00Z  open-tab  SubagentStop  
+2026-08-21T00:45:00Z  open-tab  SubagentStop  
 ```
 
 ---
