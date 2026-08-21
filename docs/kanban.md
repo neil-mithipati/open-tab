@@ -37,11 +37,124 @@
 | OT-134 | a transient gemini outage permanently burns a receipt's only parse — no retry affordance | Done | — (full reviewer passed all nine criteria, no high findings, merged as `5534b5f`. bounded to 3 model attempts per receipt via migration 0025 — renumbered from 0024 after OT-137 took that slot; replay hole confirmed still closed) |
 | OT-137 | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming | Done | — (full reviewer passed all seven criteria, no high findings, merged as `070cb49`. carries claim_done_at across the participant delete/re-insert via migration 0024, keyed on lowercased username; deliberately no backfill, keeping OT-124's now() trap in mind) |
 | OT-138 | three live fail-opens in parallel-cap.sh let an uncapped dispatch through | Blocked | the maintenance grant cannot activate for a dispatched subagent. `maint_active()` in `protect-fleet.sh` and `deny-irreversible.sh` keys off `basename(CLAUDE_PROJECT_DIR)`, which is the main checkout for a worker, so it returns 1 before ever reading `gates.json`. Verified by probe and by live denial on both the edit and bash routes. Fix is owner-side: either re-run this task from a session rooted in `../wt-OT-138`, or change `maint_active` in both guards to key off the target path. |
-| OT-135 | migrate receipt parser to gemini-2.5-flash-lite with schema enforced as config | Blocked | code complete and committed (`a1ade42`), gates green (395/395), reviewer-light passed 5 of 6 criteria. Blocked on the 6th only — live parse against real receipts — because `GOOGLE_AI_API_KEY` is unset and the repo has no receipt image fixtures. Awaiting an owner decision: supply key plus fixtures, or waive the criterion. Not blocked on engineering. (P0, go-live tomorrow) |
-| OT-136 | arithmetic validation on parsed receipts, money as integer cents end to end | In Progress | — (P0, go-live tomorrow; branch `task/OT-136` is deliberately based on `task/OT-135`, not main — both edit `parseReceipt.ts`, so OT-135 must merge before OT-136) |
-| OT-139 | lock down receipt image storage — private bucket, RLS, signed URLs, retention job | In Progress | attempt 1 REJECTED at pass 1, attempt 2 now built (attempts: 2), full re-review running. Attempt 2 closes the HIGH bug class: `extractStoragePath` is module-private, all readers route through a new `boundStoragePath(receipt)` that binds to `<created_by>/<id>.<ext>` and returns null rather than an unbound signature, and a sweep test forbids any other file reading the raw extractor. Proved by reverting the fix and showing 11 tests fail against the old code, then 497/497 with it restored. 4 of 6 acceptance criteria pass and are checked in the ledger; the 2 open ones are unchanged pending the re-review verdict. **Deployment, prominent: migration 0026 changed and must be re-applied even if already run, and BEFORE the code** — the retention function now returns `created_by`, and `create or replace` cannot change a function's OUT columns, so 0026 drops and recreates it. Code-first is fail-safe (purge job skips every row, nothing deleted) but retention silently does not run. Owner actions still outstanding before go-live, unchanged from last cycle: (1) enumerate and drop stray policies on `storage.objects` in the live project — migration 0026 only adds, and policies are OR'd; (2) set `CRON_SECRET` and `RECEIPT_IMAGE_RETENTION_DAYS` on the host with a daily schedule, or the retention job is silently inert. See `ledger/OT-139.md` for the full attack chain and proof — not reproduced here. (P0, go-live tomorrow) |
-| OT-140 | client-side image downscale and EXIF orientation normalization before upload | Blocked | code complete, gates green, reviewer-light passed 3 of 5 criteria. the two open ones both need something this environment cannot supply: receipt image fixtures plus `GOOGLE_AI_API_KEY` for the parse-quality comparison, and a real browser measurement for the upload size/time numbers — the reviewer declined to accept a `sharp` proxy as proof of the `canvas.toBlob` path. both await an owner decision to supply or waive. (P0, go-live tomorrow) |
-| OT-141 | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor | Todo | found by the OT-139 attempt-2 builder, outside that task's own scope. `ReceiptSplitStep.tsx`'s `handleDelete` inlines a verbatim copy of the storage-path extractor instead of calling the named one, so OT-139's sweep test doesn't catch it. Same bug class as OT-139's HIGH, lower severity — this path runs on the browser session, where migration 0026's delete policy (own folder AND own receipt) is still in the way, unlike the service-client paths OT-139 fixed. **Deliberately queued, not available work: held until OT-136 merges**, since OT-136 is concurrently making heavy edits to the same file and the two would conflict. See `ledger/OT-141.md` for scope. |
+| OT-135 | migrate receipt parser to gemini-2.5-flash-lite with schema enforced as config | Done | — (P0, go-live tomorrow; owner waived the live-parse-quality criterion rather than supply a key and fixtures, recorded as WAIVED not passed; other 5 criteria passed reviewer-light independently. Residual risk noted in the ledger: flash-lite is weaker than flash for OCR and no test catches a regression) |
+| OT-136 | arithmetic validation on parsed receipts, money as integer cents end to end | Done | — (P0, go-live tomorrow; branch `task/OT-136` was deliberately based on `task/OT-135`, not main — both edit `parseReceipt.ts`, merge order held then cleared) |
+| OT-139 | lock down receipt image storage — private bucket, RLS, signed URLs, retention job | Done | — (P0, go-live tomorrow; attempt 2 merged. Deployment note stands: migration 0026 must be re-applied even if already run, and BEFORE the code, since the retention function's OUT columns changed. Owner set `RECEIPT_IMAGE_RETENTION_DAYS=14` and generated `CRON_SECRET` 2026-08-20; bucket `file_size_limit`/`allowed_mime_types` agreed but owner action, not code) |
+| OT-140 | client-side image downscale and EXIF orientation normalization before upload | Done | — (P0, go-live tomorrow; owner waived both open criteria — parse-quality, no fixtures/key, and upload size/time, rejected as proven-by-`sharp`-proxy not the real `canvas.toBlob` path. Measurement stands as strong evidence — 11.0MB to 649KB, 94% reduction — but recorded as WAIVED, not passed) |
+| OT-141 | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor | Done | — (merged to main as `d6c347a` on top of `f9b1910`; `handleDelete` now calls `boundStoragePath`, skips `storage.remove` on a null return, and the OT-139 sweep test gained a class rule catching inline `"/receipt-images/"` parsing anywhere outside `src/lib/storage.ts`) |
+| OT-142 | production database is ~14 migrations behind the repo — merged code reads columns that do not exist live | Blocked | needs the owner to run the schema_migrations query against production and decide the remediation path. no agent can see the live database, so the gap cannot be measured from here. this blocks the go-live, not just this task. Found while applying migration 0026 through the dashboard: `parsed_at` (0020) doesn't exist live, production appears to be at roughly migration 11 of 26. Code merged tonight (OT-135, OT-136, OT-139) assumes the full set. |
+| OT-143 | 0026 cannot be applied by supabase db push — split the storage half out of the migration | Done | — (reviewed MERGE, all five criteria pass; reviewer confirmed `supabase/storage-policies.sql` byte-identical to pre-split `0026`, gates re-run 574/574 tests, typecheck and lint clean. `public.` half stays in `0026` and pushes clean; storage half moved to `supabase/storage-policies.sql` with the apply procedure documented in `docs/deployment.md`. Criterion 1 verified by statement inspection, not a live hosted push — no agent can reach one) |
+| OT-144 | change the receipt image retention default from 7 days to 14 | Done | — (`builder-light`, `review: skip`, attempt 2. Owner decision 2026-08-20 to match `RECEIPT_IMAGE_RETENTION_DAYS=14`, already set live) |
+
+## Sync notes (2026-08-20, cycle 30)
+
+Reconciled against every file in `ledger/`. Matched on id.
+
+- **OT-143** In Progress → **Done**. Ledger `state: done`. Reviewer passed all
+  five criteria on the second review pass; merged.
+
+Left alone, no drift: every other card checked against its ledger file and
+already matches — OT-100–OT-141, OT-144 all Done; OT-138 and OT-142 remain
+Blocked, reasons unchanged.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present, and
+`.claude/notion.json` has real database ids but no Notion tools in this
+session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
+
+## Sync notes (2026-08-20, cycle 29)
+
+Reconciled against every file in `ledger/`, 47 files read.
+
+- **OT-141** In Progress → **Done**. Ledger `state: done`, merged into main
+  (`d6c347a` on top of `f9b1910`). Card matched on id, not appended.
+- **OT-143** left In Progress, note refreshed. Ledger `state: in-progress`,
+  `attempts: 1`. Attempt 1 finished the split and widened its own scope to
+  cover the test that was hardcoding the pre-split shape; it's in review now,
+  not yet `done`.
+- **OT-144** created, **Done**. This card did not exist on the board at all —
+  drift, not a status disagreement. Ledger shows `state: done`,
+  `tier: builder-light`, `review: skip`, `attempts: 2`, matching the owner's
+  2026-08-20 decision to raise `RECEIPT_IMAGE_RETENTION_DAYS` to 14.
+
+Verified unchanged, no card edit: **OT-138** and **OT-142**, both still
+`blocked` in the ledger with the same `blocked_reason` already on the board.
+
+No card left flagged as vanished this cycle — every ledger id has a card.
+
+Notion was not reachable: no `mcp__notion__*` tools present in this session's
+tool list. Per the fallback rule this is expected, not an error — writing to
+`docs/` is the correct outcome.
+
+## Sync notes (2026-08-20, cycle 28)
+
+Reconciled against every file in `ledger/`, 45 files read. Matched on id —
+OT-142 and OT-143 created, no existing cards for either; OT-141 updated in
+place, not appended.
+
+- **OT-141** Todo → **In Progress**. Ledger `state: in-progress`,
+  `attempts: 0`, `branch: task/OT-141`, `worktree: ../wt-OT-141`. Was
+  deliberately held behind OT-136 merging (both edit `ReceiptSplitStep.tsx`);
+  OT-136 is `done` in the ledger, so the hold is cleared and this is now
+  dispatched.
+- **OT-143** created, **In Progress**. `builder` tier, review full,
+  `attempts: 0`, `branch: task/OT-143`, `worktree: ../wt-OT-143`. Found while
+  applying migration 0026 to a real Supabase project — `supabase db push`
+  fails inside 0026 because `storage.objects` is owned by
+  `supabase_storage_admin`, a role nothing here can assume. No automated path
+  applies the storage half of that migration as written.
+- **OT-142** created, **Blocked**. `builder-deep` tier, review full,
+  `attempts: 0`, `branch: null`, `worktree: null` — never dispatched, blocked
+  before a worktree existed. `blocked_reason` carried verbatim: needs the
+  owner to run `schema_migrations` against production and decide remediation;
+  no agent can see the live database. Found alongside OT-143 while applying
+  0026 — production is roughly 14 migrations behind the repo, missing at
+  least `parsed_at` (0020) and the parse-attempt columns (0025). Blocks
+  go-live, not just this task.
+
+Verified unchanged, no card edit: **OT-138** (blocked, same maintenance-grant
+reason).
+
+**Drift found and corrected, four cards** — the board's cycle-27 rows had
+gone stale on status, not just OT-141/OT-143's dispatch note. Checked every
+"P0, go-live tomorrow" row against its ledger frontmatter directly rather than
+trusting the prior cycle's notes, since those are exactly the tasks a fast
+merge sequence would outrun:
+
+- **OT-135** Blocked → **Done**. Ledger `state: done`. Owner waived the
+  live-parse-quality criterion 2026-08-20 rather than supply a key and
+  fixtures — recorded WAIVED, not passed. Other 5 criteria passed
+  reviewer-light independently. Residual risk carried onto the card: flash-lite
+  is weaker than flash for OCR and nothing here tests for a regression.
+- **OT-136** In Progress → **Done**. Ledger `state: done`. Merge order it was
+  held on — behind OT-135, same file — is complete.
+- **OT-139** In Progress → **Done**. Ledger `state: done`. Attempt 2 merged.
+  Deployment note kept prominent: migration 0026 must be re-applied even if
+  already run, and before the code, since the retention function's OUT
+  columns changed between attempt 1 and attempt 2. Owner set
+  `RECEIPT_IMAGE_RETENTION_DAYS=14` and generated `CRON_SECRET` 2026-08-20.
+- **OT-140** Blocked → **Done**. Ledger `state: done`. Owner waived both open
+  criteria 2026-08-20 — parse-quality (no fixtures/key) and upload size/time
+  (rejected earlier as proven-by-`sharp`-proxy, not the real
+  `canvas.toBlob` path). Recorded WAIVED, not passed, on both.
+
+No merge commit hashes or full review detail added beyond what the ledger
+states for these four — this sync's job is status only; a `document`-mode
+pass writes the fuller README/docs-board entry once these four are confirmed
+merged to main.
+
+No task ids in the table are absent from `ledger/`, and no ledger task is
+missing a card.
+
+Not touched, per instruction: `../wt-OT-141`, `../wt-OT-143` — builders
+running in both. `ledger/` read only, never written.
+
+Notion was not reachable: no `mcp__notion__*` tools present in this session's
+tool list. Per the fallback rule this is expected, not an error — writing to
+`docs/kanban.md` is the correct outcome.
 
 ## Sync notes (2026-08-20, cycle 27)
 
@@ -840,6 +953,53 @@ one.
   `v_claiming` is false at `status='open'`, so a join committing in the gap
   between `joinReceipt` writing `'shared'` and `reopenEditing` writing
   `'open'` is deletable by the next save (LOW).
+
+## Publisher notes (2026-08-20, document mode, cycle 5)
+
+Documented one merge: OT-143. Kanban card moved In Progress → Done (matches
+`ledger/OT-143.md` `state: done`) as part of this same run — sync and
+document modes were dispatched together this cycle.
+
+README got one new tradeoff row (setup script via service key vs a versioned
+`supabase/storage-policies.sql` file plus a documented dashboard procedure —
+chose the latter, since no automated route can assume the
+`supabase_storage_admin` role a hosted project requires) and one new learning
+(a migration can pass every local check and still fail against a hosted
+project when it touches a Supabase-owned schema; the dashboard also silently
+splits a multi-operation policy into two rows, which a future drift check
+needs to survive by comparing expressions, not row counts).
+
+`docs/features.md` got one new row, not an extension of the OT-141 row — the
+two are different failure classes (a dead code path vs. an undeployable
+migration) even though both touch receipt-image storage.
+
+`docs/deployment.md` already carried the OT-143 apply procedure — it was in
+the task's own declared file scope and was written by the builder, not added
+here.
+
+No findings filed: the reviewer's one caveat (criterion 1 verified by
+statement inspection, not a live hosted push) is not a defect to backlog —
+the ledger records it feeds directly into the already-open OT-142 (production
+migration gap), so a duplicate entry would be noise.
+
+Notion was not reachable: no `mcp__notion__*` tools present in this session's
+tool list, despite `.claude/notion.json` naming real database ids. Per the
+fallback rule this is expected — writing to `docs/` is the correct outcome.
+
+## Publisher notes (2026-08-20, document mode, cycle 4)
+
+Documented one merge: OT-141 (`d6c347a`, on top of `f9b1910`). README got one
+new tradeoff row and one new learning (a sweep test that greps a function
+name misses a copy of its body). `docs/features.md` got one new row —
+internal build hygiene, no existing OT-139 row to extend since that task was
+never documented here.
+
+No findings to file: this was a single-attempt, full-review task with no
+medium or low findings recorded in `ledger/OT-141.md`.
+
+Notion was not reachable: no `mcp__notion__*` tools present in this session's
+tool list. Per the fallback rule this is expected, not an error — writing to
+`docs/` is the correct outcome.
 
 ## Publisher notes (2026-08-20, document mode, cycle 3)
 
