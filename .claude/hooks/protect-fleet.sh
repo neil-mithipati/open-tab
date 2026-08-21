@@ -39,18 +39,52 @@ rel="${path#"$ROOT"/}"
 # override holds only when this session's project dir is that task's worktree
 # (wt-<ID>). gates.json and the two guard hooks are never overridable.
 maint_active() {
-  local base id common main gates
-  base=$(basename "$ROOT")
-  case "$base" in wt-*) id="${base#wt-}" ;; *) return 1 ;; esac
-  common=$(git -C "$ROOT" rev-parse --git-common-dir 2>/dev/null) || return 1
-  case "$common" in
+  local id="" seg main gates abs
+
+  # Absolute form of the target, so a relative tool call resolves the same way.
+  case "$path" in
+    /*) abs="$path" ;;
+    *)  abs="$ROOT/$path" ;;
+  esac
+
+  # First wt-<ID> path segment wins. An id is restricted to the same shape the
+  # ledger uses, so a directory literally named "wt-../.." cannot smuggle
+  # traversal through the jq lookup below.
+  local IFS=/
+  for seg in $abs; do
+    case "$seg" in
+      wt-*)
+        id="${seg#wt-}"
+        case "$id" in
+          ''|*[!A-Za-z0-9_-]*) return 1 ;;
+          *) break ;;
+        esac
+        ;;
+    esac
+  done
+  unset IFS
+  [ -n "$id" ] || return 1
+
+  # The write must land INSIDE that worktree. Without this, a worker in
+  # wt-OT-147 could name a path that merely mentions wt-OT-147 while pointing
+  # somewhere else entirely.
+  case "$abs" in
+    */wt-"$id"/*) : ;;
+    *) return 1 ;;
+  esac
+
+  # The grant lives in the main checkout's gates.json, found from the worktree's
+  # own git common dir — same resolution as before, just anchored on the target.
+  main=$(git -C "$(dirname "$abs")" rev-parse --git-common-dir 2>/dev/null) || return 1
+  case "$main" in
     '') return 1 ;;
     /*) : ;;
-    *) common="$ROOT/$common" ;;
+    *) main="$(dirname "$abs")/$main" ;;
   esac
-  main="${common%/.git}"; main="${main%/}"
+  main="${main%/.git}"; main="${main%/}"
   gates="$main/.claude/gates.json"
   [ -s "$gates" ] || return 1
+
   jq -e --arg id "$id" '(.maintenance // []) | index($id) != null' "$gates" >/dev/null 2>&1
 }
 
