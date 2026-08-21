@@ -4,6 +4,7 @@
     "test",
     "typecheck"
   ],
+  "maintenance": ["OT-147", "OT-150", "OT-151", "OT-152"],
   "pending": [],
   "commands": {
     "typecheck": "npm run typecheck",
