@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-08-21 05:40 UTC · regenerated on every task completion.
+Updated 2026-08-21 05:41 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $30.95 | $200.00 | █░░░░░░░░░ 15% |
+| open-tab | $31.97 | $200.00 | █░░░░░░░░░ 15% |
 
 ## Agents
 
@@ -15,6 +15,7 @@ Idle — no agents currently running.
 ## Blocked — needs your input
 
 > [!CAUTION]
+> 🔴 **Blocked `OT-147`** — rejected by reviewer-deep. 4 of 6 criteria fail, and the fixes for three of them live in liveness.sh, outside this task's declared file scope. needs the owner to widen the scope, and a maintenance grant, which is unsafe until OT-150/OT-152 land.
 > 🔴 **Blocked `OT-150`** — reviewer-deep rejected the landed fix: two high findings let a grant for one task write the MAIN checkout. needs canonicalization before any further fleet-tooling dispatch, and the change must go back through the kit.
 
 ## Tasks
@@ -9991,18 +9992,22 @@ but an instruction not to echo a secret did not hold, and that is worth knowing
 before a review ever runs against a real one.
 
 </details>
-<details><summary>🟢 <code>OT-147</code> in-progress — four fail-opens remain in parallel-cap.sh after OT-138 · 0/6 criteria</summary>
+<details><summary>🔴 <code>OT-147</code> blocked — four fail-opens remain in parallel-cap.sh after OT-138 · 0/6 criteria — rejected by reviewer-deep. 4 of 6 criteria fail, and the fixes for three of them live in liveness.sh, outside this task's declared file scope. needs the owner to widen the scope, and a maintenance grant, which is unsafe until OT-150/OT-152 land.</summary>
 
 - app: open-tab
 - tier: builder-deep
 - review: full
-- attempts: 0
+- attempts: 1
 - branch: task/OT-147
 - worktree: ../wt-OT-147
 - files:
 -   - .claude/hooks/parallel-cap.sh
 -   - .claude/hooks/log-event.sh
-- blocked_reason: null
+- blocked_reason: >-
+-   rejected by reviewer-deep. 4 of 6 criteria fail, and the fixes for three of
+-   them live in liveness.sh, outside this task's declared file scope. needs the
+-   owner to widen the scope, and a maintenance grant, which is unsafe until
+-   OT-150/OT-152 land.
 
 
 ## Needs a maintenance grant before dispatch
@@ -10092,6 +10097,86 @@ The owner landed the option-A `maint_active()` (keys off the write target's
 `maintenance`. Probed before dispatch: a write into `wt-OT-147/.claude/` allows,
 the same write into an ungranted worktree denies, and a write to the main
 checkout's `.claude/` denies. Worktree `../wt-OT-147`.
+
+
+## Attempt 1 — ported guards hold, four criteria still fail
+
+`reviewer-deep` verified by executing the hook against 24 fixtures. Commit
+`6dd3061`, one file, scope clean, gates green.
+
+**What the builder delivered works.** Every ported guard denies correctly: jq
+missing, jq broken, jq printing a partial doc then failing, non-positive or
+non-numeric limits, all three unsearchable ancestor levels, a directory in place
+of the log, an unreadable log, a wholly corrupt log, and every `liveness.sh`
+load failure. Absent, empty and whitespace-only logs still ALLOW, so a fresh
+checkout is not wedged. Hostile `agent_id`s (globs, quotes, newlines, 5000
+chars) produced valid JSON and no injection.
+
+**THE CAP IS CURRENTLY OFF ON ANY TORN LINE — and this is live on main.**
+
+    2 live builder starts + 1 torn line   -> ALLOW  (builder cap 2)
+    6 live reviewer starts + 1 torn line  -> ALLOW  (total cap 6)
+
+Without the torn line both deny. Cause is `liveness.sh:70`, which slurps with
+`jq -rsc` — `-s` without `-R`. One unparseable line fails the whole parse,
+`LIVE_JSON` comes back empty, and `liveness.sh:110` coerces it to `"[]"`, which
+`parallel-cap.sh` reads as "idle fleet, allow". Corruption is laundered into a
+confident zero before the cap ever sees it. Agents append to this log
+concurrently and async, so a torn line is the ordinary case, not the exotic one.
+
+This predates `6dd3061` — main allows the same fixture — but it is exactly the
+fail-open OT-138 criterion 1 closed, so criterion 6 does not hold.
+`"[]"` on any failure has to stop being liveness.sh's error contract:
+enforcement cannot tell unknown from idle while it does.
+
+Also wrong and worth fixing in the same pass: the comment at
+`parallel-cap.sh:152-157` states that liveness.sh parses the log line by line
+and drops bad lines. It does not. The guard was ported onto a false premise.
+
+## Per-criterion verdict
+
+1. partial corruption denies — **FAIL.** content=4 parsed=1, 3 live builders
+   counted as 1 -> ALLOW. No ratio guard exists. Fix in `parallel-cap.sh`.
+2. one intact non-agent object no longer disarms the guard — **FAIL.** The
+   guard still tests parsed OBJECTS, not parsed AGENT RECORDS. Fix in
+   `parallel-cap.sh`.
+3. builder-deep with live heartbeats stays counted — **PASS**, but delivered by
+   `liveness.sh:91-92`, unchanged by this commit. Nothing was needed here.
+4. duplicate starts count once, cause found in `log-event.sh` — **FAIL, both
+   halves.** 3 agents x 2 identical records counted as 6. Fix belongs in
+   `liveness.sh:101-107` (no dedup by `agent_id`). On the cause: the reviewer
+   checked and `log-event.sh` appends once per invocation with anchored,
+   non-overlapping matchers, so it is NOT the obvious duplicator. Cause
+   unidentified.
+5. jam fixture timestamps rebased — **NOT ATTEMPTED.** The fixture is untracked
+   and exists only in the main checkout, not in the worktree. Unchanged, sha
+   `09864d848683`. Still allows on staleness, not pairing.
+6. every OT-138 criterion still passes — **FAIL** on criterion 1 (torn line,
+   above). The other nine pass, with two notes: the off-by-one at exactly
+   age 3600s is still there, pre-existing; and the stderr inventory was
+   deliberately changed to per-type aggregation, so it no longer names the
+   `agent_id` holding a slot — which was the whole point of OT-138's GAP 1.
+   Owner's call whether that is acceptable.
+
+## Further findings, not gating
+
+- **medium.** A live agent stops being counted 180s after start if its first
+  tool call outruns `HB_GRACE` — measured ALLOW at 200s with no heartbeat file.
+  Any agent whose first tool call is a test suite or a build is invisible to the
+  cap for that window. `liveness.sh:95`.
+- **low.** `is_positive_int` leaks a bash error to stderr on a bignum limit.
+  Decision is still correct.
+- **low.** A `SubagentStop` dated before its `SubagentStart` still cancels it.
+  Needs an agent_id collision, so implausible.
+
+## What a retry needs
+
+Scope must widen to include `.claude/hooks/liveness.sh` — criteria 3, 4 and the
+torn-line regression cannot be fixed from `parallel-cap.sh` at all. Owner
+decision, recorded before any retry is dispatched.
+
+Do not retry until OT-150 and OT-152 land: this needs a maintenance grant, and
+a live grant is what makes those holes exploitable.
 
 </details>
 <details><summary>✅ <code>OT-148</code> done — robustness gaps in the schema drift check · 7/7 criteria</summary>
@@ -10496,18 +10581,6 @@ writing the same `realpath` logic twice and getting one of them wrong.
 ## Recent activity
 
 ```
-2026-08-21T05:38:58Z  open-tab  SubagentStop  
-2026-08-21T05:39:12Z  open-tab  SubagentStop  
-2026-08-21T05:39:12Z  open-tab  SubagentStop  
-2026-08-21T05:39:12Z  open-tab  SubagentStop  
-2026-08-21T05:39:12Z  open-tab  SubagentStop  
-2026-08-21T05:39:12Z  open-tab  SubagentStop  
-2026-08-21T05:39:12Z  open-tab  SubagentStop  
-2026-08-21T05:39:18Z  open-tab  SubagentStop  
-2026-08-21T05:39:18Z  open-tab  SubagentStop  
-2026-08-21T05:39:18Z  open-tab  SubagentStop  
-2026-08-21T05:39:18Z  open-tab  SubagentStop  
-2026-08-21T05:39:18Z  open-tab  SubagentStop  
 2026-08-21T05:39:18Z  open-tab  SubagentStop  
 2026-08-21T05:39:23Z  open-tab  SubagentStop  
 2026-08-21T05:39:23Z  open-tab  SubagentStop  
@@ -10516,6 +10589,18 @@ writing the same `realpath` logic twice and getting one of them wrong.
 2026-08-21T05:39:23Z  open-tab  SubagentStop  
 2026-08-21T05:39:23Z  open-tab  SubagentStop  
 2026-08-21T05:40:18Z  open-tab  SubagentStop  reviewer-deep
+2026-08-21T05:41:11Z  open-tab  SubagentStop  
+2026-08-21T05:41:11Z  open-tab  SubagentStop  
+2026-08-21T05:41:11Z  open-tab  SubagentStop  
+2026-08-21T05:41:11Z  open-tab  SubagentStop  
+2026-08-21T05:41:11Z  open-tab  SubagentStop  
+2026-08-21T05:41:11Z  open-tab  SubagentStop  
+2026-08-21T05:41:45Z  open-tab  SubagentStop  
+2026-08-21T05:41:45Z  open-tab  SubagentStop  
+2026-08-21T05:41:45Z  open-tab  SubagentStop  
+2026-08-21T05:41:45Z  open-tab  SubagentStop  
+2026-08-21T05:41:45Z  open-tab  SubagentStop  
+2026-08-21T05:41:45Z  open-tab  SubagentStop  
 ```
 
 ---
