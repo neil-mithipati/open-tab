@@ -1,0 +1,302 @@
+diff --git a/.claude/hooks/log-event.sh b/.claude/hooks/log-event.sh
+index f230062..df9e2a4 100755
+--- a/.claude/hooks/log-event.sh
++++ b/.claude/hooks/log-event.sh
+@@ -24,10 +24,74 @@
+ # agent_type "". parallel-cap.sh treats "" as unreadable and never reads a type off
+ # a stop record at all, so this does not affect the cap.
+ 
++#
++# ---------------------------------------------------------------------------
++# HEARTBEAT MODE (`--heartbeat` as $1), registered on PostToolUse.
++#
++# An agent killed by its turn limit emits NO SubagentStop. Verified in the
++# harness binary (2.1.236): the query loop returns {reason:"max_turns"} without
++# invoking the Stop/SubagentStop executor, and runAgent's finally-block fallback
++# is guarded by a flag that the max-turns break has already set, so it declines
++# to fire one. There is no other terminal event either — the full registrable
++# hook list contains no turn-limit event, and StopFailure fires only for
++# api_error / prompt_too_long / malformed_tool_use_exhausted, not max_turns.
++#
++# So the start stays unpaired and parallel-cap.sh counts the dead agent as live
++# for the full hour of its staleness cutoff. Three occurrences, each cleared by
++# hand-appending a stop. The log could not distinguish live from dead because it
++# holds only starts and stops: no activity record, and `session` is the shared
++# parent id, identical for both.
++#
++# This mode emits that missing signal. Every tool call an agent completes
++# refreshes a one-line file at .claude/state/heartbeats/<agent_id>, so "no
++# activity for N minutes" becomes answerable. Notes on the shape:
++#
++#   - One file per agent, OVERWRITTEN, not an append-only log. Constant size
++#     regardless of how many tool calls run, and it keeps events.jsonl itself
++#     untouched, so dashboard/status-page/audit see no new records at all.
++#   - Throttled to one write per agent per minute, not per tool call.
++#   - Written to a temp file and renamed, so a reader never sees a torn line.
++#   - Skipped entirely when agent_id is absent, which is the main session. Only
++#     subagents can hold a cap slot, so only subagents need a heartbeat.
++#   - agent_id is used as a filename, so anything outside [A-Za-z0-9_-] is
++#     refused rather than sanitised. A refused id simply produces no heartbeat,
++#     which parallel-cap.sh reads as "no data" and falls back to its existing
++#     behaviour. Every failure here degrades to what the hook did before.
++#
++# The file is removed when the agent logs a real SubagentStop, and files left by
++# agents that never did are pruned after a day.
++# ---------------------------------------------------------------------------
++
+ LOG="${CLAUDE_PROJECT_DIR}/.claude/state/events.jsonl"
++HB_DIR="${CLAUDE_PROJECT_DIR}/.claude/state/heartbeats"
++HB_MIN_INTERVAL_SECONDS=60
++
++if [ "${1:-}" = "--heartbeat" ]; then
++  agent_id=$(jq -r '.agent_id // ""' 2>/dev/null <<<"$(cat)")
++  case "$agent_id" in
++    ''|*[!A-Za-z0-9_-]*) exit 0 ;;
++  esac
++  now=$(date -u +%s)
++  hb="$HB_DIR/$agent_id"
++  if [ -f "$hb" ]; then
++    last=""
++    read -r _ _ last <"$hb" 2>/dev/null
++    case "$last" in
++      ''|*[!0-9]*) last=0 ;;
++    esac
++    [ "$(( now - last ))" -ge "$HB_MIN_INTERVAL_SECONDS" ] || exit 0
++  fi
++  mkdir -p "$HB_DIR" 2>/dev/null
++  tmp="$HB_DIR/.tmp.$$"
++  if printf '%s %s %s\n' "$agent_id" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$now" >"$tmp" 2>/dev/null; then
++    mv -f "$tmp" "$hb" 2>/dev/null || rm -f "$tmp" 2>/dev/null
++  fi
++  exit 0
++fi
++
+ input=$(cat)
+ 
+-jq -c \
++record=$(jq -c \
+   --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+   --arg lane "${LANE:-default}" \
+   --arg atype "${1:-}" '{
+@@ -38,6 +102,23 @@ jq -c \
+   agent_id: (.agent_id // null),
+   agent_type: (.agent_type // (if $atype == "" then null else $atype end)),
+   cwd: .cwd
+-}' <<<"$input" >> "$LOG" 2>/dev/null
++}' 2>/dev/null <<<"$input")
++
++[ -n "$record" ] || exit 0
++printf '%s\n' "$record" >> "$LOG" 2>/dev/null
++
++# An agent that stopped properly has no use for a heartbeat: it is paired in the
++# log and can never be counted live again. Drop its file, and opportunistically
++# prune the ones left behind by agents that never stopped.
++case "$record" in
++  *'"event":"SubagentStop"'*)
++    stopped_id=$(jq -r '.agent_id // ""' 2>/dev/null <<<"$record")
++    case "$stopped_id" in
++      ''|*[!A-Za-z0-9_-]*) : ;;
++      *) rm -f "$HB_DIR/$stopped_id" 2>/dev/null ;;
++    esac
++    find "$HB_DIR" -type f -mtime +1 -delete 2>/dev/null
++    ;;
++esac
+ 
+ exit 0
+diff --git a/.claude/hooks/parallel-cap.sh b/.claude/hooks/parallel-cap.sh
+index da7d332..aa13a9e 100755
+--- a/.claude/hooks/parallel-cap.sh
++++ b/.claude/hooks/parallel-cap.sh
+@@ -70,14 +70,47 @@ if ! command -v jq >/dev/null 2>&1; then
+   exit 0
+ fi
+ 
++# Escape a shell string into a JSON string body, without jq. Covers the only
++# things JSON forbids raw: backslash, double quote, and control characters. A
++# NUL cannot be held in a shell variable, so the range starts at \x01. Used only
++# on the fallback path below, where jq is by definition not usable.
++json_escape() {
++  local s="$1" LC_ALL=C
++  s=${s//\\/\\\\}
++  s=${s//\"/\\\"}
++  s=${s//$'\t'/\\t}
++  s=${s//$'\r'/\\r}
++  s=${s//$'\n'/\\n}
++  s=${s//[$'\x01'-$'\x1f']/ }
++  printf '%s' "$s"
++}
++
++# deny() must not depend on jq SUCCEEDING. `command -v jq` above only proves the
++# binary EXISTS; a jq that is present but broken -- too old for --argjson or
++# fromdateiso8601, or failing outright -- exits non-zero here and prints nothing.
++# Nothing on stdout where a deny document belonged is read by the harness as no
++# decision, i.e. ALLOW. So every other guard in this file, including the five
++# fail-opens already closed, was one broken jq away from being bypassed.
++#
++# jq is still tried first, so the emitted bytes are unchanged on the normal path.
++# If it fails or prints nothing, the same document is built by hand instead --
++# the same treatment the jq-absent branch above already gets. Output is captured
++# rather than streamed so a broken jq cannot dribble a partial document onto
++# stdout ahead of the fallback.
+ deny() {
+-  jq -n --arg msg "$1" '{
++  local out rc
++  out=$(jq -n --arg msg "$1" '{
+     hookSpecificOutput: {
+       hookEventName: "PreToolUse",
+       permissionDecision: "deny",
+       permissionDecisionReason: $msg
+     }
+-  }'
++  }' 2>/dev/null)
++  rc=$?
++  if [ "$rc" -ne 0 ] || [ -z "$out" ]; then
++    out=$(printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"%s"}}' "$(json_escape "$1")")
++  fi
++  printf '%s\n' "$out"
+   exit 0
+ }
+ 
+@@ -137,6 +170,45 @@ STALE_AFTER_SECONDS=3600
+ now_epoch=$(date -u +%s)
+ cutoff_epoch=$(( now_epoch - STALE_AFTER_SECONDS ))
+ 
++# ---------------------------------------------------------------------------
++# HEARTBEATS: the second, much tighter cutoff.
++#
++# The hour above is the only cutoff the log can support on its own, and it must
++# stay an hour: a builder-deep legitimately runs 10-15 minutes, so shortening it
++# globally would drop live agents out of the count and stop the cap capping.
++# That is the permissive failure, and it is worse than the bug.
++#
++# An agent killed by its turn limit emits no SubagentStop (confirmed in the
++# harness binary; see log-event.sh), so its start stays unpaired and holds a
++# slot for the full hour. Observed three times, each cleared by hand.
++#
++# log-event.sh --heartbeat now refreshes .claude/state/heartbeats/<agent_id> on
++# tool use, at most once a minute. That gives a per-agent activity signal the
++# log never had, so an unpaired start can be judged on IDLE time instead of
++# total age:
++#
++#   - heartbeat present and fresh  -> live, however old the start is
++#   - heartbeat present and stale  -> dead, aged out in 15 min instead of 60
++#   - no heartbeat at all          -> unchanged: the hour-old start cutoff
++#
++# 900s is chosen against the longest silence a LIVE agent can produce. No
++# heartbeat is written while a tool runs, and the longest a tool can run is the
++# Bash tool's 600s ceiling; add model latency for the following turn and the
++# worst legitimate gap is around 11 minutes. 900s leaves headroom on that, plus
++# up to 60s of write-throttle skew, so the effective bound on a phantom is ~16
++# minutes. Raising this is safe; lowering it below ~700s is not.
++#
++# Every failure mode of the heartbeat leaves $beats missing an entry, which is
++# read as "no data" and falls back to the hour. There is no path here that makes
++# the cap more permissive than it was before heartbeats existed.
++HEARTBEAT_STALE_AFTER_SECONDS=900
++heartbeat_cutoff_epoch=$(( now_epoch - HEARTBEAT_STALE_AFTER_SECONDS ))
++
++# One line per agent, "<agent_id> <iso_ts> <epoch>". Read with -exec ... + so a
++# large directory cannot overflow the argument list, and via find rather than a
++# glob so a missing directory is simply empty rather than a literal "*" path.
++heartbeats=$(find "$ROOT/.claude/state/heartbeats" -type f ! -name '.tmp.*' -exec cat {} + 2>/dev/null)
++
+ # Read the log LINE BY LINE and drop unparseable lines, rather than `jq -s`
+ # slurping it as a JSON stream. Parallel agents append to this file
+ # concurrently and async, so a torn or interleaved line is plausible rather
+@@ -145,12 +217,21 @@ cutoff_epoch=$(( now_epoch - STALE_AFTER_SECONDS ))
+ # dispatch, which costs real money. Reading with -R makes the file itself
+ # always parseable (it is just text) and confines the damage of a torn line to
+ # that one event.
+-counts=$(jq -Rsr --argjson cutoff "$cutoff_epoch" --argjson now "$now_epoch" '
++counts=$(jq -Rsr --argjson cutoff "$cutoff_epoch" --argjson now "$now_epoch" \
++  --argjson hb_cutoff "$heartbeat_cutoff_epoch" --arg heartbeats "$heartbeats" '
+   # Keep two tallies: how many lines held actual content, and how many of those
+   # parsed as JSON objects. If content lines exist but NONE parsed, the file is
+   # wholly corrupt rather than merely torn, and the count below would be a
+   # meaningless 0 that silently allows. That case is denied further down.
+-  ( [ split("\n")[] | select(. != "" and (test("^[[:space:]]*$") | not)) ] | length ) as $content_lines
++  # agent_id -> epoch of its last recorded tool use. A malformed or truncated
++  # line contributes nothing rather than poisoning the map, which lands the
++  # agent on the conservative hour-long cutoff instead.
++  ( reduce ( $heartbeats | split("\n")[] | select(. != "") | split(" ") ) as $f
++      ( {};
++        ( if ($f | length) >= 3 then ($f[2] | tonumber?) else null end ) as $e
++        | if $e == null or $f[0] == "" then . else .[$f[0]] = $e end )
++  ) as $beats
++  | ( [ split("\n")[] | select(. != "" and (test("^[[:space:]]*$") | not)) ] | length ) as $content_lines
+   | ( [ split("\n")[] | (fromjson? // empty) | select(type == "object") ] ) as $records
+   # Visibility, not enforcement: a SubagentStart missing agent_id is dropped
+   # before pairing (it cannot be matched to anything) and one missing ts is
+@@ -187,14 +268,22 @@ counts=$(jq -Rsr --argjson cutoff "$cutoff_epoch" --argjson now "$now_epoch" '
+       # stuck, at the cost of (rarely) undercounting a genuinely running agent
+       # whose start record lacks a usable ts.
+       | select(if $start_epoch == null then false else $start_epoch >= $cutoff end)
++      | ($beats[$starts[0].agent_id] // null) as $beat_epoch
++      # An agent with NO heartbeat is left on the cutoff above, unchanged: it
++      # may predate heartbeats, or have died before its first tool call, and
++      # guessing either way in the permissive direction is not worth it. An
++      # agent WITH a heartbeat is judged on that instead, which is what lets a
++      # turn-exhausted phantom age out in minutes rather than an hour.
++      | select(if $beat_epoch == null then true else $beat_epoch >= $hb_cutoff end)
+       # Type comes from the START record only, never from a stop.
+-      | { id: $starts[0].agent_id, t: ($starts[0].agent_type // ""), age: ($now - $start_epoch) }
++      | { id: $starts[0].agent_id, t: ($starts[0].agent_type // ""), age: ($now - $start_epoch),
++          idle: (if $beat_epoch == null then null else ($now - $beat_epoch) end) }
+     ]
+   | { total: length,
+       builders: ( [ .[] | select(.t == "builder-light" or .t == "builder" or .t == "builder-deep") ] | length ),
+       # Diagnostic only, never read for a decision. Emitted as one space-free
+       # token so the shell word-split below stays positional.
+-      inventory: ( [ .[] | "\(.id):\(.t // "?"):\(.age | floor)s" ] | join(",") ) }
++      inventory: ( [ .[] | "\(.id):\(.t // "?"):\(.age | floor)s:idle=\(if .idle == null then "none" else "\(.idle | floor)s" end)" ] | join(",") ) }
+   | "\(.total) \(.builders) \($content_lines) \($records | length) \($missing_agent_id_starts) \($missing_ts_starts) \(.inventory)"
+ ' "$EVENTS" 2>/dev/null)
+ jq_rc=$?
+@@ -259,7 +348,7 @@ fi
+ # agent from a live one, so that needs its own task.
+ warn_live_inventory() {
+   [ -n "$live_inventory" ] || return 0
+-  echo "parallel-cap: counted as running (agent_id:type:age-since-start). Each of these has a SubagentStart and no SubagentStop; if one has not actually been running that long, it died without logging a stop and holds a slot until the ${STALE_AFTER_SECONDS}s cutoff:" >&2
++  echo "parallel-cap: counted as running (agent_id:type:age-since-start:idle-since-last-tool-use). Each of these has a SubagentStart and no SubagentStop. idle=none means no heartbeat was recorded, so it is held until the ${STALE_AFTER_SECONDS}s start cutoff; otherwise it is held until idle passes ${HEARTBEAT_STALE_AFTER_SECONDS}s:" >&2
+   printf '%s\n' "$live_inventory" | tr ',' '\n' | sed 's/^/parallel-cap:   /' >&2
+ }
+ 
+diff --git a/.claude/settings.json b/.claude/settings.json
+index d9cdfeb..c380221 100644
+--- a/.claude/settings.json
++++ b/.claude/settings.json
+@@ -63,6 +63,34 @@
+         ]
+       }
+     ],
++    "PostToolUse": [
++      {
++        "hooks": [
++          {
++            "type": "command",
++            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
++            "args": [
++              "--heartbeat"
++            ],
++            "async": true
++          }
++        ]
++      }
++    ],
++    "PostToolUseFailure": [
++      {
++        "hooks": [
++          {
++            "type": "command",
++            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/log-event.sh",
++            "args": [
++              "--heartbeat"
++            ],
++            "async": true
++          }
++        ]
++      }
++    ],
+     "SubagentStop": [
+       {
+         "hooks": [

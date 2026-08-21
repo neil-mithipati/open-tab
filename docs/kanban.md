@@ -27,7 +27,7 @@
 | OT-124 | Owner save erases `joined_via_share`, hiding real claimers from the owner's view | Done | — (reviewed MERGE, merged; commit `791d027` line, main 317/317. `joined_via_share` and `joined_at` now survive an owner save) |
 | OT-125 | the fleet's own agent cards and tooling are untracked or uncommitted in git | Done | — (reviewed MERGE, merged; main 304/304. `reviewer-light.md` and `bin/doctor` now tracked, executable bit preserved. Merge itself was blocked by the very problem the task fixed — main's untracked copies had to be reconciled by hand, not discarded) |
 | OT-126 | detect-and-repair can discard a genuine revert; staged blob not captured in the patch | Done | — (reviewed MERGE against 13 fixture repos, merged; main 304/304. A deliberate revert-to-an-earlier-value now refuses instead of being silently discarded; `MM` paths refuse. Tier-routing lesson: `finish-worktree` changes should route `builder-deep`, since the script performs an irreversible action regardless of diff size. Two residual holes routed to OT-129) |
-| OT-127 | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it | Blocked | upstream kit work, not blocked on any owner decision. the OT-131 decision was made (option 1, keep the kit) and this branch's two commits were built against the local parallel-cap.sh the kit replaced. .claude/hooks/protect-fleet.sh now blocks every agent in this fleet, orchestrator included, from writing .claude/hooks — so no agent here can fix it regardless of tier or prompt. the bug is still live: an agent killed on maxTurns emits no SubagentStop and holds a cap slot until STALE_AFTER_SECONDS=3600. branch task/OT-127 and its worktree are deliberately preserved as the only working fix that exists anywhere. |
+| OT-127 | a dead agent holds a cap slot for an hour — events.jsonl has no data to detect it | Done | — (supersession review passed all four re-scoped criteria: the kit's heartbeat mechanism reproduces the branch's fix by a different implementation, verified against fixtures. completed by discarding `task/OT-127` unmerged on owner instruction — there is no merge commit. full diff archived at `ledger/attachments/OT-127-branch.patch`. remaining gaps carried forward as OT-138) |
 | OT-132 | a parse outage is invisible to the user — no message on any non-429 failure | Done | — (carved out of OT-129 section B, items 1, 3, 5, 6. reviewed clean, merged as `19901ac`, worktree and branch removed) |
 | OT-128 | review the unreviewed kit install change by change and commit what survives | Done | — (reviewed MERGE, merged; main 304/304 across 23 files. `reviewer.md`'s two competing versions reconciled by hand — OT-122's merged mutation-guard paragraph verified byte-identical, the install's separate +6/-1 delta applied on top. Two lows routed to OT-129) |
 | OT-129 | backlog from the OT-123, OT-124 and OT-126 reviews | Done | — (closed by decline, not by merge — no commit, no branch. B4, the last live item, was declined by the owner: two tabs on one `receiptId`, the 409 loser can save over the winner's parsed data, low, pre-existing. every other item was shipped elsewhere — B1/B3/B5/B6 in OT-132, B2 in OT-134, C1/C2 in OT-137 — or declined, section A permanently, on `bin/finish-worktree` being closed to every agent) |
@@ -36,6 +36,286 @@
 | OT-133 | a late claim is destroyed by the item re-mint when the claimer IS in the payload | Done | — (third reviewer dispatch delivered a PASS after two turn-exhausted attempts lost their verdicts; all six criteria checked, mutation-checked non-tautological, merged into main as a merge commit on top of `420a8d3`. two medium findings reviewed and deliberately declined on owner instruction, not fixed — reasoning kept in `ledger/OT-133.md`) |
 | OT-134 | a transient gemini outage permanently burns a receipt's only parse — no retry affordance | Done | — (full reviewer passed all nine criteria, no high findings, merged as `5534b5f`. bounded to 3 model attempts per receipt via migration 0025 — renumbered from 0024 after OT-137 took that slot; replay hole confirmed still closed) |
 | OT-137 | claim_done_at is reset by every owner save, so a finished claimer reads as still claiming | Done | — (full reviewer passed all seven criteria, no high findings, merged as `070cb49`. carries claim_done_at across the participant delete/re-insert via migration 0024, keyed on lowercased username; deliberately no backfill, keeping OT-124's now() trap in mind) |
+| OT-138 | three live fail-opens in parallel-cap.sh let an uncapped dispatch through | Blocked | the maintenance grant cannot activate for a dispatched subagent. `maint_active()` in `protect-fleet.sh` and `deny-irreversible.sh` keys off `basename(CLAUDE_PROJECT_DIR)`, which is the main checkout for a worker, so it returns 1 before ever reading `gates.json`. Verified by probe and by live denial on both the edit and bash routes. Fix is owner-side: either re-run this task from a session rooted in `../wt-OT-138`, or change `maint_active` in both guards to key off the target path. |
+| OT-135 | migrate receipt parser to gemini-2.5-flash-lite with schema enforced as config | Blocked | code complete and committed (`a1ade42`), gates green (395/395), reviewer-light passed 5 of 6 criteria. Blocked on the 6th only — live parse against real receipts — because `GOOGLE_AI_API_KEY` is unset and the repo has no receipt image fixtures. Awaiting an owner decision: supply key plus fixtures, or waive the criterion. Not blocked on engineering. (P0, go-live tomorrow) |
+| OT-136 | arithmetic validation on parsed receipts, money as integer cents end to end | In Progress | — (P0, go-live tomorrow; branch `task/OT-136` is deliberately based on `task/OT-135`, not main — both edit `parseReceipt.ts`, so OT-135 must merge before OT-136) |
+| OT-139 | lock down receipt image storage — private bucket, RLS, signed URLs, retention job | In Progress | attempt 1 REJECTED at pass 1, attempt 2 now built (attempts: 2), full re-review running. Attempt 2 closes the HIGH bug class: `extractStoragePath` is module-private, all readers route through a new `boundStoragePath(receipt)` that binds to `<created_by>/<id>.<ext>` and returns null rather than an unbound signature, and a sweep test forbids any other file reading the raw extractor. Proved by reverting the fix and showing 11 tests fail against the old code, then 497/497 with it restored. 4 of 6 acceptance criteria pass and are checked in the ledger; the 2 open ones are unchanged pending the re-review verdict. **Deployment, prominent: migration 0026 changed and must be re-applied even if already run, and BEFORE the code** — the retention function now returns `created_by`, and `create or replace` cannot change a function's OUT columns, so 0026 drops and recreates it. Code-first is fail-safe (purge job skips every row, nothing deleted) but retention silently does not run. Owner actions still outstanding before go-live, unchanged from last cycle: (1) enumerate and drop stray policies on `storage.objects` in the live project — migration 0026 only adds, and policies are OR'd; (2) set `CRON_SECRET` and `RECEIPT_IMAGE_RETENTION_DAYS` on the host with a daily schedule, or the retention job is silently inert. See `ledger/OT-139.md` for the full attack chain and proof — not reproduced here. (P0, go-live tomorrow) |
+| OT-140 | client-side image downscale and EXIF orientation normalization before upload | Blocked | code complete, gates green, reviewer-light passed 3 of 5 criteria. the two open ones both need something this environment cannot supply: receipt image fixtures plus `GOOGLE_AI_API_KEY` for the parse-quality comparison, and a real browser measurement for the upload size/time numbers — the reviewer declined to accept a `sharp` proxy as proof of the `canvas.toBlob` path. both await an owner decision to supply or waive. (P0, go-live tomorrow) |
+| OT-141 | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor | Todo | found by the OT-139 attempt-2 builder, outside that task's own scope. `ReceiptSplitStep.tsx`'s `handleDelete` inlines a verbatim copy of the storage-path extractor instead of calling the named one, so OT-139's sweep test doesn't catch it. Same bug class as OT-139's HIGH, lower severity — this path runs on the browser session, where migration 0026's delete policy (own folder AND own receipt) is still in the way, unlike the service-client paths OT-139 fixed. **Deliberately queued, not available work: held until OT-136 merges**, since OT-136 is concurrently making heavy edits to the same file and the two would conflict. See `ledger/OT-141.md` for scope. |
+
+## Sync notes (2026-08-20, cycle 27)
+
+Reconciled against `ledger/OT-139.md` and `ledger/OT-141.md`. Matched on id —
+OT-141 created, no existing card for it; OT-139 updated in place, not
+appended.
+
+- **OT-141** created, **Todo**. New task, `builder` tier, review full,
+  `attempts: 0`. Filed by the OT-139 attempt-2 builder outside its own scope —
+  a fourth unbound reader of `image_url` (`ReceiptSplitStep.tsx`'s
+  `handleDelete`) that inlines a copy of the extractor instead of calling the
+  shared one, so OT-139's new sweep test doesn't catch it. Lower severity than
+  OT-139's HIGH: this path runs on the browser session, so migration 0026's
+  delete policy still defends it. **Card notes this is deliberately queued,
+  not available work** — held until OT-136 merges, since OT-136 is
+  concurrently making heavy edits to the same file. No exploit recipe put on
+  the board; the card names the class and points at `ledger/OT-141.md`.
+- **OT-139** stays **In Progress**, note rewritten for attempt 2.
+  `attempts: 2` now. The builder closed the bug class the reviewer rejected
+  attempt 1 for: `extractStoragePath` is module-private, every reader routes
+  through a new `boundStoragePath(receipt)` bound to `<created_by>/<id>.<ext>`,
+  and a sweep test forbids any unbound reader. Proof shown by reverting the
+  fix (11 tests fail against the old code) and restoring it (497/497). Still 4
+  of 6 acceptance criteria checked in the ledger — the 2 open criteria are
+  unchanged pending the full reviewer's re-review, which is running now, not
+  yet verdicted. **Deployment note added prominently**: migration 0026 itself
+  changed in attempt 2 (the retention function now returns `created_by`, so
+  the function is dropped and recreated rather than `create or replace`d) and
+  must be re-applied even if it was already run, and before the code ships —
+  code-first is fail-safe but leaves retention silently inert. The two
+  owner-side actions from last cycle (stray `storage.objects` policies;
+  `CRON_SECRET` / `RECEIPT_IMAGE_RETENTION_DAYS` unset) are unchanged and
+  still outstanding.
+
+Verified unchanged, no card edit: **OT-135** (blocked, `attempts: 1`, same
+`blocked_reason`), **OT-140** (blocked, `attempts: 0`, same `blocked_reason`),
+**OT-138** (blocked, `attempts: 1`, same `blocked_reason`), **OT-136**
+(in-progress, `attempts: 1`, `blocked_reason: null`) — each grepped against
+its ledger frontmatter and matches the board already.
+
+No task ids in the table are absent from `ledger/`, and no ledger task is
+missing a card.
+
+Not touched, per instruction: `../wt-OT-136`, `../wt-OT-139` — builders
+running in both. `ledger/` read only, never written.
+
+Notion was not reachable: no `mcp__notion__*` tools present in this session's
+tool list. Per the fallback rule this is expected, not an error — writing to
+`docs/kanban.md` is the correct outcome.
+
+## Sync notes (2026-08-20, cycle 26)
+
+Reconciled against `ledger/OT-139.md` for the one card with drift; the other
+four (OT-135, OT-136, OT-140, OT-138) were checked against their ledger files
+and matched the board exactly — no change.
+
+- **OT-139** stays **In Progress**. Ledger `state: in-progress`,
+  `attempts: 1`. Full reviewer REJECTED attempt 1 at pass 1: 4 of 6 acceptance
+  criteria pass (checked in the ledger), 2 fail. Note updated with the
+  rejection class — a HIGH finding, an authenticated share-link holder can
+  read (and cause deletion of) another user's receipt photo via an unbound
+  `extractStoragePath` feeding the RLS-bypassing service client, pre-existing
+  and surfaced by this task rather than introduced by it — plus the two
+  owner-side actions still outstanding before go-live (stray
+  `storage.objects` policies in the live project; `CRON_SECRET` and
+  `RECEIPT_IMAGE_RETENTION_DAYS` unset on the host). Full attack chain lives
+  in `ledger/OT-139.md`, not reproduced here. A builder-deep retry is already
+  running in the same worktree.
+- **OT-135**, **OT-136**, **OT-140**, **OT-138** — no change. Ledger states
+  read `blocked`, `in-progress`, `blocked`, `blocked` respectively, matching
+  the table already.
+- No task ids in the table are absent from `ledger/`, and no ledger task is
+  missing a card.
+
+Not touched, per instruction: `../wt-OT-136`, `../wt-OT-139` — builders
+running in both.
+
+Notion was not reachable: no `mcp__notion__*` tools present in this session's
+tool list. Per the fallback rule this is expected, not an error — writing to
+`docs/kanban.md` is the correct outcome.
+
+## Sync notes (2026-08-20, cycle 25)
+
+Reconciled against every file in `ledger/`. Matched on id — no card created
+without a matching ledger file. No `mcp__notion__*` tools present this
+session, so this file is the correct fallback destination, not a degraded
+outcome.
+
+- **OT-136** Todo → **In Progress**. Ledger `state: in-progress`,
+  `attempts: 0`, `branch: task/OT-136   # based on task/OT-135, not main`.
+  Note added: the branch is deliberately built on top of `task/OT-135` rather
+  than main, because both edit `src/lib/gemini/parseReceipt.ts` — this fixes
+  merge order, OT-135 has to land in main before OT-136 can.
+- **OT-140** left at **In Progress** — no status change, note corrected.
+  Ledger `files:` was corrected to `src/lib/image/compressImage.ts` and
+  `src/__tests__/lib/compressImage.test.ts`; `src/components/receipt/
+  CaptureStep.tsx`, the original scope, was never modified because it already
+  delegated compression to the lib. Board note now reflects the corrected
+  file list rather than the original scope guess. A builder result is
+  recorded in the ledger and a reviewer is now running — not yet moved to
+  Done, since the ledger `state` is still `in-progress`.
+- **OT-139** left at **In Progress**, no change. Ledger `state: in-progress`,
+  `attempts: 0`, unchanged since last cycle.
+- **OT-135** left at **Blocked**, no change. Ledger `state: blocked`,
+  `blocked_reason` unchanged since last cycle.
+- **OT-127** and **OT-138** left as recorded, no change. Both ledger files
+  read unchanged from cycle 24 — OT-127 `state: done`, OT-138 `state: blocked`
+  with the same maintenance-grant reason.
+
+Not touched, per instruction: `../wt-OT-136`, `../wt-OT-139`, `../wt-OT-140` —
+agents are working in all three. No merges performed. `.claude/` untouched.
+`ledger/` read only, never written.
+
+Left alone, no drift: every other card checked against the ledger and matches
+already — OT-100–OT-134, OT-137, OT-138 all remain as recorded in cycle 24.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+## Sync notes (2026-08-20, cycle 24)
+
+Reconciled against every file in `ledger/`. Matched on id — no card created
+without a matching ledger file. No `mcp__notion__*` tools present this
+session, so this file is the correct fallback destination, not a degraded
+outcome.
+
+- **OT-135** In Progress → **Blocked**. Ledger `state: blocked`,
+  `attempts: 1`. Code is complete and committed (`a1ade42`) on `task/OT-135`,
+  gates green, reviewer-light passed five of its six acceptance criteria —
+  those five now read `[x]` in the ledger. The sixth (`all existing test
+  receipts parse`) is unchecked and blocked, not failed: no receipt fixtures
+  exist anywhere in this repo, and `GOOGLE_AI_API_KEY` is unset, so no live
+  parse comparison is possible for anyone. This is an owner decision, not an
+  engineering gap — supply a key plus fixtures, or waive the criterion.
+  Reason carried onto the card accordingly.
+- **OT-140** Todo → **In Progress**. Ledger `state: in-progress`,
+  `attempts: 0`, `worktree: ../wt-OT-140`. Dispatched early — its stated
+  dependency on OT-135 is only the parse-quality comparison, which is blocked
+  on the same missing fixtures regardless of OT-135's own status, and it
+  edits `CaptureStep.tsx` only, no file overlap with OT-135's worktree.
+- **OT-136** left at **Todo**, no change. Ledger `state: todo`,
+  `attempts: 0`, still explicitly queued behind OT-135 — both edit
+  `parseReceipt.ts` — per its own body.
+- **OT-139** left at **In Progress**, no change. Ledger `state: in-progress`,
+  `attempts: 0`, unchanged since last cycle.
+
+Not touched, per instruction: `../wt-OT-135` (idle, left alone anyway),
+`../wt-OT-139`, `../wt-OT-140` — builders running in the latter two. No
+merges performed. `.claude/` untouched. `ledger/` read only, never written.
+
+Left alone, no drift: every other card checked against the ledger and
+matches already — OT-100–OT-134, OT-137, OT-138 all remain as recorded in
+cycle 23.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished.
+
+## Sync notes (2026-08-20, cycle 23)
+
+Reconciled against every file in `ledger/`. Matched on id — no card created
+without a matching ledger file. No `mcp__notion__*` tools present this
+session, so this file is the correct fallback destination, not a degraded
+outcome.
+
+- **OT-138** In Progress → **Blocked**. Ledger `state: blocked`,
+  `attempts: 1`. It was dispatched, hit the maintenance-grant activation gap
+  documented in its own file, and came back blocked — the engineering isn't
+  the problem, the grant mechanism is. Full `blocked_reason` carried onto the
+  card verbatim (trimmed of markdown line-wrap only).
+- **OT-135** created, **In Progress**. `builder` tier, review full. P0 for
+  tomorrow's go-live, noted in the card since this board has no dedicated
+  priority column — reusing the same free-text column Done rows already use
+  for commentary, not a new field.
+- **OT-136** created, **Todo**. `builder-deep` tier, review full. Queued
+  behind OT-135 — both touch `src/lib/gemini/parseReceipt.ts` — noted on the
+  card. Same P0 flag as OT-135.
+- **OT-139** created, **In Progress**. `builder-deep` tier, review full. P0.
+- **OT-140** created, **Todo**. `builder` tier, review full. Queued behind
+  OT-135, noted on the card. Same P0 flag.
+
+**Id note, so this board isn't confusing later:** the owner's brief numbered
+the storage-lockdown and image-downscale tasks OT-137 and OT-138. Both ids
+were already taken by existing ledger tasks (the claim_done_at fix and the
+parallel-cap fail-opens fix), so they were renumbered to OT-139 and OT-140
+before filing. OT-135 and OT-136 are the ids from the brief as written — those
+were genuinely free and are unchanged.
+
+Not touched, per instruction: `../wt-OT-135`, `../wt-OT-139`, `../wt-OT-138` —
+builders are running in the first and third of those right now. No merges
+performed. `.claude/` untouched. `ledger/` read only, never written.
+
+Left alone, no drift: every other card checked against the ledger and matches
+already — OT-100–OT-134 and OT-137 all remain Done, matching `state: done` in
+their ledger files.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as vanished.
+
+## Sync notes (2026-08-20, cycle 22)
+
+Reconciled against every file in `ledger/`. Matched on id — no card created
+without a matching ledger file.
+
+- **OT-138** Blocked → **In Progress**. Ledger `state: in-progress`,
+  `blocked_reason: null`. It cleared its two blockers in sequence — the
+  maintenance grant, then a dispatch permission issue — and is now dispatched
+  and running in `../wt-OT-138`. Not touched: that worktree, per instruction.
+  None of its nine acceptance criteria are checked yet (`ledger/OT-138.md`
+  lines 138–151 are all `[ ]`), so the card carries no completed-criteria
+  claim.
+
+Left alone, no drift: every other card checked against the ledger and matches
+already — OT-100–OT-134 and OT-137 all remain Done, matching `state: done` in
+their ledger files. OT-127 in particular was re-checked this cycle since it
+was flagged as recently edited: its ledger file still reads `state: done`,
+unchanged since cycle 21, so its card stays Done with no edit needed.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as
+vanished. (`ledger/OT-135.md` and `ledger/OT-136.md` do not exist and never
+had cards here — notes on other tasks reference those ids as filed elsewhere,
+but no file backs them in this `ledger/`, so there is nothing on the board to
+reconcile against them.)
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in this
+session's tool list. Per the fallback rule this is expected, not an error —
+writing to `docs/kanban.md` is the correct outcome. This is a fallback sync,
+not a full one — no card was written to an actual Notion kanban.
+
+## Sync notes (2026-08-20, cycle 21)
+
+Reconciled against `ledger/OT-127.md`, `ledger/OT-138.md`. Matched on id — no
+card created without a matching ledger file.
+
+- **OT-127** In Progress → **Done**. Ledger `state: done`. Its supersession
+  review passed all four re-scoped acceptance criteria (now all `[x]`). Noted
+  on the card, per the ledger, that this was completed by discarding
+  `task/OT-127` and its worktree unmerged on owner instruction — there is no
+  merge commit to look for. The full diff is archived at
+  `ledger/attachments/OT-127-branch.patch`.
+- **OT-138** created, **Blocked**. New task, `builder-deep` per frontmatter.
+  Blocked reason carried verbatim from the ledger's `blocked_reason`: waiting
+  on the owner to add `"OT-138"` to the `maintenance` array in the main
+  checkout's `.claude/gates.json`. Confirmed on disk this cycle — `gates.json`
+  currently has no `maintenance` key, so the grant has not yet been given.
+
+Left alone, no drift: every other card checked against the ledger and matches
+already — OT-100–OT-126, OT-128–OT-134, OT-137 all remain Done.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in this
+session's tool list. Per the fallback rule this is expected, not an error —
+writing to `docs/kanban.md` is the correct outcome. This is a fallback sync,
+not a full one — no card was written to an actual Notion kanban.
+
+## Sync notes (2026-08-20, cycle 20)
+
+Reconciled against `ledger/OT-127.md`. Matched on id — no card created without a
+matching ledger file.
+
+- **OT-127** Blocked → **In Progress**. Ledger `state: in-progress`,
+  `blocked_reason` cleared to `null`. Scope changed with the state: this is no
+  longer the original hook fix — it is now a verification task, to confirm a
+  kit update supersedes branch `task/OT-127` and then discard that branch
+  unmerged. Title left unchanged per the ledger's frontmatter. Blocked reason
+  column cleared to match.
+
+Left alone, no drift: every other card checked against the ledger and matches
+already — all of OT-100–OT-134 and OT-137 remain Done.
+
+No tasks in `ledger/` are missing from this board; nothing to flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in this
+session's tool list. Per the fallback rule this is expected, not an error —
+writing to `docs/kanban.md` is the correct outcome.
 
 ## Sync notes (2026-08-20, cycle 19)
 
