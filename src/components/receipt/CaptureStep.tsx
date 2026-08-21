@@ -5,6 +5,7 @@ import { GlassButton } from "@/components/ui/GlassButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { refreshUserCaches } from "@/app/actions/cache";
 import { compressImage } from "@/lib/image/compressImage";
+import { RECEIPT_IMAGE_URL_TTL_SECONDS } from "@/lib/storage";
 import { useToast, ToastViewport } from "@/components/ui/Toast";
 import type { useReceiptFlow } from "@/hooks/useReceiptFlow";
 import { Camera, RotateCw } from "lucide-react";
@@ -73,15 +74,27 @@ export function CaptureStep({ flow }: { flow: Flow }) {
 
     if (uploadErr) { flow.goTo("capture"); setError("Upload failed."); return; }
 
-    // get signed URL for Gemini
+    // A signed URL for the preview thumbnail the split step shows beside the
+    // items. Fifteen minutes rather than the hour this used to ask for: long
+    // enough to cover a split session start to finish, short enough that the
+    // copy written to the row below is a dead string within the quarter hour.
     const { data: signed } = await supabase.storage
       .from("receipt-images")
-      .createSignedUrl(path, 3600);
+      .createSignedUrl(path, RECEIPT_IMAGE_URL_TTL_SECONDS);
 
     if (!signed) { flow.goTo("capture"); return; }
     flow.update("signedUrl", signed.signedUrl);
 
-    // update receipt with image url
+    // image_url is a POINTER, not a credential. Every reader of this column —
+    // the parse route, the receipt page, the discard path, the retention job —
+    // runs boundStoragePath over it and signs a fresh URL from the path it
+    // recovers; not one of them follows the stored string. So the signature
+    // going stale costs nothing, and a row that leaks stops being a way into
+    // the bucket a quarter of an hour after it was written.
+    //
+    // It is also not trusted. This column is writable by whoever owns the row,
+    // so boundStoragePath refuses any path that is not this uploader's folder
+    // and this receipt's id — the exact shape written on the line above.
     await supabase.from("receipts").update({ image_url: signed.signedUrl }).eq("id", receipt.id);
 
     await runParse(receipt.id, mimeType, user.id);

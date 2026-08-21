@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const getUser = vi.fn();
 const isParseRateLimited = vi.fn();
-const extractStoragePath = vi.fn();
 const parseReceiptImage = vi.fn();
 
 // Mutable stand-in for the two tables this route touches. `receipt` is the row
@@ -189,9 +188,12 @@ vi.mock("@/lib/rateLimit", () => ({
   isParseRateLimited: (...args: unknown[]) => isParseRateLimited(...args),
 }));
 
-vi.mock("@/lib/storage", () => ({
-  extractStoragePath: (...args: unknown[]) => extractStoragePath(...args),
-}));
+// @/lib/storage is NOT mocked. It used to be, with extractStoragePath stubbed
+// to hand the route whichever path a test wanted. That stub is the wrong shape
+// now: the path is derived by boundStoragePath, which is the security control
+// under test here, and a test that replaces it proves nothing about it. Each
+// case sets db.receipt.image_url — the attacker-writable column the real
+// helper reads — and the real code decides.
 
 // Only the model call is mocked. parsedReceiptCentsSchema is the real one, so
 // the route's validate-before-write step is genuinely exercised here rather
@@ -216,6 +218,12 @@ function rawRequest(body: string) {
     body,
   });
 }
+
+// A receipt row's image_url is writable by its owner, so it is attacker text.
+// This is the victim's object named in it: another account's folder, another
+// receipt's id. Nothing in the route may sign it, fetch it or delete it.
+const FOREIGN_BUCKET_URL =
+  "https://x/storage/v1/object/sign/receipt-images/someone-else/r9.jpg";
 
 const UNPARSED = {
   id: "r1",
@@ -264,7 +272,6 @@ const PARSE_RESULT = {
 beforeEach(() => {
   getUser.mockReset().mockResolvedValue({ data: { user: { id: "u1" } } });
   isParseRateLimited.mockReset().mockResolvedValue(false);
-  extractStoragePath.mockReset().mockReturnValue("u1/r1.jpg");
   parseReceiptImage.mockReset().mockResolvedValue(PARSE_RESULT);
   Object.values(spies).forEach((spy) => spy.mockReset());
   db.receipt = { ...UNPARSED };
@@ -589,7 +596,7 @@ describe("POST /api/receipts/parse", () => {
 
   it("does not delete a stored object outside the caller's own path", async () => {
     isParseRateLimited.mockResolvedValue(true);
-    extractStoragePath.mockReturnValue("someone-else/r9.jpg");
+    db.receipt = { ...UNPARSED, image_url: `${FOREIGN_BUCKET_URL}?token=abc` };
 
     await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
 
@@ -619,7 +626,7 @@ describe("POST /api/receipts/parse", () => {
   });
 
   it("rejects an image path that is not the caller's own", async () => {
-    extractStoragePath.mockReturnValue("someone-else/r9.jpg");
+    db.receipt = { ...UNPARSED, image_url: `${FOREIGN_BUCKET_URL}?token=abc` };
 
     const res = await POST(request({ receiptId: "r1", mimeType: "image/jpeg" }));
 

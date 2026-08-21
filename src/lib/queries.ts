@@ -7,6 +7,10 @@ import {
   userReceiptsTag,
 } from "@/lib/cacheTags";
 import { mapGroupRows } from "@/lib/friendGroups";
+import {
+  RECEIPT_IMAGE_CACHE_EXPIRE_SECONDS,
+  RECEIPT_IMAGE_URL_TTL_SECONDS,
+} from "@/lib/storage";
 import type { FriendGroup } from "@/types";
 
 // Service client — no cookies, no session, bypasses RLS.
@@ -131,16 +135,30 @@ export async function getUserFriendGroups(userId: string): Promise<FriendGroup[]
 
 // A fresh signature on every render makes the URL unique, so neither the image
 // optimizer nor the browser ever gets a cache hit and the original photo is
-// re-fetched and re-encoded each time the user opens it. Signing for two hours
-// but reusing the result for at most thirty minutes keeps one stable URL in
-// play, well inside its validity window.
+// re-fetched and re-encoded each time the user opens it. Reusing one signature
+// for a while fixes that; the question is how long, and the answer has to be
+// derived from the TTL rather than chosen independently of it.
+//
+// It was two hours signed against a thirty-minute reuse window. Both numbers
+// come down here: 15 minutes signed (RECEIPT_IMAGE_URL_TTL_SECONDS) against a
+// 5-minute window, so the oldest URL this function can hand out still carries
+// ten minutes of validity — more than any page load needs, and a fraction of
+// the exposure a two-hour signature carries if one leaks.
+//
+// The window and the TTL are two constants that only mean anything together,
+// which is why they sit side by side in lib/storage.ts behind an invariant the
+// test suite asserts. Do not shorten one without the other.
 export async function getReceiptImageUrl(storagePath: string): Promise<string | null> {
   "use cache";
-  cacheLife({ stale: 300, revalidate: 900, expire: 1800 });
+  cacheLife({
+    stale: 60,
+    revalidate: Math.floor(RECEIPT_IMAGE_CACHE_EXPIRE_SECONDS / 2),
+    expire: RECEIPT_IMAGE_CACHE_EXPIRE_SECONDS,
+  });
 
   const { data } = await serviceClient()
     .storage.from("receipt-images")
-    .createSignedUrl(storagePath, 7200);
+    .createSignedUrl(storagePath, RECEIPT_IMAGE_URL_TTL_SECONDS);
 
   return data?.signedUrl ?? null;
 }

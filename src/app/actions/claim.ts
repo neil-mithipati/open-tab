@@ -21,6 +21,31 @@ import { fromCents, toCents } from "@/lib/money";
 // which is unguessable. Every action re-validates the token (and that the
 // participant/item belongs to that receipt) before any write. All DB access
 // uses the service client; the browser anon key never touches receipt data.
+//
+// ── the receipt photograph does not come through here ──────────────────────
+//
+// The service client bypasses RLS by design, so the storage policies added in
+// 0026 are not a backstop on this path — every column these actions hand to an
+// anonymous browser is a column someone decided to hand over. `image_url` is
+// not one of them, and that is load bearing rather than incidental: a claimer
+// needs the line items and their prices, and the photo behind those items
+// carries a card's last four digits, the payer's name and where they were.
+//
+// Two things keep it out and both are checked in
+// __tests__/actions/claimImageExposure.test.ts:
+//
+//   1. every read below names its columns explicitly. There is no `select("*")`
+//      anywhere in the public half of this file, so a column added to
+//      `receipts` later cannot arrive on the claim page by default.
+//   2. the SharedReceipt type this returns has no image field, so adding the
+//      column to the query alone would not compile into anything a claimer can
+//      see.
+//
+// Enumeration is closed off separately: nothing here takes a receipt id, a user
+// id or a storage path from the caller. The only input is the share_token, and
+// every row read afterwards is filtered by the receipt id that token resolved
+// to. A token from one receipt is therefore not an argument that can be aimed
+// at another one — it is the only way to name a receipt at all.
 // ===========================================================================
 
 interface ItemWithAssignments {
