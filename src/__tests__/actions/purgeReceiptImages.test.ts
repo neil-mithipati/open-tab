@@ -144,7 +144,7 @@ describe("the endpoint is not open to the internet", () => {
 });
 
 describe("N days after parse", () => {
-  it("asks the database for rows older than seven days by default", async () => {
+  it("asks the database for rows older than fourteen days by default", async () => {
     const before = Date.now();
     await GET(authed());
     const after = Date.now();
@@ -154,9 +154,9 @@ describe("N days after parse", () => {
       expect.objectContaining({ p_before: expect.any(String) })
     );
     const cutoff = Date.parse(spies.rpc.mock.calls[0][1].p_before);
-    const sevenDays = 7 * 24 * 60 * 60 * 1000;
-    expect(cutoff).toBeGreaterThanOrEqual(before - sevenDays - 5000);
-    expect(cutoff).toBeLessThanOrEqual(after - sevenDays);
+    const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+    expect(cutoff).toBeGreaterThanOrEqual(before - fourteenDays - 5000);
+    expect(cutoff).toBeLessThanOrEqual(after - fourteenDays);
   });
 
   it("honours RECEIPT_IMAGE_RETENTION_DAYS", async () => {
@@ -170,12 +170,12 @@ describe("N days after parse", () => {
     expect((await res.json()).retentionDays).toBe(30);
   });
 
-  it("falls back to seven on a nonsense override rather than skipping the purge", async () => {
+  it("falls back to fourteen on a nonsense override rather than skipping the purge", async () => {
     process.env.RECEIPT_IMAGE_RETENTION_DAYS = "not-a-number";
 
     const res = await GET(authed());
 
-    expect((await res.json()).retentionDays).toBe(7);
+    expect((await res.json()).retentionDays).toBe(14);
     expect(spies.rpc).toHaveBeenCalled();
   });
 });
