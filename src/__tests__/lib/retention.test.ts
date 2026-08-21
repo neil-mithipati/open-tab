@@ -15,12 +15,12 @@ function quiet() {
   return vi.spyOn(console, "error").mockImplementation(() => {});
 }
 
-describe("N is configurable and defaults to 7", () => {
-  it("defaults to 7 days when nothing is set", () => {
-    expect(DEFAULT_RECEIPT_IMAGE_RETENTION_DAYS).toBe(7);
-    expect(receiptImageRetentionDays(undefined)).toBe(7);
-    expect(receiptImageRetentionDays("")).toBe(7);
-    expect(receiptImageRetentionDays("   ")).toBe(7);
+describe("N is configurable and defaults to 14", () => {
+  it("defaults to 14 days when nothing is set", () => {
+    expect(DEFAULT_RECEIPT_IMAGE_RETENTION_DAYS).toBe(14);
+    expect(receiptImageRetentionDays(undefined)).toBe(14);
+    expect(receiptImageRetentionDays("")).toBe(14);
+    expect(receiptImageRetentionDays("   ")).toBe(14);
   });
 
   it("honours an override", () => {
@@ -42,29 +42,29 @@ describe("a bad value falls back rather than disabling the job", () => {
   it("rejects values that are not whole numbers", () => {
     const spy = quiet();
     for (const raw of ["abc", "7.5", "NaN", "1e2x", "-", "seven"]) {
-      expect(receiptImageRetentionDays(raw)).toBe(7);
+      expect(receiptImageRetentionDays(raw)).toBe(14);
     }
     expect(spy).toHaveBeenCalled();
   });
 
   it("rejects zero and negatives, which would delete what users are still using", () => {
     quiet();
-    expect(receiptImageRetentionDays("0")).toBe(7);
-    expect(receiptImageRetentionDays("-1")).toBe(7);
-    expect(receiptImageRetentionDays("-3650")).toBe(7);
+    expect(receiptImageRetentionDays("0")).toBe(14);
+    expect(receiptImageRetentionDays("-1")).toBe(14);
+    expect(receiptImageRetentionDays("-3650")).toBe(14);
   });
 
   it("rejects a value large enough to be retention switched off by typo", () => {
     quiet();
-    expect(receiptImageRetentionDays("366")).toBe(7);
-    expect(receiptImageRetentionDays("99999")).toBe(7);
+    expect(receiptImageRetentionDays("366")).toBe(14);
+    expect(receiptImageRetentionDays("99999")).toBe(14);
   });
 
   it("says out loud which value it refused", () => {
     const spy = quiet();
     receiptImageRetentionDays("0");
     expect(spy.mock.calls[0][0]).toContain("RECEIPT_IMAGE_RETENTION_DAYS=0");
-    expect(spy.mock.calls[0][0]).toContain("7 days");
+    expect(spy.mock.calls[0][0]).toContain("14 days");
   });
 });
 
