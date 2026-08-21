@@ -1,18 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 13:07 UTC · regenerated on every task completion.
+Updated 2026-08-21 13:08 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $93.2 | $200.00 | ████░░░░░░ 46% |
+| open-tab | $94.07 | $200.00 | ████░░░░░░ 47% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer-deep | open-tab | 2026-08-21T12:37:46Z | 1 |
+| 🟢 reviewer-deep | open-tab | 2026-08-21T13:08:09Z | 2 |
 
 ## Blocked — needs your input
 
@@ -11137,6 +11137,14 @@ taking main's side after OT-153 lands — OT-153's content is a strict superset.
 Fixture suites: /tmp/ot147/harness.sh (SRC=<hooks dir>) and
 /tmp/ot153/harness.sh (NEW=<hooks dir>), baseline in /tmp/ot153/baseline.
 
+## Review attempt 1 aborted
+
+reviewer-deep terminated after 36 tool calls and ~30 minutes without emitting a
+result block. It reported gates passing and had just begun the adversarial pass;
+no per-criterion verdict survived. Budget failure, not capability — same shape as
+OT-155 attempt 1. Retried at the same tier, prompt narrowed and ordered so the
+verdict is emitted before the adversarial pass rather than after it.
+
 </details>
 <details><summary>⚪ <code>OT-154</code> todo — leftover edges in the patched fleet guard · 0/6 criteria</summary>
 
@@ -11395,19 +11403,6 @@ fixtures still exercise the fallback path.
 ## Recent activity
 
 ```
-2026-08-21T12:59:30Z  open-tab  SubagentStop  
-2026-08-21T12:59:30Z  open-tab  SubagentStop  
-2026-08-21T13:00:14Z  open-tab  SubagentStop  
-2026-08-21T13:00:14Z  open-tab  SubagentStop  
-2026-08-21T13:00:14Z  open-tab  SubagentStop  
-2026-08-21T13:00:14Z  open-tab  SubagentStop  
-2026-08-21T13:00:14Z  open-tab  SubagentStop  
-2026-08-21T13:00:14Z  open-tab  SubagentStop  
-2026-08-21T13:00:47Z  open-tab  SubagentStop  
-2026-08-21T13:00:47Z  open-tab  SubagentStop  
-2026-08-21T13:00:47Z  open-tab  SubagentStop  
-2026-08-21T13:00:47Z  open-tab  SubagentStop  
-2026-08-21T13:00:47Z  open-tab  SubagentStop  
 2026-08-21T13:00:47Z  open-tab  SubagentStop  
 2026-08-21T13:07:19Z  open-tab  SubagentStop  
 2026-08-21T13:07:19Z  open-tab  SubagentStop  
@@ -11415,6 +11410,19 @@ fixtures still exercise the fallback path.
 2026-08-21T13:07:19Z  open-tab  SubagentStop  
 2026-08-21T13:07:19Z  open-tab  SubagentStop  
 2026-08-21T13:07:19Z  open-tab  SubagentStop  
+2026-08-21T13:08:09Z  open-tab  SubagentStart  reviewer-deep
+2026-08-21T13:08:16Z  open-tab  SubagentStop  
+2026-08-21T13:08:16Z  open-tab  SubagentStop  
+2026-08-21T13:08:16Z  open-tab  SubagentStop  
+2026-08-21T13:08:16Z  open-tab  SubagentStop  
+2026-08-21T13:08:16Z  open-tab  SubagentStop  
+2026-08-21T13:08:16Z  open-tab  SubagentStop  
+2026-08-21T13:08:19Z  open-tab  SubagentStop  
+2026-08-21T13:08:19Z  open-tab  SubagentStop  
+2026-08-21T13:08:19Z  open-tab  SubagentStop  
+2026-08-21T13:08:19Z  open-tab  SubagentStop  
+2026-08-21T13:08:19Z  open-tab  SubagentStop  
+2026-08-21T13:08:19Z  open-tab  SubagentStop  
 ```
 
 ---
