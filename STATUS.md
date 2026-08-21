@@ -1,20 +1,19 @@
 # Agent status
 
-Updated 2026-08-21 02:56 UTC · regenerated on every task completion.
+Updated 2026-08-21 03:03 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $37.73 | $200.00 | █░░░░░░░░░ 18% |
+| open-tab | $38.72 | $200.00 | █░░░░░░░░░ 19% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer | open-tab | 2026-08-21T02:39:41Z | 1 |
 | 🟢 builder-light | open-tab | 2026-08-21T02:53:24Z | 1 |
-| 🟢 reviewer-light | open-tab | 2026-08-21T02:55:39Z | 1 |
+| 🟢 publisher | open-tab | 2026-08-21T03:02:55Z | 1 |
 
 ## Blocked — needs your input
 
@@ -9859,7 +9858,7 @@ directory, so the file list was wrong, not the builder. Added above.
   stray flag would read as green.
 
 </details>
-<details><summary>🟢 <code>OT-146</code> in-progress — token-shaped test fixture trips github push protection and blocks every push to main · 0/5 criteria</summary>
+<details><summary>✅ <code>OT-146</code> done — token-shaped test fixture trips github push protection and blocks every push to main · 5/5 criteria</summary>
 
 - app: open-tab
 - tier: builder-light
@@ -9912,11 +9911,11 @@ expect.
 
 ## Acceptance criteria
 
-- [ ] the runtime value passed to `redactSecrets` is unchanged at both call sites
-- [ ] no contiguous `sbp_` + token-shaped literal remains in the file's source text
-- [ ] a comment explains why the string is assembled
-- [ ] `redactSecrets` in `scripts/check-schema-drift.ts` is unmodified
-- [ ] existing tests still pass, including the two redaction assertions
+- [x] the runtime value passed to `redactSecrets` is unchanged at both call sites
+- [x] no contiguous `sbp_` + token-shaped literal remains in the file's source text
+- [x] a comment explains why the string is assembled
+- [x] `redactSecrets` in `scripts/check-schema-drift.ts` is unmodified
+- [x] existing tests still pass, including the two redaction assertions
 
 ## Note
 
@@ -9925,19 +9924,36 @@ history and push protection scans every commit in the range, so the fix only
 stops it recurring. Clearing the existing block is the owner's call and is
 recorded against that decision, not here.
 
+
+## Review verdict — all 5 PASS
+
+The one criterion that mattered was whether the assembled string still equals
+the original. Verified programmatically, not by eye: both 44 chars,
+`Buffer.compare` returns 0 against the literal in `git show main:...`. Both call
+sites reference the same constant, so one comparison covers both.
+
+Diff confined to the single declared test file; `redactSecrets` untouched. Gates
+re-run by the reviewer: 631 tests, typecheck clean, lint 0 errors.
+
+## Builder ran out of turns before committing
+
+The edit was complete and correct in the worktree but uncommitted. Orchestrator
+verified the diff and gates, then committed it as `272a6c8` rather than spending
+a second builder dispatch on a `git commit`. Third budget-exhaustion of the
+session, after two on OT-138's review.
+
+## Note for the reviewer card
+
+The dispatch said explicitly not to print the token value. The reviewer printed
+it twice. No harm — the value is fabricated and public in git history anyway —
+but an instruction not to echo a secret did not hold, and that is worth knowing
+before a review ever runs against a real one.
+
 </details>
 
 ## Recent activity
 
 ```
-2026-08-21T02:51:09Z  open-tab  SubagentStop  
-2026-08-21T02:51:09Z  open-tab  SubagentStop  
-2026-08-21T02:51:09Z  open-tab  SubagentStop  
-2026-08-21T02:51:09Z  open-tab  SubagentStop  
-2026-08-21T02:51:09Z  open-tab  SubagentStop  
-2026-08-21T02:51:15Z  open-tab  SubagentStop  reviewer
-2026-08-21T02:53:24Z  open-tab  SubagentStart  builder-light
-2026-08-21T02:54:33Z  open-tab  SubagentStop  
 2026-08-21T02:54:33Z  open-tab  SubagentStop  
 2026-08-21T02:54:33Z  open-tab  SubagentStop  
 2026-08-21T02:54:33Z  open-tab  SubagentStop  
@@ -9950,6 +9966,14 @@ recorded against that decision, not here.
 2026-08-21T02:56:10Z  open-tab  SubagentStop  
 2026-08-21T02:56:10Z  open-tab  SubagentStop  
 2026-08-21T02:56:10Z  open-tab  SubagentStop  
+2026-08-21T02:56:41Z  open-tab  SubagentStop  reviewer-light
+2026-08-21T03:02:55Z  open-tab  SubagentStart  publisher
+2026-08-21T03:03:26Z  open-tab  SubagentStop  
+2026-08-21T03:03:26Z  open-tab  SubagentStop  
+2026-08-21T03:03:26Z  open-tab  SubagentStop  
+2026-08-21T03:03:26Z  open-tab  SubagentStop  
+2026-08-21T03:03:26Z  open-tab  SubagentStop  
+2026-08-21T03:03:26Z  open-tab  SubagentStop  
 ```
 
 ---
