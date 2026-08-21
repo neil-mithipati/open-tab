@@ -1,20 +1,18 @@
 # Agent status
 
-Updated 2026-08-21 06:16 UTC · regenerated on every task completion.
+Updated 2026-08-21 06:18 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $60.58 | $200.00 | ███░░░░░░░ 30% |
+| open-tab | $61.62 | $200.00 | ███░░░░░░░ 30% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
 | 🟢 reviewer-deep | open-tab | 2026-08-21T05:56:59Z | 1 |
-| 🟢 reviewer | open-tab | 2026-08-21T05:59:57Z | 1 |
-| 🟢 builder-deep | open-tab | 2026-08-21T06:09:35Z | 1 |
 
 ## Blocked — needs your input
 
@@ -4248,6 +4246,8 @@ Five findings routed to OT-126.
 
 </details>
 <details><summary>✅ <code>OT-123</code> done — "Parse replay is still open on an empty parse — needs a parsed_at marker written before the model call"</summary>
+
+ parsed_at marker written before the model call"</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -10239,6 +10239,42 @@ heartbeats. At the boundary it stays counted, the safe direction.
 
 Remaining findings, none blocking, filed as OT-153.
 
+
+## MERGE PENDING — owner must run it. My fault, and here is why.
+
+Earlier tonight I ran `git pull --rebase` on main to land a push. That rewrote
+main's history, so the base commits of every worktree branch created before it
+are no longer main's ancestors. Git therefore sees the same content as an
+independent change on both sides, and the merge conflicts on files nobody
+actually edited twice:
+
+    ledger/OT-147.md, ledger/OT-149.md        -> take main's copy
+    .claude/hooks/loop-until-done.sh          -> take main's copy (OT-151's fix)
+    .claude/hooks/liveness.sh                 -> take the branch's copy
+    .claude/hooks/parallel-cap.sh             -> take the branch's copy
+
+I cannot resolve it: `git checkout --ours/--theirs` on a hook path is a
+Bash-route write to fleet infrastructure, denied to every agent regardless of
+grant. The guard is right; the mess is mine.
+
+Owner, from the main checkout:
+
+    git merge --no-commit task/OT-147
+    git checkout --ours  ledger/OT-147.md ledger/OT-149.md .claude/hooks/loop-until-done.sh
+    git checkout --theirs .claude/hooks/liveness.sh .claude/hooks/parallel-cap.sh
+    git add ledger/OT-147.md ledger/OT-149.md .claude/hooks/loop-until-done.sh \
+            .claude/hooks/liveness.sh .claude/hooks/parallel-cap.sh
+    git commit
+    ./bin/finish-worktree OT-147
+
+Sanity check before committing — all three should print a non-zero count:
+
+    grep -c LIVE_STATUS .claude/hooks/parallel-cap.sh
+    grep -c 'jq -R' .claude/hooks/liveness.sh
+    grep -c 'awaiting owner' .claude/hooks/loop-until-done.sh
+
+The work is done and reviewed. Only the merge is outstanding.
+
 </details>
 <details><summary>✅ <code>OT-148</code> done — robustness gaps in the schema drift check · 7/7 criteria</summary>
 
@@ -10906,23 +10942,80 @@ so narrowing to repo roots buys nothing and reopens the other-checkout hole.
 closes 20 live holes and opens none. Add the one line, then install.
 
 </details>
+<details><summary>⚪ <code>OT-153</code> todo — remaining cap-counting gaps found in the OT-147 review · 0/6 criteria</summary>
+
+- app: open-tab
+- tier: builder-deep
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - .claude/hooks/liveness.sh
+-   - .claude/hooks/parallel-cap.sh
+- blocked_reason: null
+
+
+## From `reviewer-deep`'s adversarial pass on OT-147. None blocked that merge.
+
+The cap now denies on an unknown count, which was the point. These are the edges
+it does not cover. All measured, none high.
+
+1. **Medium. Two jq passes, one log.** The corruption tally and the liveness
+   read are separate passes. A rotation or truncation between them yields `[]`
+   with status `ok` — an ALLOW while agents are live. Narrow window,
+   pre-existing.
+
+2. **Medium. The timing knobs get none of the validation the caps get.**
+   `STALE_SECS`, `HB_DEAD_SECS` and `HB_GRACE` have no equivalent of
+   `is_positive_int`. Non-numeric values fail closed through jq's `tonumber`,
+   but a valid-but-tiny `STALE_SECS=1` or `HB_DEAD_SECS=0` silently drops live
+   agents and allows. Same class as the `MAX_PARALLEL_*` guard OT-138 added.
+
+3. **Medium. Two dispatches evaluated before either logs its start** both see
+   the same count and both allow, exceeding the cap by one. Inherent to a
+   log-based cap; fixing it needs a lock or a claim record, which is a design
+   change rather than a patch.
+
+4. **Low. A `SubagentStop` timestamped before its `SubagentStart` still cancels
+   it.** Needs an agent_id collision.
+
+5. **Low. A record over `PIPE_BUF` (4096 bytes) can interleave** on the `>>` in
+   `log-event.sh:114` and produce exactly the torn line that now wedges
+   dispatch. Records are short today, so this is a latent coupling between the
+   logger and the new deny rather than a live bug.
+
+6. **Low. `CLAUDE_PROJECT_DIR` unset with a cwd outside the repo** means the log
+   is absent, and absent means "fresh checkout, allow". The fresh-checkout path
+   doubles as a cap-off path.
+
+## Acceptance criteria
+
+- [ ] the corruption tally and the live count come from ONE read of the log, so
+      a rotation between passes cannot produce `ok` with an empty result
+- [ ] `STALE_SECS`, `HB_DEAD_SECS` and `HB_GRACE` are validated as positive
+      integers within sane bounds, denying rather than silently undercounting
+- [ ] a `SubagentStop` earlier than its `SubagentStart` does not cancel it
+- [ ] an absent log with no resolvable project root denies rather than allowing
+- [ ] finding 3 is either fixed or recorded in the hook as a known bound, with
+      the reasoning
+- [ ] every fixture in `/tmp/ot147/harness.sh` still passes, plus new ones for
+      each of the above
+
+## Note
+
+Do not weaken the "any lost line denies" rule to make finding 1 easier. That
+rule is what closed the torn-line fail-open, and the review confirmed the wedge
+is recoverable without the owner — `.claude/state/` is not fleet-protected, so
+the log can be rotated by an agent.
+
+Needs a maintenance grant.
+
+</details>
 
 ## Recent activity
 
 ```
-2026-08-21T06:15:19Z  open-tab  SubagentStop  
-2026-08-21T06:15:20Z  open-tab  SubagentStop  reviewer-deep
-2026-08-21T06:15:51Z  open-tab  SubagentStop  
-2026-08-21T06:15:51Z  open-tab  SubagentStop  
-2026-08-21T06:15:51Z  open-tab  SubagentStop  
-2026-08-21T06:15:51Z  open-tab  SubagentStop  
-2026-08-21T06:15:51Z  open-tab  SubagentStop  
-2026-08-21T06:15:51Z  open-tab  SubagentStop  
-2026-08-21T06:16:24Z  open-tab  SubagentStop  
-2026-08-21T06:16:24Z  open-tab  SubagentStop  
-2026-08-21T06:16:24Z  open-tab  SubagentStop  
-2026-08-21T06:16:24Z  open-tab  SubagentStop  
-2026-08-21T06:16:24Z  open-tab  SubagentStop  
 2026-08-21T06:16:24Z  open-tab  SubagentStop  
 2026-08-21T06:16:56Z  open-tab  SubagentStop  
 2026-08-21T06:16:56Z  open-tab  SubagentStop  
@@ -10930,6 +11023,19 @@ closes 20 live holes and opens none. Add the one line, then install.
 2026-08-21T06:16:56Z  open-tab  SubagentStop  
 2026-08-21T06:16:56Z  open-tab  SubagentStop  
 2026-08-21T06:16:56Z  open-tab  SubagentStop  
+2026-08-21T06:17:28Z  open-tab  SubagentStop  
+2026-08-21T06:17:28Z  open-tab  SubagentStop  
+2026-08-21T06:17:28Z  open-tab  SubagentStop  
+2026-08-21T06:17:28Z  open-tab  SubagentStop  
+2026-08-21T06:17:28Z  open-tab  SubagentStop  
+2026-08-21T06:17:28Z  open-tab  SubagentStop  
+2026-08-21T06:18:01Z  open-tab  SubagentStop  
+2026-08-21T06:18:01Z  open-tab  SubagentStop  
+2026-08-21T06:18:01Z  open-tab  SubagentStop  
+2026-08-21T06:18:01Z  open-tab  SubagentStop  
+2026-08-21T06:18:01Z  open-tab  SubagentStop  
+2026-08-21T06:18:01Z  open-tab  SubagentStop  
+2026-08-21T06:18:01Z  open-tab  SubagentStop  builder-deep
 ```
 
 ---
