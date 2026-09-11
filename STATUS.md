@@ -1,23 +1,22 @@
 # Agent status
 
-Updated 2026-09-11 16:59 UTC · regenerated on every task completion.
+Updated 2026-09-11 17:10 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $6.56 | $200.00 | ░░░░░░░░░░ 3% |
+| open-tab | $7.36 | $200.00 | ░░░░░░░░░░ 3% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer-deep | open-tab | 2026-09-11T16:54:03Z | 1 |
+| 🟢 publisher | open-tab | 2026-09-11T17:09:44Z | 1 |
 
 ## Blocked — needs your input
 
 > [!CAUTION]
-> 🔴 **Blocked `OT-152`** — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.
 > 🔴 **Blocked `OT-154`** — needs a maintenance grant: add OT-154 to maintenance in .claude/gates.json. also should land after OT-160 so its harness can prove the changes.
 > 🔴 **Blocked `OT-156`** — needs a maintenance grant: add OT-156 to maintenance in .claude/gates.json.
 
@@ -10837,7 +10836,7 @@ it was a false positive, the grant was present and verified in the main
 checkout's gates.json.
 
 </details>
-<details><summary>🔴 <code>OT-152</code> blocked — fleet-path matcher is bypassed by path spelling, no grant needed · 0/7 criteria — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.</summary>
+<details><summary>✅ <code>OT-152</code> done — fleet-path matcher is bypassed by path spelling, no grant needed · 7/7 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -10847,10 +10846,7 @@ checkout's gates.json.
 - worktree: null
 - files:
 -   - .claude/hooks/protect-fleet.sh
-- blocked_reason: >-
--   fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent
--   can install it: protect-fleet.sh is never-overridable in both guards, which
--   is itself an acceptance criterion here. owner copies it in.
+- blocked_reason: null
 
 
 ## Found by `reviewer-deep` while reviewing OT-150. Pre-existing, not introduced there.
@@ -10873,14 +10869,14 @@ Fix both in one pass, in the kit, or the next `add-fleet` reverts it.
 
 ## Acceptance criteria
 
-- [ ] the path is canonicalized (`realpath` / `cd -P`) before any matching
-- [ ] `.claude//hooks/…`, `./bin/…` and `…/wt-X/../open-tab/bin/…` all deny
-- [ ] `bin/` is protected by absolute path, not only relative to `$ROOT`
-- [ ] a nonexistent target path still matches — canonicalization must not
+- [x] the path is canonicalized (`realpath` / `cd -P`) before any matching
+- [x] `.claude//hooks/…`, `./bin/…` and `…/wt-X/../open-tab/bin/…` all deny
+- [x] `bin/` is protected by absolute path, not only relative to `$ROOT`
+- [x] a nonexistent target path still matches — canonicalization must not
       require the file to exist, or a first write to a new hook slips through
-- [ ] the grant file and both guard hooks stay non-overridable in every spelling
-- [ ] ordinary application writes inside a worktree still allow
-- [ ] verified by executing the hook against every shape above, not by reading
+- [x] the grant file and both guard hooks stay non-overridable in every spelling
+- [x] ordinary application writes inside a worktree still allow
+- [x] verified by executing the hook against every shape above, not by reading
 
 ## Note
 
@@ -11064,6 +11060,18 @@ the harness first; the case list is described in the review notes above.
 
 `blocked_reason` is left as written because the state field is the orchestrator's
 to change on a reviewer's report, not on inspection.
+
+## Closed 2026-09-11 by OT-160
+
+the fix was installed on main at a28cfad. OT-160 rebuilt the case harness as
+scripts/protect-fleet-cases.sh and re-proved the installed hook: 68 ok / 0 fail.
+reviewer-deep confirmed every criterion against that run — canonicalization,
+all three named spellings, absolute bin/ protection, nonexistent targets, both
+guards and the grant file non-overridable in eight case variants, no false
+denials on app code, and verification by execution rather than reading.
+
+one narrow gap remains in the absolute bin/ clause (node_modules ordered ahead
+of bin/), already filed as OT-154#1. it reaches no fleet file.
 
 </details>
 <details><summary>✅ <code>OT-153</code> done — remaining cap-counting gaps found in the OT-147 review · 6/6 criteria</summary>
@@ -11633,7 +11641,7 @@ values are all owner actions. Do not attempt them, and do not mark this task
 done on their behalf — the code criteria above are what this task closes.
 
 </details>
-<details><summary>🟢 <code>OT-160</code> in-progress — rebuild the protect-fleet case harness as a versioned script and re-prove the installed hook · 0/9 criteria</summary>
+<details><summary>✅ <code>OT-160</code> done — rebuild the protect-fleet case harness as a versioned script and re-prove the installed hook · 9/9 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -11720,20 +11728,20 @@ not change the hook.
 
 ## Acceptance criteria
 
-- [ ] `scripts/protect-fleet-cases.sh` exists, takes the hook path as `$1`, and
+- [x] `scripts/protect-fleet-cases.sh` exists, takes the hook path as `$1`, and
       exits non-zero if any case fails
-- [ ] it builds and removes its own fixtures under a `mktemp -d`, and leaves
+- [x] it builds and removes its own fixtures under a `mktemp -d`, and leaves
       nothing behind in this repo or in `/tmp` on either success or failure
-- [ ] no fixture is ever created inside this checkout
-- [ ] every case from the OT-152 review notes is present, with the cases that
+- [x] no fixture is ever created inside this checkout
+- [x] every case from the OT-152 review notes is present, with the cases that
       could not be reconstructed named explicitly in the result
-- [ ] every DENY case that names a real file asserts `[ -f ]` on it first
-- [ ] running it against `.claude/hooks/protect-fleet.sh` is reported with an
+- [x] every DENY case that names a real file asserts `[ -f ]` on it first
+- [x] running it against `.claude/hooks/protect-fleet.sh` is reported with an
       exact tally, and any failing case is reported rather than fixed
-- [ ] `docs/deployment.md` gains a short section: what the script is, when to
+- [x] `docs/deployment.md` gains a short section: what the script is, when to
       run it, and that a non-zero exit means the fleet guard has a hole
-- [ ] `.claude/hooks/protect-fleet.sh` is not modified
-- [ ] typecheck, lint and tests all pass
+- [x] `.claude/hooks/protect-fleet.sh` is not modified
+- [x] typecheck, lint and tests all pass
 
 ## On completion
 
@@ -11741,19 +11749,53 @@ Report the tally in `NOTES`. If it is clean, OT-152's criteria 1-3 and 5-7 are
 satisfiable by inspection of this run and the orchestrator can close it — but
 that is the orchestrator's call on a reviewer's report, not this builder's.
 
+## Closed 2026-09-11
+
+reviewer-deep verified all nine criteria by execution. harness reproduced at
+68 ok / 0 fail / 0 skip, exit 0; allow-all stub 24 ok / 44 fail, exit 1. hook
+byte-identical to main. both builder judgment calls upheld. merged as a28-line
+script at scripts/protect-fleet-cases.sh.
+
+three low findings carried to OT-161.
+
+</details>
+<details><summary>⚪ <code>OT-161</code> todo — three low findings in the protect-fleet case harness · 0/5 criteria</summary>
+
+- app: open-tab
+- tier: builder-light
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - scripts/protect-fleet-cases.sh
+- blocked_reason: null
+
+
+## From reviewer-deep's adversarial pass on OT-160. None blocked that merge.
+
+1. `FIX=$(cd -P "$FIX" && pwd -P)` at line 48 is unguarded. If that ever
+   returned empty, `MAIN` becomes `/open-tab`, fixtures root at `/`, and the
+   exit trap runs `rm -rf ""`. Unreachable in practice and harmless on darwin,
+   but one line fixes it: `[ -n "$FIX" ] || exit 64`.
+2. No timeout around the hook invocation, so a hanging hook hangs the run with
+   no diagnostic.
+3. Skipped cases do not affect the exit code, so a case-sensitive runner
+   reports green with the 8 case-variant cases never executed.
+
+## Acceptance criteria
+
+- [ ] `$FIX` is checked non-empty immediately after canonicalization, exiting 64 otherwise
+- [ ] the hook invocation is wrapped in a timeout; a hang is reported as a failed case, not a hang
+- [ ] a run with any skipped case exits non-zero, or prints a distinct exit code that a CI runner can tell from clean
+- [ ] `bash scripts/protect-fleet-cases.sh .claude/hooks/protect-fleet.sh` still reports 68 ok / 0 fail / 0 skip on darwin
+- [ ] `.claude/hooks/protect-fleet.sh` is not modified
+
 </details>
 
 ## Recent activity
 
 ```
-2026-09-11T16:57:40Z  open-tab  SubagentStop  
-2026-09-11T16:57:40Z  open-tab  SubagentStop  
-2026-09-11T16:58:12Z  open-tab  SubagentStop  
-2026-09-11T16:58:12Z  open-tab  SubagentStop  
-2026-09-11T16:58:12Z  open-tab  SubagentStop  
-2026-09-11T16:58:12Z  open-tab  SubagentStop  
-2026-09-11T16:58:12Z  open-tab  SubagentStop  
-2026-09-11T16:58:12Z  open-tab  SubagentStop  
 2026-09-11T16:58:44Z  open-tab  SubagentStop  
 2026-09-11T16:58:44Z  open-tab  SubagentStop  
 2026-09-11T16:58:44Z  open-tab  SubagentStop  
@@ -11766,6 +11808,14 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 2026-09-11T16:59:15Z  open-tab  SubagentStop  
 2026-09-11T16:59:15Z  open-tab  SubagentStop  
 2026-09-11T16:59:15Z  open-tab  SubagentStop  
+2026-09-11T16:59:25Z  open-tab  SubagentStop  reviewer-deep
+2026-09-11T17:09:44Z  open-tab  SubagentStart  publisher
+2026-09-11T17:10:15Z  open-tab  SubagentStop  
+2026-09-11T17:10:15Z  open-tab  SubagentStop  
+2026-09-11T17:10:15Z  open-tab  SubagentStop  
+2026-09-11T17:10:15Z  open-tab  SubagentStop  
+2026-09-11T17:10:15Z  open-tab  SubagentStop  
+2026-09-11T17:10:15Z  open-tab  SubagentStop  
 ```
 
 ---
