@@ -52,14 +52,15 @@
 | OT-149 | verify-trivial.sh re-fires forever on a done task whose worktree was removed | Done | — (unblocked once OT-150 fixed the grant) |
 | OT-150 | maintenance grant never activates for a dispatched subagent | Done | — (fix written and verified 53/53, then hardened to 96/96 across two reviewer-deep passes; owner installed the patched candidate as `a28cfad`. Criterion 7 — re-proving the installed file by execution — left unchecked, since the harness lived only in `/tmp` and is gone; rebuild routed to OT-160) |
 | OT-151 | the stop hook ignores the [awaiting owner] marker and forces continuation anyway | Done | — (reviewed MERGE, all five criteria pass by execution against synthetic transcripts; commit `ef30099`. Fix worked on fixtures but not live — continued as OT-155) |
-| OT-152 | fleet-path matcher is bypassed by path spelling, no grant needed | Blocked | fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in. |
+| OT-152 | fleet-path matcher is bypassed by path spelling, no grant needed | Done | — (closed by OT-160: fix installed on main at a28cfad, case harness rebuilt as scripts/protect-fleet-cases.sh, installed hook re-proven 68 ok / 0 fail. one narrow gap filed as OT-154#1, does not reach any fleet file) |
 | OT-153 | remaining cap-counting gaps found in the OT-147 review | Done | — (reviewer-deep pass 2 approved all six criteria, no high findings, merged as `caa98a1`. Carries OT-147's cap fix as a strict superset and resolves the merge conflict OT-147 has with main. Four residual gaps, none blocking, routed to OT-157) |
-| OT-154 | leftover edges in the patched fleet guard | Todo | — |
+| OT-154 | leftover edges in the patched fleet guard | Blocked | needs a maintenance grant: add OT-154 to maintenance in .claude/gates.json. also should land after OT-160 so its harness can prove the changes. |
 | OT-155 | the [awaiting owner] marker passes its fixtures but still fails live | Done | — (root cause: the Stop hook's transcript JSONL is flushed asynchronously, so the marker read live is stale even though the OT-151 matcher logic is correct. Fixed via the Stop payload's own `last_assistant_message` field instead of the transcript tail, no polling. All six criteria verified live, not just by fixture. Merged as `962ce18`. Two residual gaps routed to OT-156) |
-| OT-156 | loop hook can't tell an absent last_assistant_message from an empty one | Todo | — |
+| OT-156 | loop hook can't tell an absent last_assistant_message from an empty one | Blocked | needs a maintenance grant: add OT-156 to maintenance in .claude/gates.json. |
 | OT-158 | remove the Sentry wizard's example page and route before launch | Done | — (builder committed `fc664dc` but died before its result block; criteria verified independently from the branch, gates green, merged) |
 | OT-159 | production deploy is not reachable — enable it and set the required env vars | Done | — |
-| OT-160 | rebuild the protect-fleet case harness as a versioned script and re-prove the installed hook | Todo | — |
+| OT-160 | rebuild the protect-fleet case harness as a versioned script and re-prove the installed hook | Done | — (reviewer-deep verified all nine criteria by execution: 68 ok / 0 fail / 0 skip against the installed hook, byte-identical to main. merged. three low findings routed to OT-161) |
+| OT-161 | three low findings in the protect-fleet case harness | Todo | — |
 
 ## Backlog — non-blocking findings from reviews, not yet filed as ledger tasks
 
@@ -71,6 +72,27 @@
 | OT-145-F4 | drift check: the ENOENT message interpolates `SUPABASE_BIN` unredacted (owner-supplied path, not a credential, but still worth trimming) | Todo | — |
 | OT-145-F5 | drift check: `--help` exits 0 having checked nothing, which a deploy step passing a stray flag would read as a clean run | Todo | — |
 | OT-157 | four residual cap-counting gaps found in the OT-153 reviewer-deep pass (NUL-byte log line defeats the lost-line deny; worktree with no events.jsonl turns the cap off; whole log buffered in shell memory; stderr inventory omits HB_GRACE) | Todo | — |
+
+## Sync notes (2026-09-11, cycle 35)
+
+- **OT-160** In Progress → **Done**. Ledger `state: done`, merged. reviewer-deep
+  verified all nine criteria by execution: 68 ok / 0 fail / 0 skip against the
+  installed hook, byte-identical to main. Three low findings routed to OT-161.
+- **OT-152** Blocked → **Done**. Ledger `state: done`, closed by OT-160 —
+  reason column rewritten from the stale blocked note to the closure summary.
+- **OT-161** created, **Todo**. Ledger `state: todo`, `builder-light`, review
+  full. Three low findings from OT-160's reviewer-deep pass, none of which
+  blocked that merge.
+
+Left alone, no drift: every other card checked against its ledger file and
+already matches.
+
+No id disappeared from the ledger that had a card on this board; nothing to
+flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
 
 ## Sync notes (2026-09-11, cycle 32)
 
@@ -102,6 +124,28 @@ transition requested.
 
 No id disappeared from the ledger that had a card on this board — nothing to
 flag as vanished.
+
+## Sync notes (2026-09-11, cycle 34)
+
+- **OT-160** Todo → **In Progress**. Ledger `state: in-progress`, branch
+  `task/OT-160`, worktree `../wt-OT-160`. The requested transition.
+- **OT-154** Todo → **Blocked**. Ledger `state: blocked`, `blocked_reason`
+  carried verbatim: needs a maintenance grant (add OT-154 to `maintenance` in
+  `.claude/gates.json`); should also land after OT-160 so its harness can
+  prove the changes.
+- **OT-156** Todo → **Blocked**. Ledger `state: blocked`, `blocked_reason`
+  carried verbatim: needs a maintenance grant (add OT-156 to `maintenance` in
+  `.claude/gates.json`).
+
+Left alone, no drift: every other card checked against its ledger file and
+already matches.
+
+No id disappeared from the ledger that had a card on this board; nothing to
+flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
 
 ## Sync notes (2026-09-11, cycle 33)
 
