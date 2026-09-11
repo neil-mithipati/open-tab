@@ -1,16 +1,18 @@
 # Agent status
 
-Updated 2026-09-11 16:11 UTC · regenerated on every task completion.
+Updated 2026-09-11 16:22 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $1.71 | $200.00 | ░░░░░░░░░░ 0% |
+| open-tab | $2 | $200.00 | ░░░░░░░░░░ 0% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| 🟢 publisher | open-tab | 2026-09-11T16:21:46Z | 1 |
 
 ## Blocked — needs your input
 
@@ -11526,7 +11528,7 @@ deletions, both parent directories gone, no `sentry-example` reference left in
 src/, worktree clean, gates green on the branch.
 
 </details>
-<details><summary>🟢 <code>OT-159</code> in-progress — production deploy is not reachable — enable it and set the required env vars · 0/7 criteria</summary>
+<details><summary>✅ <code>OT-159</code> done — production deploy is not reachable — enable it and set the required env vars · 7/7 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -11611,13 +11613,13 @@ guests who claimed on a shared tab cannot convert.
 
 ## Acceptance criteria
 
-- [ ] `vercel.json` parses as valid JSON, verified by running a parse, not by eye
-- [ ] the `crons` entry is unchanged and still declares the daily purge path
-- [ ] `git.deploymentEnabled` is left exactly as the owner directs — unchanged unless told otherwise
-- [ ] `docs/deployment.md` gains a first-deploy section listing every env var above, each with the file and line that reads it and what breaks when it is missing
-- [ ] that section also documents the Supabase auth redirect allowlist step — Site URL and `<origin>/api/auth/callback` — and states that a missing entry fails silently to the Site URL rather than erroring, breaking both first sign-in and the anonymous→permanent upgrade
-- [ ] no other file is modified
-- [ ] typecheck, lint and tests all pass
+- [x] `vercel.json` parses as valid JSON, verified by running a parse, not by eye
+- [x] the `crons` entry is unchanged and still declares the daily purge path
+- [x] `git.deploymentEnabled` is left exactly as the owner directs — unchanged unless told otherwise
+- [x] `docs/deployment.md` gains a first-deploy section listing every env var above, each with the file and line that reads it and what breaks when it is missing
+- [x] that section also documents the Supabase auth redirect allowlist step — Site URL and `<origin>/api/auth/callback` — and states that a missing entry fails silently to the Site URL rather than erroring, breaking both first sign-in and the anonymous→permanent upgrade
+- [x] no other file is modified
+- [x] typecheck, lint and tests all pass
 
 ## Not in scope
 
@@ -11739,13 +11741,6 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 ## Recent activity
 
 ```
-2026-09-11T16:01:27Z  open-tab  SubagentStop  
-2026-09-11T16:01:27Z  open-tab  SubagentStop  
-2026-09-11T16:01:27Z  open-tab  SubagentStop  
-2026-09-11T16:01:27Z  open-tab  SubagentStop  
-2026-09-11T16:01:27Z  open-tab  SubagentStop  
-2026-09-11T16:01:44Z  open-tab  SubagentStop  publisher
-2026-09-11T16:09:56Z  open-tab  SubagentStart  reviewer
 2026-09-11T16:10:28Z  open-tab  SubagentStop  
 2026-09-11T16:10:28Z  open-tab  SubagentStop  
 2026-09-11T16:10:28Z  open-tab  SubagentStop  
@@ -11759,6 +11754,13 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 2026-09-11T16:10:59Z  open-tab  SubagentStop  
 2026-09-11T16:10:59Z  open-tab  SubagentStop  
 2026-09-11T16:11:30Z  open-tab  SubagentStop  reviewer
+2026-09-11T16:21:46Z  open-tab  SubagentStart  publisher
+2026-09-11T16:22:18Z  open-tab  SubagentStop  
+2026-09-11T16:22:18Z  open-tab  SubagentStop  
+2026-09-11T16:22:18Z  open-tab  SubagentStop  
+2026-09-11T16:22:18Z  open-tab  SubagentStop  
+2026-09-11T16:22:18Z  open-tab  SubagentStop  
+2026-09-11T16:22:18Z  open-tab  SubagentStop  
 ```
 
 ---
