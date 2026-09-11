@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-09-11 15:27 UTC · regenerated on every task completion.
+Updated 2026-09-11 15:31 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -11526,7 +11526,7 @@ deletions, both parent directories gone, no `sentry-example` reference left in
 src/, worktree clean, gates green on the branch.
 
 </details>
-<details><summary>⚪ <code>OT-159</code> todo — production deploy is not reachable — enable it and set the required env vars · 0/6 criteria</summary>
+<details><summary>⚪ <code>OT-159</code> todo — production deploy is not reachable — enable it and set the required env vars · 0/7 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -11584,12 +11584,38 @@ Read out of the code, not guessed — `grep -rho 'process\.env\.[A-Z0-9_]*' src`
 An agent cannot read or set any of these. This half is an owner checklist;
 the task's code scope is `vercel.json` and the `docs/deployment.md` section.
 
+## Supabase auth redirect allowlist — undocumented, and it fails silently
+
+Added 2026-09-11. This is the one that looks like a broken app rather than a
+missing setting, and nothing in `docs/`, `SETUP.md` or `README.md` mentions it.
+
+`src/components/auth/EmailForm.tsx:22` sends
+
+    emailRedirectTo = `${window.location.origin}/api/auth/callback`
+
+Using the live origin is correct — but Supabase refuses any redirect URL that
+is not on the project's allowlist and falls back to the project's **Site URL**
+instead of erroring. On a prod domain that is not listed, sign-in looks like it
+works: the form submits, the magic link arrives, and the link lands the user at
+whatever Site URL points to — very likely `http://localhost:3000` — with no
+session and nothing in the logs.
+
+**Owner step, Supabase dashboard → Authentication → URL Configuration:** set
+Site URL to the production origin, and add `<origin>/api/auth/callback` to
+Redirect URLs. Do it before the first real sign-in, not after.
+
+Note the same callback also carries the anonymous→permanent upgrade
+(`token_hash` + `type`, `src/app/api/auth/callback/route.ts:17`), so a missing
+allowlist entry breaks account upgrade as well as first sign-in — which means
+guests who claimed on a shared tab cannot convert.
+
 ## Acceptance criteria
 
 - [ ] `vercel.json` parses as valid JSON, verified by running a parse, not by eye
 - [ ] the `crons` entry is unchanged and still declares the daily purge path
 - [ ] `git.deploymentEnabled` is left exactly as the owner directs — unchanged unless told otherwise
 - [ ] `docs/deployment.md` gains a first-deploy section listing every env var above, each with the file and line that reads it and what breaks when it is missing
+- [ ] that section also documents the Supabase auth redirect allowlist step — Site URL and `<origin>/api/auth/callback` — and states that a missing entry fails silently to the Site URL rather than erroring, breaking both first sign-in and the anonymous→permanent upgrade
 - [ ] no other file is modified
 - [ ] typecheck, lint and tests all pass
 
@@ -11713,18 +11739,6 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 ## Recent activity
 
 ```
-2026-09-11T15:22:55Z  default  SubagentStop  
-2026-09-11T15:22:55Z  default  SubagentStop  
-2026-09-11T15:24:30Z  default  SubagentStop  
-2026-09-11T15:24:30Z  default  SubagentStop  
-2026-09-11T15:24:30Z  default  SubagentStop  
-2026-09-11T15:24:30Z  default  SubagentStop  
-2026-09-11T15:24:30Z  default  SubagentStop  
-2026-09-11T15:24:30Z  default  SubagentStop  
-2026-09-11T15:24:35Z  default  SubagentStop  
-2026-09-11T15:24:35Z  default  SubagentStop  
-2026-09-11T15:24:35Z  default  SubagentStop  
-2026-09-11T15:24:35Z  default  SubagentStop  
 2026-09-11T15:24:35Z  default  SubagentStop  
 2026-09-11T15:24:35Z  default  SubagentStop  
 2026-09-11T15:27:42Z  default  SubagentStop  
@@ -11733,6 +11747,18 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 2026-09-11T15:27:42Z  default  SubagentStop  
 2026-09-11T15:27:42Z  default  SubagentStop  
 2026-09-11T15:27:42Z  default  SubagentStop  
+2026-09-11T15:27:47Z  default  SubagentStop  
+2026-09-11T15:27:47Z  default  SubagentStop  
+2026-09-11T15:27:47Z  default  SubagentStop  
+2026-09-11T15:27:47Z  default  SubagentStop  
+2026-09-11T15:27:47Z  default  SubagentStop  
+2026-09-11T15:27:47Z  default  SubagentStop  
+2026-09-11T15:31:01Z  default  SubagentStop  
+2026-09-11T15:31:01Z  default  SubagentStop  
+2026-09-11T15:31:01Z  default  SubagentStop  
+2026-09-11T15:31:01Z  default  SubagentStop  
+2026-09-11T15:31:01Z  default  SubagentStop  
+2026-09-11T15:31:01Z  default  SubagentStop  
 ```
 
 ---
