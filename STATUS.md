@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-09-11 15:36 UTC · regenerated on every task completion.
+Updated 2026-09-11 15:39 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $0.21 | $200.00 | ░░░░░░░░░░ 0% |
+| open-tab | $0.49 | $200.00 | ░░░░░░░░░░ 0% |
 
 ## Agents
 
@@ -11526,14 +11526,14 @@ deletions, both parent directories gone, no `sentry-example` reference left in
 src/, worktree clean, gates green on the branch.
 
 </details>
-<details><summary>⚪ <code>OT-159</code> todo — production deploy is not reachable — enable it and set the required env vars · 0/7 criteria</summary>
+<details><summary>🟢 <code>OT-159</code> in-progress — production deploy is not reachable — enable it and set the required env vars · 0/7 criteria</summary>
 
 - app: open-tab
 - tier: builder
 - review: full
 - attempts: 0
-- branch: null
-- worktree: null
+- branch: task/OT-159
+- worktree: ../wt-OT-159
 - files:
 -   - vercel.json
 -   - docs/deployment.md
@@ -11739,18 +11739,6 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 ## Recent activity
 
 ```
-2026-09-11T15:34:13Z  default  SubagentStop  
-2026-09-11T15:34:13Z  default  SubagentStop  
-2026-09-11T15:34:19Z  default  SubagentStop  
-2026-09-11T15:34:19Z  default  SubagentStop  
-2026-09-11T15:34:19Z  default  SubagentStop  
-2026-09-11T15:34:19Z  default  SubagentStop  
-2026-09-11T15:34:19Z  default  SubagentStop  
-2026-09-11T15:34:19Z  default  SubagentStop  
-2026-09-11T15:35:22Z  default  SubagentStop  
-2026-09-11T15:35:22Z  default  SubagentStop  
-2026-09-11T15:35:22Z  default  SubagentStop  
-2026-09-11T15:35:22Z  default  SubagentStop  
 2026-09-11T15:35:22Z  default  SubagentStop  
 2026-09-11T15:35:22Z  default  SubagentStop  
 2026-09-11T15:36:32Z  open-tab  SubagentStop  
@@ -11759,6 +11747,18 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 2026-09-11T15:36:32Z  open-tab  SubagentStop  
 2026-09-11T15:36:32Z  open-tab  SubagentStop  
 2026-09-11T15:36:32Z  open-tab  SubagentStop  
+2026-09-11T15:36:37Z  open-tab  SubagentStop  
+2026-09-11T15:36:37Z  open-tab  SubagentStop  
+2026-09-11T15:36:37Z  open-tab  SubagentStop  
+2026-09-11T15:36:37Z  open-tab  SubagentStop  
+2026-09-11T15:36:37Z  open-tab  SubagentStop  
+2026-09-11T15:36:37Z  open-tab  SubagentStop  
+2026-09-11T15:39:20Z  open-tab  SubagentStop  
+2026-09-11T15:39:20Z  open-tab  SubagentStop  
+2026-09-11T15:39:20Z  open-tab  SubagentStop  
+2026-09-11T15:39:20Z  open-tab  SubagentStop  
+2026-09-11T15:39:20Z  open-tab  SubagentStop  
+2026-09-11T15:39:20Z  open-tab  SubagentStop  
 ```
 
 ---
