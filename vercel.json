@@ -1,7 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/purge-receipt-images", "schedule": "0 4 * * *" }
-  ]
+  ],
   "git": {
     "deploymentEnabled": false
   }
