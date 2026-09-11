@@ -47,9 +47,19 @@
 | OT-144 | change the receipt image retention default from 7 days to 14 | Done | — (`builder-light`, `review: skip`, attempt 2. Owner decision 2026-08-20 to match `RECEIPT_IMAGE_RETENTION_DAYS=14`, already set live) |
 | OT-145 | nothing detects schema drift between the repo and the live database | Done | — (reviewed MERGE, all 8 criteria pass; `npm run check:drift` compares migrations and storage policies by normalised expression, not by name; on its first live run it found the storage-policy hole recorded on OT-142's row above. 5 findings routed to backlog) |
 | OT-146 | token-shaped test fixture trips github push protection and blocks every push to main | Done | — (reviewed MERGE, all 5 criteria pass; OT-145's fabricated Supabase token literal in a test fixture matched GitHub's secret scanner and blocked every push. Literal now assembled from parts, runtime value unchanged — verified byte-identical by `Buffer.compare`) |
-| OT-147 | four fail-opens remain in parallel-cap.sh after OT-138 | Blocked | maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree. |
-| OT-148 | robustness gaps in the schema drift check | In Progress | — (attempt 2) |
-| OT-149 | verify-trivial.sh re-fires forever on a done task whose worktree was removed | Blocked | maintenance grant does not activate for a dispatched subagent — protect-fleet.sh maint_active() keys off basename(CLAUDE_PROJECT_DIR), which is the main checkout for a worker. needs a session rooted in the worktree. |
+| OT-147 | four fail-opens remain in parallel-cap.sh after OT-138 | Done | — (unblocked once OT-150 fixed the grant; content carried into task/OT-153, merged from there. Six remaining gaps routed to OT-153) |
+| OT-148 | robustness gaps in the schema drift check | Done | — |
+| OT-149 | verify-trivial.sh re-fires forever on a done task whose worktree was removed | Done | — (unblocked once OT-150 fixed the grant) |
+| OT-150 | maintenance grant never activates for a dispatched subagent | Done | — (fix written and verified 53/53, then hardened to 96/96 across two reviewer-deep passes; owner installed the patched candidate as `a28cfad`. Criterion 7 — re-proving the installed file by execution — left unchecked, since the harness lived only in `/tmp` and is gone; rebuild routed to OT-160) |
+| OT-151 | the stop hook ignores the [awaiting owner] marker and forces continuation anyway | Done | — (reviewed MERGE, all five criteria pass by execution against synthetic transcripts; commit `ef30099`. Fix worked on fixtures but not live — continued as OT-155) |
+| OT-152 | fleet-path matcher is bypassed by path spelling, no grant needed | Blocked | fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in. |
+| OT-153 | remaining cap-counting gaps found in the OT-147 review | Done | — (reviewer-deep pass 2 approved all six criteria, no high findings, merged as `caa98a1`. Carries OT-147's cap fix as a strict superset and resolves the merge conflict OT-147 has with main. Four residual gaps, none blocking, routed to OT-157) |
+| OT-154 | leftover edges in the patched fleet guard | Todo | — |
+| OT-155 | the [awaiting owner] marker passes its fixtures but still fails live | Done | — (root cause: the Stop hook's transcript JSONL is flushed asynchronously, so the marker read live is stale even though the OT-151 matcher logic is correct. Fixed via the Stop payload's own `last_assistant_message` field instead of the transcript tail, no polling. All six criteria verified live, not just by fixture. Merged as `962ce18`. Two residual gaps routed to OT-156) |
+| OT-156 | loop hook can't tell an absent last_assistant_message from an empty one | Todo | — |
+| OT-158 | remove the Sentry wizard's example page and route before launch | Done | — (builder committed `fc664dc` but died before its result block; criteria verified independently from the branch, gates green, merged) |
+| OT-159 | production deploy is not reachable — enable it and set the required env vars | Done | — |
+| OT-160 | rebuild the protect-fleet case harness as a versioned script and re-prove the installed hook | Todo | — |
 
 ## Backlog — non-blocking findings from reviews, not yet filed as ledger tasks
 
@@ -60,6 +70,55 @@
 | OT-145-F3 | drift check: a `{"_tag":"Success","result":null}` envelope is read as one data row instead of zero | Todo | — |
 | OT-145-F4 | drift check: the ENOENT message interpolates `SUPABASE_BIN` unredacted (owner-supplied path, not a credential, but still worth trimming) | Todo | — |
 | OT-145-F5 | drift check: `--help` exits 0 having checked nothing, which a deploy step passing a stray flag would read as a clean run | Todo | — |
+| OT-157 | four residual cap-counting gaps found in the OT-153 reviewer-deep pass (NUL-byte log line defeats the lost-line deny; worktree with no events.jsonl turns the cap off; whole log buffered in shell memory; stderr inventory omits HB_GRACE) | Todo | — |
+
+## Sync notes (2026-09-11, cycle 32)
+
+Reconciled against every file in `ledger/`, 58 files read. This board had not
+been synced since cycle 31 (2026-08-20) — a large gap, not just the one
+transition requested.
+
+- **OT-159** Todo → **In Progress**. Ledger `state: in-progress`, branch
+  `task/OT-159`, worktree `../wt-OT-159`. The requested transition.
+- **OT-147, OT-148, OT-149** Blocked / In Progress / Blocked → **Done**, all
+  three. Ledger `state: done` for each. OT-147 and OT-149 were blocked on the
+  maintenance-grant defect that OT-150 then fixed; OT-147's cap-hook content
+  was carried forward and merged from `task/OT-153` instead of its own
+  branch.
+- **OT-150, OT-151, OT-153, OT-155, OT-158** created, **Done**. All existed
+  in the ledger with no card on the board — drift, not a status disagreement.
+- **OT-152** created, **Blocked**. `blocked_reason` carried verbatim:
+  `protect-fleet.sh` is never-overridable in both guards, so no agent can
+  install its own fix. Note: OT-150's ledger body records that the owner has
+  since installed the fix (`a28cfad`) and that only the re-verification
+  criterion is still open — but the ledger's own `state:` for OT-152 is still
+  `blocked`, so the card follows that, not the narrative in OT-150's file.
+- **OT-154, OT-156, OT-160** created, **Todo**. No cards existed.
+- **OT-157** added to the backlog table. Referenced by OT-153's ledger body
+  ("routed to OT-157") but there is no `ledger/OT-157.md` — it has been named
+  as a destination for four findings but not yet filed as a task. Flagging
+  this rather than treating it as done: it reads like a task id reserved and
+  then not created.
+
+No id disappeared from the ledger that had a card on this board — nothing to
+flag as vanished.
+
+## Sync notes (2026-09-11, cycle 33)
+
+- **OT-159** In Progress → **Done**. Ledger `state: done`, all 7 acceptance
+  criteria checked. Notion MCP unavailable again; used the `docs/kanban.md`
+  fallback. No reviewer medium/low findings recorded on this task, so no new
+  backlog rows filed. Note for the record, not a board field: closing this
+  card is the code/docs half only — linking the Vercel project, setting env
+  values, flipping `git.deploymentEnabled`, and the Supabase redirect
+  allowlist are still open owner steps.
+
+Left alone, no drift: OT-100–OT-146 all still match their last-recorded
+state.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
 
 ## Sync notes (2026-08-20, cycle 31)
 
