@@ -58,6 +58,34 @@ Before the first real sign-in, in the Supabase dashboard under
 **Authentication → URL Configuration**: set **Site URL** to the production
 origin, and add `<origin>/api/auth/callback` to **Redirect URLs**.
 
+## Proving the fleet guard still holds (OT-160)
+
+    bash scripts/protect-fleet-cases.sh .claude/hooks/protect-fleet.sh
+
+68 cases against the hook that stops agents editing their own hooks, agent
+cards, settings, `bin/`, `CLAUDE.md` and `gates.json`. Each case is fed to the
+hook as JSON on stdin, the way the real `PreToolUse` entry point does, and the
+exit status is compared with the expected verdict. One line per case, tally on
+the last line.
+
+It builds its own fixtures under `mktemp -d` — its own git repo, its own
+worktrees, its own maintenance grant — and removes them on exit, including on
+failure. Nothing is written inside a checkout and no worktree of this repo is
+used.
+
+**When to run it.** After `add-fleet` reinstalls the fleet files, after any
+change to `.claude/hooks/protect-fleet.sh`, and before relying on a maintenance
+grant. Not a gate: it proves fleet tooling, not the app.
+
+**A non-zero exit means the fleet guard has a hole.** File the failing case
+names as a task. Do not edit the hook to make this script green — the script is
+the record of what the guard is supposed to do, and the hook is not editable by
+an agent anyway.
+
+Six cases carry an `[OT-154#n]` tag. Those assert the guard's *current*
+behaviour on edges that are known-open and already filed, so landing OT-154
+flips them deliberately instead of silently.
+
 ## Checking the live database against the repo (OT-145)
 
     npm run check:drift
