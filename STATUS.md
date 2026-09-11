@@ -1,18 +1,16 @@
 # Agent status
 
-Updated 2026-09-11 16:10 UTC · regenerated on every task completion.
+Updated 2026-09-11 16:11 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $1.62 | $200.00 | ░░░░░░░░░░ 0% |
+| open-tab | $1.71 | $200.00 | ░░░░░░░░░░ 0% |
 
 ## Agents
 
-| Role | Lane | Started | Running |
-|---|---|---|---|
-| 🟢 reviewer | open-tab | 2026-09-11T16:09:56Z | 1 |
+Idle — no agents currently running.
 
 ## Blocked — needs your input
 
@@ -11741,13 +11739,6 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 ## Recent activity
 
 ```
-2026-09-11T16:00:54Z  open-tab  SubagentStop  
-2026-09-11T16:00:54Z  open-tab  SubagentStop  
-2026-09-11T16:00:54Z  open-tab  SubagentStop  
-2026-09-11T16:00:54Z  open-tab  SubagentStop  
-2026-09-11T16:00:54Z  open-tab  SubagentStop  
-2026-09-11T16:00:54Z  open-tab  SubagentStop  
-2026-09-11T16:01:27Z  open-tab  SubagentStop  
 2026-09-11T16:01:27Z  open-tab  SubagentStop  
 2026-09-11T16:01:27Z  open-tab  SubagentStop  
 2026-09-11T16:01:27Z  open-tab  SubagentStop  
@@ -11761,6 +11752,13 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 2026-09-11T16:10:28Z  open-tab  SubagentStop  
 2026-09-11T16:10:28Z  open-tab  SubagentStop  
 2026-09-11T16:10:28Z  open-tab  SubagentStop  
+2026-09-11T16:10:59Z  open-tab  SubagentStop  
+2026-09-11T16:10:59Z  open-tab  SubagentStop  
+2026-09-11T16:10:59Z  open-tab  SubagentStop  
+2026-09-11T16:10:59Z  open-tab  SubagentStop  
+2026-09-11T16:10:59Z  open-tab  SubagentStop  
+2026-09-11T16:10:59Z  open-tab  SubagentStop  
+2026-09-11T16:11:30Z  open-tab  SubagentStop  reviewer
 ```
 
 ---
