@@ -1,5 +1,63 @@
 # Deployment notes
 
+## First deploy checklist (OT-159)
+
+Nothing in the app code blocks a deploy — the two things that do are outside
+this repo's reach: the Vercel project must exist and be linked (`npx vercel`,
+owner action), and the env vars below must be set in that project before the
+first real request. An agent cannot read or set any of these; this section is
+the checklist, not the values.
+
+**Env vars, read out of the code with `grep -rho 'process\.env\.[A-Z0-9_]*' src`:**
+
+- `NEXT_PUBLIC_APP_URL` — read in `src/lib/qr/inviteUrl.ts:8`. Highest risk:
+  unset in production throws `"NEXT_PUBLIC_APP_URL must be set in
+  production"` from `appBaseUrl()`, and every share link and QR code goes
+  through it (`buildInviteUrl`, and `buildTabUrl` for the crowd-claim flow) —
+  so the whole share/claim path is dead without it. See also the dedicated
+  section below this one.
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — read in
+  `src/proxy.ts:10-11` on every matched request. Missing either one throws
+  when `createServerClient` is constructed, so auth-protected routes
+  (`/dashboard`, `/receipts`, `/profile`) fail on every request.
+- `SUPABASE_SECRET_KEY` — read in `src/lib/supabase/server.ts:33` and
+  `src/lib/queries.ts:22`, both service-role clients used by the no-login
+  claim actions and cross-user queries. Missing it breaks the crowd-claim
+  flow and any server action that needs to read past a claimer's own RLS
+  scope.
+- `GOOGLE_AI_API_KEY` — read in `src/lib/gemini/parseReceipt.ts:243`. Missing
+  it fails receipt parsing — every upload to `/api/receipts/parse` errors.
+- `CRON_SECRET` — checked in
+  `src/app/api/cron/purge-receipt-images/route.ts:67`. Missing it makes the
+  route refuse to run at all (503 `{ error: "not_configured" }`), so receipt
+  photos are never purged and storage grows unbounded. Owner generated one
+  2026-08-20 per `docs/kanban.md:46` — confirm it is set in the Vercel
+  project, not only in `.env.local`.
+- `RECEIPT_IMAGE_RETENTION_DAYS` — read in `src/lib/retention.ts:38`.
+  Optional: unset or invalid falls back to the 14-day default
+  (`DEFAULT_RECEIPT_IMAGE_RETENTION_DAYS`) rather than failing, but the owner
+  set it explicitly to 14 on 2026-08-20 (`docs/kanban.md:46`) — confirm that
+  value is in the Vercel project too, so a future code change to the default
+  doesn't silently change retention in production.
+
+**Supabase auth redirect allowlist — not an env var, but blocks first
+sign-in just as hard.** `src/components/auth/EmailForm.tsx:22` sends
+`emailRedirectTo = ${window.location.origin}/api/auth/callback`, using
+whatever origin the request actually came from. Supabase does not error on a
+redirect URL that isn't on the project's allowlist — it silently falls back
+to the project's **Site URL** instead. On a production domain that isn't
+listed, sign-in looks like it works (form submits, magic link arrives) but
+the link lands the user at the Site URL — very likely
+`http://localhost:3000` — with no session and nothing in the logs. The same
+callback route also carries the anonymous→permanent upgrade (`token_hash` +
+`type`, handled in `src/app/api/auth/callback/route.ts:17`), so a missing
+allowlist entry breaks account upgrade too — a guest who claimed on a shared
+tab cannot convert to a permanent account.
+
+Before the first real sign-in, in the Supabase dashboard under
+**Authentication → URL Configuration**: set **Site URL** to the production
+origin, and add `<origin>/api/auth/callback` to **Redirect URLs**.
+
 ## Checking the live database against the repo (OT-145)
 
     npm run check:drift
