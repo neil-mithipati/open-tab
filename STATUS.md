@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-09-11 15:24 UTC · regenerated on every task completion.
+Updated 2026-09-11 15:27 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -10270,6 +10270,31 @@ Sanity check before committing — all three should print a non-zero count:
 
 The work is done and reviewed. Only the merge is outstanding.
 
+## Branch retired without merging — 2026-09-11
+
+`task/OT-147` was deleted (tip `ade338f`) and `../wt-OT-147` removed. It was
+never merged, and should not be: main already contains this work.
+
+`bin/finish-worktree OT-147` hit conflicts in `liveness.sh`,
+`loop-until-done.sh`, `parallel-cap.sh` and two ledger files, and aborted
+cleanly. Looking at why:
+
+- `git cherry main task/OT-147` found 4 of the 6 commits already on main by
+  patch, including `fleet: commit the liveness-based hooks`, which main carries
+  as `534e956`.
+- The 2 that read as unique are on main in substance, re-applied by OT-153 and
+  OT-155 under different names. `is_positive_int` with the `2>/dev/null` guard
+  is byte-identical at `parallel-cap.sh:139`; `live_status ok|unknown` is there
+  as `LIVE_STATUS` (`parallel-cap.sh:193,354,357`); the torn-line denial is at
+  `:330`; `liveness.sh:185` parses line by line with `-R` and records the same
+  reasoning `ade338f` gave.
+- `git diff main task/OT-147` was net **-491 lines**. The branch sat 27 commits
+  behind main and predates the OT-150/152/153/155 hardening, so merging it
+  would have dragged the hooks backwards in exactly the conflicted regions.
+
+Recoverable from the reflog for the usual 90 days if this reading is ever
+shown wrong.
+
 </details>
 <details><summary>✅ <code>OT-148</code> done — robustness gaps in the schema drift check · 7/7 criteria</summary>
 
@@ -10814,8 +10839,8 @@ checkout's gates.json.
 - tier: builder-deep
 - review: full
 - attempts: 0
-- branch: task/OT-150
-- worktree: ../wt-OT-150
+- branch: null
+- worktree: null
 - files:
 -   - .claude/hooks/protect-fleet.sh
 - blocked_reason: >-
@@ -11014,6 +11039,27 @@ own recommendation is to install now and treat them as backlog.
 
 Expect 95 ok / 0 fail / 1 skip. Then commit the kit copy, or the next
 `add-fleet` reverts it.
+
+## Worktree retired, pointers cleared — 2026-09-11
+
+`task/OT-150` and `../wt-OT-150` are gone (branch tip was `46f287e`, already
+merged into main). The `branch:` and `worktree:` fields above pointed at them
+and now read `null`.
+
+The install this task was blocked on **has happened**: `a28cfad` put the patched
+candidate on main. Verified by inspection of `.claude/hooks/protect-fleet.sh` —
+`canon_path()` at :68, the lowercased-copy deny matching at :111-121, and
+`*/bin/*` in the absolute-suffix list at :200. That covers criteria 1-3 and 5-6
+on the face of it.
+
+**Still not done, deliberately.** Criterion 7 asks for verification by executing
+the hook, and the 96-case harness is gone — `/tmp/ot150-*.sh` no longer exists,
+so nothing here has re-proven the installed file behaves as the candidate did.
+Boxes stay unchecked until a reviewer runs it. Whoever picks this up rebuilds
+the harness first; the case list is described in the review notes above.
+
+`blocked_reason` is left as written because the state field is the orchestrator's
+to change on a reviewer's report, not on inspection.
 
 </details>
 <details><summary>✅ <code>OT-153</code> done — remaining cap-counting gaps found in the OT-147 review · 6/6 criteria</summary>
@@ -11554,22 +11600,119 @@ values are all owner actions. Do not attempt them, and do not mark this task
 done on their behalf — the code criteria above are what this task closes.
 
 </details>
+<details><summary>⚪ <code>OT-160</code> todo — rebuild the protect-fleet case harness as a versioned script and re-prove the installed hook · 0/9 criteria</summary>
+
+- app: open-tab
+- tier: builder-deep
+- review: full
+- attempts: 0
+- branch: null
+- worktree: null
+- files:
+-   - scripts/protect-fleet-cases.sh
+-   - docs/deployment.md
+- blocked_reason: null
+
+
+## Why
+
+OT-152's fix is installed on main (`a28cfad`) but has never been re-proven
+against the file that is actually on disk. Its last criterion asks for
+verification by execution, and the harness that did that — `/tmp/ot150-*.sh`,
+96 cases — is gone. Living in `/tmp` is why it is gone; this task puts it in the
+repo so the next person does not rebuild it a third time.
+
+Closing this closes OT-152.
+
+## What
+
+Write `scripts/protect-fleet-cases.sh`: builds its fixtures, runs every case
+against a hook given as `$1`, prints one line per case, exits non-zero if any
+case fails. Then run it against `.claude/hooks/protect-fleet.sh` and report the
+tally.
+
+The case list is already written down — read the review notes in
+`ledger/OT-152.md` before writing any cases. They name the exact paths and the
+expected verdict for each. Do not invent a new list; reproduce that one, and say
+in your result which cases you could not reconstruct from the notes.
+
+Coverage the notes establish, at minimum:
+
+- **case variants** — `.claude/Gates.json`, `.Claude/gates.json`, `Claude.md`,
+  `.claude/Agents/reviewer.md`, `Bin/doctor`, and both guard hooks reached
+  through a granted worktree in mixed case. All DENY. Each must satisfy
+  `[ -f ]` so that a deny is not a lucky miss on a path that does not exist.
+- **spellings** — trailing slash, doubled slash, interior `..`, `./`, a
+  climb-out like `wt-X/../open-tab/bin/doctor`, a nonexistent target, a `/tmp`
+  copy, unset and bogus `CLAUDE_PROJECT_DIR`.
+- **symlinks** — a symlink as the final component, a symlink to a directory in
+  the tail, and a brand-new file behind a directory link.
+- **`*/bin/*`** — `node_modules/.bin/next` allows, and
+  `node_modules/.bin/../../bin/doctor` folds back and denies.
+- **no false denials** — app code, new app files in a worktree, ledger files,
+  `docs/kanban.md`, and a granted worktree's own hooks, cards, settings,
+  handbook and `bin/` all ALLOW.
+- **the grant never widens itself** — `gates.json` and both guard hooks DENY
+  even from inside a live grant.
+
+## Constraints that will bite
+
+1. **Every fixture goes in a temp dir, never in this repo.** The hook denies
+   writes to `.claude/`, `bin/`, `CLAUDE.md` and `gates.json` — so creating a
+   fixture at `.claude/Gates.json` inside this checkout is itself denied, and
+   correctly so. Build a throwaway checkout under `$TMPDIR`/`mktemp -d` and
+   point `CLAUDE_PROJECT_DIR` at it. Clean it up on exit, including on failure.
+
+2. **`maint_active()` reads `git worktree list --porcelain`.** Grant cases need
+   real worktrees, so the fixture dir has to be a real git repo with real
+   worktrees of its own, and a `.claude/gates.json` carrying a `maintenance`
+   grant for the fixture task id. Do not depend on any worktree of this repo —
+   `wt-OT-147`, `wt-OT-150` and `wt-OT-151` are all gone now, which is what
+   turned one of the original 96 cases into a skip.
+
+3. **The hook reads its input as JSON on stdin** (`.tool_input.file_path`).
+   Feed it that way; do not call internal functions directly. The whole point of
+   this harness is that it exercises the real entry path.
+
+4. **You do not need a maintenance grant for this task.** Reading and executing
+   `protect-fleet.sh` always passes; only writes are denied, and nothing here
+   writes to a protected path. If you find yourself wanting to edit the hook,
+   stop — that is a finding for OT-154, not this task.
+
+## If a case fails
+
+Report it; do not fix it. A failing case means the installed hook has a hole,
+which is a new finding with its own task. This task proves what is true, it does
+not change the hook.
+
+## Acceptance criteria
+
+- [ ] `scripts/protect-fleet-cases.sh` exists, takes the hook path as `$1`, and
+      exits non-zero if any case fails
+- [ ] it builds and removes its own fixtures under a `mktemp -d`, and leaves
+      nothing behind in this repo or in `/tmp` on either success or failure
+- [ ] no fixture is ever created inside this checkout
+- [ ] every case from the OT-152 review notes is present, with the cases that
+      could not be reconstructed named explicitly in the result
+- [ ] every DENY case that names a real file asserts `[ -f ]` on it first
+- [ ] running it against `.claude/hooks/protect-fleet.sh` is reported with an
+      exact tally, and any failing case is reported rather than fixed
+- [ ] `docs/deployment.md` gains a short section: what the script is, when to
+      run it, and that a non-zero exit means the fleet guard has a hole
+- [ ] `.claude/hooks/protect-fleet.sh` is not modified
+- [ ] typecheck, lint and tests all pass
+
+## On completion
+
+Report the tally in `NOTES`. If it is clean, OT-152's criteria 1-3 and 5-7 are
+satisfiable by inspection of this run and the orchestrator can close it — but
+that is the orchestrator's call on a reviewer's report, not this builder's.
+
+</details>
 
 ## Recent activity
 
 ```
-2026-09-11T15:22:50Z  default  SubagentStop  
-2026-09-11T15:22:50Z  default  SubagentStop  
-2026-09-11T15:22:52Z  default  SubagentStop  
-2026-09-11T15:22:52Z  default  SubagentStop  
-2026-09-11T15:22:52Z  default  SubagentStop  
-2026-09-11T15:22:52Z  default  SubagentStop  
-2026-09-11T15:22:52Z  default  SubagentStop  
-2026-09-11T15:22:52Z  default  SubagentStop  
-2026-09-11T15:22:55Z  default  SubagentStop  
-2026-09-11T15:22:55Z  default  SubagentStop  
-2026-09-11T15:22:55Z  default  SubagentStop  
-2026-09-11T15:22:55Z  default  SubagentStop  
 2026-09-11T15:22:55Z  default  SubagentStop  
 2026-09-11T15:22:55Z  default  SubagentStop  
 2026-09-11T15:24:30Z  default  SubagentStop  
@@ -11578,6 +11721,18 @@ done on their behalf — the code criteria above are what this task closes.
 2026-09-11T15:24:30Z  default  SubagentStop  
 2026-09-11T15:24:30Z  default  SubagentStop  
 2026-09-11T15:24:30Z  default  SubagentStop  
+2026-09-11T15:24:35Z  default  SubagentStop  
+2026-09-11T15:24:35Z  default  SubagentStop  
+2026-09-11T15:24:35Z  default  SubagentStop  
+2026-09-11T15:24:35Z  default  SubagentStop  
+2026-09-11T15:24:35Z  default  SubagentStop  
+2026-09-11T15:24:35Z  default  SubagentStop  
+2026-09-11T15:27:42Z  default  SubagentStop  
+2026-09-11T15:27:42Z  default  SubagentStop  
+2026-09-11T15:27:42Z  default  SubagentStop  
+2026-09-11T15:27:42Z  default  SubagentStop  
+2026-09-11T15:27:42Z  default  SubagentStop  
+2026-09-11T15:27:42Z  default  SubagentStop  
 ```
 
 ---
