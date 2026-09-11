@@ -1,23 +1,25 @@
 # Agent status
 
-Updated 2026-09-11 16:22 UTC · regenerated on every task completion.
+Updated 2026-09-11 16:34 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $2 | $200.00 | ░░░░░░░░░░ 0% |
+| open-tab | $2.78 | $200.00 | ░░░░░░░░░░ 1% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 publisher | open-tab | 2026-09-11T16:21:46Z | 1 |
+| 🟢 builder-deep | open-tab | 2026-09-11T16:33:53Z | 1 |
 
 ## Blocked — needs your input
 
 > [!CAUTION]
 > 🔴 **Blocked `OT-152`** — fix is written and verified 53/53 at /tmp/ot150-candidate.sh, but no agent can install it: protect-fleet.sh is never-overridable in both guards, which is itself an acceptance criterion here. owner copies it in.
+> 🔴 **Blocked `OT-154`** — needs a maintenance grant: add OT-154 to maintenance in .claude/gates.json. also should land after OT-160 so its harness can prove the changes.
+> 🔴 **Blocked `OT-156`** — needs a maintenance grant: add OT-156 to maintenance in .claude/gates.json.
 
 ## Tasks
 
@@ -11228,7 +11230,7 @@ Findings carried out to OT-157, not blocking this merge:
   HB_GRACE, which is now validated alongside them.
 
 </details>
-<details><summary>⚪ <code>OT-154</code> todo — leftover edges in the patched fleet guard · 0/6 criteria</summary>
+<details><summary>🔴 <code>OT-154</code> blocked — leftover edges in the patched fleet guard · 0/6 criteria — needs a maintenance grant: add OT-154 to maintenance in .claude/gates.json. also should land after OT-160 so its harness can prove the changes.</summary>
 
 - app: open-tab
 - tier: builder
@@ -11238,7 +11240,9 @@ Findings carried out to OT-157, not blocking this merge:
 - worktree: null
 - files:
 -   - .claude/hooks/protect-fleet.sh
-- blocked_reason: null
+- blocked_reason: >-
+-   needs a maintenance grant: add OT-154 to maintenance in .claude/gates.json.
+-   also should land after OT-160 so its harness can prove the changes.
 
 
 ## From the final review of the OT-150 candidate. None blocked the install.
@@ -11421,7 +11425,7 @@ prompt sent it to re-run four ephemeral scratchpad scripts before reasoning
 about the criteria. Retried at the same tier with a narrowed prompt.
 
 </details>
-<details><summary>⚪ <code>OT-156</code> todo — loop hook can't tell an absent last_assistant_message from an empty one · 0/6 criteria</summary>
+<details><summary>🔴 <code>OT-156</code> blocked — loop hook can't tell an absent last_assistant_message from an empty one · 0/6 criteria — needs a maintenance grant: add OT-156 to maintenance in .claude/gates.json.</summary>
 
 - app: open-tab
 - tier: builder
@@ -11431,7 +11435,8 @@ about the criteria. Retried at the same tier with a narrowed prompt.
 - worktree: null
 - files:
 -   - .claude/hooks/loop-until-done.sh
-- blocked_reason: null
+- blocked_reason: >-
+-   needs a maintenance grant: add OT-156 to maintenance in .claude/gates.json.
 
 
 ## Two findings from `reviewer-deep`'s adversarial pass on OT-155
@@ -11628,14 +11633,14 @@ values are all owner actions. Do not attempt them, and do not mark this task
 done on their behalf — the code criteria above are what this task closes.
 
 </details>
-<details><summary>⚪ <code>OT-160</code> todo — rebuild the protect-fleet case harness as a versioned script and re-prove the installed hook · 0/9 criteria</summary>
+<details><summary>🟢 <code>OT-160</code> in-progress — rebuild the protect-fleet case harness as a versioned script and re-prove the installed hook · 0/9 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
 - review: full
 - attempts: 0
-- branch: null
-- worktree: null
+- branch: task/OT-160
+- worktree: ../wt-OT-160
 - files:
 -   - scripts/protect-fleet-cases.sh
 -   - docs/deployment.md
@@ -11741,14 +11746,6 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 ## Recent activity
 
 ```
-2026-09-11T16:10:28Z  open-tab  SubagentStop  
-2026-09-11T16:10:28Z  open-tab  SubagentStop  
-2026-09-11T16:10:28Z  open-tab  SubagentStop  
-2026-09-11T16:10:28Z  open-tab  SubagentStop  
-2026-09-11T16:10:28Z  open-tab  SubagentStop  
-2026-09-11T16:10:28Z  open-tab  SubagentStop  
-2026-09-11T16:10:59Z  open-tab  SubagentStop  
-2026-09-11T16:10:59Z  open-tab  SubagentStop  
 2026-09-11T16:10:59Z  open-tab  SubagentStop  
 2026-09-11T16:10:59Z  open-tab  SubagentStop  
 2026-09-11T16:10:59Z  open-tab  SubagentStop  
@@ -11761,6 +11758,14 @@ that is the orchestrator's call on a reviewer's report, not this builder's.
 2026-09-11T16:22:18Z  open-tab  SubagentStop  
 2026-09-11T16:22:18Z  open-tab  SubagentStop  
 2026-09-11T16:22:18Z  open-tab  SubagentStop  
+2026-09-11T16:22:34Z  open-tab  SubagentStop  publisher
+2026-09-11T16:33:53Z  open-tab  SubagentStart  builder-deep
+2026-09-11T16:34:25Z  open-tab  SubagentStop  
+2026-09-11T16:34:25Z  open-tab  SubagentStop  
+2026-09-11T16:34:25Z  open-tab  SubagentStop  
+2026-09-11T16:34:25Z  open-tab  SubagentStop  
+2026-09-11T16:34:25Z  open-tab  SubagentStop  
+2026-09-11T16:34:25Z  open-tab  SubagentStop  
 ```
 
 ---
