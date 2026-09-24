@@ -1,19 +1,16 @@
 # Agent status
 
-Updated 2026-09-24 22:34 UTC · regenerated on every task completion.
+Updated 2026-09-24 22:35 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $5.06 | $200.00 | ░░░░░░░░░░ 2% |
+| open-tab | $5.47 | $200.00 | ░░░░░░░░░░ 2% |
 
 ## Agents
 
-| Role | Lane | Started | Running |
-|---|---|---|---|
-| 🟢 reviewer | open-tab | 2026-09-24T22:34:19Z | 2 |
-| 🟢 publisher | open-tab | 2026-09-24T22:34:21Z | 1 |
+Idle — no agents currently running.
 
 ## Tasks
 
@@ -11757,7 +11754,7 @@ script at scripts/protect-fleet-cases.sh.
 three low findings carried to OT-161.
 
 </details>
-<details><summary>🟢 <code>OT-161</code> in-progress — three low findings in the protect-fleet case harness · 0/5 criteria</summary>
+<details><summary>✅ <code>OT-161</code> done — three low findings in the protect-fleet case harness · 5/5 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -11783,11 +11780,11 @@ three low findings carried to OT-161.
 
 ## Acceptance criteria
 
-- [ ] `$FIX` is checked non-empty immediately after canonicalization, exiting 64 otherwise
-- [ ] the hook invocation is wrapped in a timeout; a hang is reported as a failed case, not a hang
-- [ ] a run with any skipped case exits non-zero, or prints a distinct exit code that a CI runner can tell from clean
-- [ ] `bash scripts/protect-fleet-cases.sh .claude/hooks/protect-fleet.sh` still reports 68 ok / 0 fail / 0 skip on darwin
-- [ ] `.claude/hooks/protect-fleet.sh` is not modified
+- [x] `$FIX` is checked non-empty immediately after canonicalization, exiting 64 otherwise
+- [x] the hook invocation is wrapped in a timeout; a hang is reported as a failed case, not a hang
+- [x] a run with any skipped case exits non-zero, or prints a distinct exit code that a CI runner can tell from clean
+- [x] `bash scripts/protect-fleet-cases.sh .claude/hooks/protect-fleet.sh` still reports 68 ok / 0 fail / 0 skip on darwin
+- [x] `.claude/hooks/protect-fleet.sh` is not modified
 
 ## Attempt 1 (builder)
 
@@ -11840,10 +11837,6 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 ## Recent activity
 
 ```
-2026-09-24T20:18:26Z  open-tab  SubagentStart  builder-light
-2026-09-24T20:18:28Z  open-tab  SubagentStart  publisher
-2026-09-24T20:19:00Z  open-tab  SubagentStop  publisher
-2026-09-24T20:38:50Z  open-tab  SubagentStart  builder
 2026-09-24T20:38:53Z  open-tab  SubagentStart  builder-light
 2026-09-24T20:39:48Z  open-tab  SubagentStop  builder-light
 2026-09-24T20:39:56Z  open-tab  SubagentStop  builder-light
@@ -11860,6 +11853,10 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 2026-09-24T22:34:15Z  open-tab  SubagentStart  reviewer
 2026-09-24T22:34:19Z  open-tab  SubagentStart  reviewer
 2026-09-24T22:34:21Z  open-tab  SubagentStart  publisher
+2026-09-24T22:35:06Z  open-tab  SubagentStop  reviewer
+2026-09-24T22:35:14Z  open-tab  SubagentStop  reviewer
+2026-09-24T22:35:15Z  open-tab  SubagentStop  publisher
+2026-09-24T22:35:46Z  open-tab  SubagentStop  reviewer
 ```
 
 ---
