@@ -1,18 +1,16 @@
 # Agent status
 
-Updated 2026-09-24 22:56 UTC · regenerated on every task completion.
+Updated 2026-09-24 22:59 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $5.94 | $200.00 | ░░░░░░░░░░ 2% |
+| open-tab | $6.21 | $200.00 | ░░░░░░░░░░ 3% |
 
 ## Agents
 
-| Role | Lane | Started | Running |
-|---|---|---|---|
-| 🟢 publisher | open-tab | 2026-09-24T22:55:38Z | 1 |
+Idle — no agents currently running.
 
 ## Tasks
 
@@ -11839,7 +11837,6 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 ## Recent activity
 
 ```
-2026-09-24T20:39:56Z  open-tab  SubagentStop  builder
 2026-09-24T20:40:00Z  open-tab  SubagentStop  builder
 2026-09-24T20:50:26Z  open-tab  SubagentStart  publisher
 2026-09-24T20:51:00Z  open-tab  SubagentStop  publisher
@@ -11859,6 +11856,7 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 2026-09-24T22:45:28Z  open-tab  SubagentStart  publisher
 2026-09-24T22:46:00Z  open-tab  SubagentStop  publisher
 2026-09-24T22:55:38Z  open-tab  SubagentStart  publisher
+2026-09-24T22:56:18Z  open-tab  SubagentStop  publisher
 ```
 
 ---
