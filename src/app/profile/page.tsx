@@ -31,11 +31,11 @@ async function ProfileContent() {
   if (!user) redirect("/auth");
 
   // Guests have no profile to manage — prompt them to create an account. They
-  // do hold tabs and photos though, so deletion is offered here too.
+  // do hold tabs and photos, but deletion is not offered.
   if (user.is_anonymous) {
     return (
       <div className="flex flex-col gap-6 pb-10">
-        <GlassCard className="p-8 flex flex-col items-center text-center gap-4">
+        <GlassCard className="mt-6 p-8 flex flex-col items-center text-center gap-4">
           <p className="text-secondary">
             Create an account to keep a history of your tabs and friends
           </p>
@@ -45,7 +45,6 @@ async function ProfileContent() {
             </GlassButton>
           </Link>
         </GlassCard>
-        <DeleteAccountSection />
         <Link
           href="/privacy"
           className="text-center text-xs text-secondary/70 underline underline-offset-4"

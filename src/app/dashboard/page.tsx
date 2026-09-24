@@ -36,7 +36,7 @@ async function DashboardContent() {
 
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <h1 className="text-5xl font-bold animate-gradient text-center">Open Tab</h1>
+      <h1 className="text-5xl font-bold animate-gradient text-center pt-6">Open Tab</h1>
 
       <div>
         <h2 className="text-lg font-semibold text-primary mb-3">Tabs</h2>
