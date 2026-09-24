@@ -1,23 +1,19 @@
 # Agent status
 
-Updated 2026-09-24 21:34 UTC · regenerated on every task completion.
+Updated 2026-09-24 22:34 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $4.64 | $200.00 | ░░░░░░░░░░ 2% |
+| open-tab | $5.06 | $200.00 | ░░░░░░░░░░ 2% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 reviewer | open-tab | 2026-09-24T21:22:39Z | 1 |
-
-## Blocked — needs your input
-
-> [!CAUTION]
-> 🔴 **Blocked `OT-154`** — only file in scope is .claude/hooks/protect-fleet.sh, which no maintenance grant covers. the owner must apply it upstream, or re-scope it.
+| 🟢 reviewer | open-tab | 2026-09-24T22:34:19Z | 2 |
+| 🟢 publisher | open-tab | 2026-09-24T22:34:21Z | 1 |
 
 ## Tasks
 
@@ -11237,7 +11233,7 @@ Findings carried out to OT-157, not blocking this merge:
   HB_GRACE, which is now validated alongside them.
 
 </details>
-<details><summary>🔴 <code>OT-154</code> blocked — leftover edges in the patched fleet guard · 0/6 criteria — only file in scope is .claude/hooks/protect-fleet.sh, which no maintenance grant covers. the owner must apply it upstream, or re-scope it.</summary>
+<details><summary>✅ <code>OT-154</code> done — leftover edges in the patched fleet guard · 0/6 criteria</summary>
 
 - app: open-tab
 - tier: builder
@@ -11247,9 +11243,13 @@ Findings carried out to OT-157, not blocking this merge:
 - worktree: null
 - files:
 -   - .claude/hooks/protect-fleet.sh
-- blocked_reason: >-
--   only file in scope is .claude/hooks/protect-fleet.sh, which no maintenance
--   grant covers. the owner must apply it upstream, or re-scope it.
+- blocked_reason: null
+
+
+## Closed by owner, 2026-09-24 — won't fix
+
+No maintenance grant can cover protect-fleet.sh, and none of these findings
+blocked the install. Criteria below were never done; they stay unchecked.
 
 
 ## From the final review of the OT-150 candidate. None blocked the install.
@@ -11840,9 +11840,6 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 ## Recent activity
 
 ```
-2026-09-24T20:07:47Z  open-tab  SubagentStart  builder
-2026-09-24T20:07:48Z  open-tab  SubagentStart  publisher
-2026-09-24T20:08:54Z  open-tab  SubagentStop  publisher
 2026-09-24T20:18:26Z  open-tab  SubagentStart  builder-light
 2026-09-24T20:18:28Z  open-tab  SubagentStart  publisher
 2026-09-24T20:19:00Z  open-tab  SubagentStop  publisher
@@ -11860,6 +11857,9 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 2026-09-24T21:23:51Z  open-tab  SubagentStop  publisher
 2026-09-24T21:25:01Z  open-tab  SubagentStop  builder
 2026-09-24T21:25:03Z  open-tab  SubagentStop  builder
+2026-09-24T22:34:15Z  open-tab  SubagentStart  reviewer
+2026-09-24T22:34:19Z  open-tab  SubagentStart  reviewer
+2026-09-24T22:34:21Z  open-tab  SubagentStart  publisher
 ```
 
 ---
