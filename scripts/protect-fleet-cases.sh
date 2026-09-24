@@ -38,6 +38,22 @@ fi
 HOOK=$(cd -P "$(dirname "$HOOK")" && pwd -P)/$(basename "$HOOK")
 command -v jq >/dev/null 2>&1 || { echo "jq is required" >&2; exit 64; }
 
+# Timeout around every hook invocation below, so a hanging hook fails its
+# case instead of hanging the whole run with no diagnostic. `perl -e 'alarm
+# shift; exec @ARGV'` sets an alarm then execs the command in place, so the
+# perl process becomes the command and inherits its stdin unchanged; if the
+# alarm fires first, the (now-command) process is killed by SIGALRM, which
+# the shell reports as exit 142.
+TIMEOUT_SECS=5
+command -v perl >/dev/null 2>&1 || { echo "perl is required" >&2; exit 64; }
+
+run_timeout() {
+  # run_timeout <seconds> <cmd> [args...]
+  local secs="$1"; shift
+  perl -e 'alarm shift; exec @ARGV' "$secs" "$@"
+  return $?
+}
+
 # ---------------------------------------------------------------- fixtures ---
 
 FIX=$(mktemp -d) || { echo "mktemp -d failed" >&2; exit 64; }
@@ -46,6 +62,7 @@ trap cleanup EXIT INT TERM
 # $TMPDIR on darwin is itself a symlink (/var -> /private/var). Canonicalise it
 # once so the fixture paths this script builds match what the hook resolves.
 FIX=$(cd -P "$FIX" && pwd -P)
+[ -n "$FIX" ] || { echo "fixture root canonicalised to empty — refusing to continue" >&2; exit 64; }
 
 MAIN="$FIX/open-tab"     # fixture "main checkout"
 WT="$FIX/wt-FX-001"      # registered worktree, granted
@@ -125,14 +142,19 @@ verdict() {
   local json rc
   json=$(jq -n --arg p "$1" '{tool_input: {file_path: $p}}')
   if [ "$R" = "-" ]; then
-    ( cd "$C" 2>/dev/null || cd / ; env -u CLAUDE_PROJECT_DIR bash "$HOOK" >/dev/null 2>&1 ) <<<"$json"
+    run_timeout "$TIMEOUT_SECS" bash -c \
+      'cd "$1" 2>/dev/null || cd /; env -u CLAUDE_PROJECT_DIR bash "$2" >/dev/null 2>&1 <<<"$3"' \
+      _ "$C" "$HOOK" "$json" 2>/dev/null
   else
-    ( cd "$C" 2>/dev/null || cd / ; CLAUDE_PROJECT_DIR="$R" bash "$HOOK" >/dev/null 2>&1 ) <<<"$json"
+    run_timeout "$TIMEOUT_SECS" bash -c \
+      'cd "$1" 2>/dev/null || cd /; CLAUDE_PROJECT_DIR="$2" bash "$3" >/dev/null 2>&1 <<<"$4"' \
+      _ "$C" "$R" "$HOOK" "$json" 2>/dev/null
   fi
   rc=$?
   case "$rc" in
     0) printf 'ALLOW' ;;
     2) printf 'DENY' ;;
+    142) printf 'ERR%s(timeout)' "$rc" ;;
     *) printf 'ERR%s' "$rc" ;;
   esac
 }
@@ -289,5 +311,11 @@ if [ "$bad" -gt 0 ]; then
   printf '\n%s\n' "A failing case means the fleet guard has a hole. File it; do not"
   printf '%s\n' "patch the hook to make this script green."
   exit 1
+fi
+if [ "$skipped" -gt 0 ]; then
+  printf '\n%s\n' "Cases were skipped (see above) and never executed. A clean run on the"
+  printf '%s\n' "volume that matters must report 0 skip; exiting non-zero so a runner"
+  printf '%s\n' "does not read this as fully green."
+  exit 3
 fi
 exit 0
