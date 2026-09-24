@@ -1,6 +1,6 @@
 # Agent status
 
-Updated 2026-09-24 14:00 UTC · regenerated on every task completion.
+Updated 2026-09-24 14:08 UTC · regenerated on every task completion.
 
 ## Spend
 
@@ -11757,14 +11757,14 @@ script at scripts/protect-fleet-cases.sh.
 three low findings carried to OT-161.
 
 </details>
-<details><summary>⚪ <code>OT-161</code> todo — three low findings in the protect-fleet case harness · 0/5 criteria</summary>
+<details><summary>🟢 <code>OT-161</code> in-progress — three low findings in the protect-fleet case harness · 0/5 criteria</summary>
 
 - app: open-tab
-- tier: builder-light
+- tier: builder
 - review: full
 - attempts: 0
 - branch: null
-- worktree: null
+- worktree: ../wt-OT-161
 - files:
 -   - scripts/protect-fleet-cases.sh
 - blocked_reason: null
