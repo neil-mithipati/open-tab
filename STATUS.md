@@ -1,19 +1,18 @@
 # Agent status
 
-Updated 2026-09-24 20:39 UTC · regenerated on every task completion.
+Updated 2026-09-24 20:50 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $2.57 | $200.00 | ░░░░░░░░░░ 1% |
+| open-tab | $3.05 | $200.00 | ░░░░░░░░░░ 1% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 builder | open-tab | 2026-09-24T20:38:50Z | 1 |
-| 🟢 builder-light | open-tab | 2026-09-24T20:38:53Z | 1 |
+| 🟢 publisher | open-tab | 2026-09-24T20:50:26Z | 1 |
 
 ## Blocked — needs your input
 
@@ -11801,7 +11800,7 @@ Hit the 40-turn limit with no report. Left an uncommitted diff in scripts/protec
 macOS has no `timeout`. Use `perl -e 'alarm shift; exec @ARGV' 5 <cmd>` (exit 142 on timeout) instead of a hand-rolled bash timeout. Build on the existing uncommitted diff.
 
 </details>
-<details><summary>🟢 <code>OT-162</code> in-progress — hide delete account for guests, top padding on header and guest blurb · 0/5 criteria</summary>
+<details><summary>✅ <code>OT-162</code> done — hide delete account for guests, top padding on header and guest blurb · 5/5 criteria</summary>
 
 - app: open-tab
 - tier: builder-light
@@ -11828,11 +11827,11 @@ vertically centered and out of scope.
 
 ## Acceptance criteria
 
-- [ ] in the `user.is_anonymous` branch of src/app/profile/page.tsx, `<DeleteAccountSection />` is no longer rendered; the signed-in branch still renders it
-- [ ] the guest blurb `GlassCard` ("Create an account to keep a history...") has added top spacing (e.g. `mt-6` on the card or `pt-6` on its wrapper)
-- [ ] the dashboard `<h1>Open Tab</h1>` has added top padding (e.g. `pt-6`)
-- [ ] the now-stale comment above the guest branch ("deletion is offered here too") is updated
-- [ ] typecheck, lint, tests pass
+- [x] in the `user.is_anonymous` branch of src/app/profile/page.tsx, `<DeleteAccountSection />` is no longer rendered; the signed-in branch still renders it
+- [x] the guest blurb `GlassCard` ("Create an account to keep a history...") has added top spacing (e.g. `mt-6` on the card or `pt-6` on its wrapper)
+- [x] the dashboard `<h1>Open Tab</h1>` has added top padding (e.g. `pt-6`)
+- [x] the now-stale comment above the guest branch ("deletion is offered here too") is updated
+- [x] typecheck, lint, tests pass
 
 ## Attempt 1 (builder-light)
 
@@ -11843,11 +11842,6 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 ## Recent activity
 
 ```
-2026-09-24T13:35:35Z  default  SubagentStop  
-2026-09-24T13:35:35Z  default  SubagentStop  
-2026-09-24T13:35:35Z  default  SubagentStop  
-2026-09-24T13:35:35Z  default  SubagentStop  
-2026-09-24T13:35:35Z  default  SubagentStop  
 2026-09-24T13:35:35Z  default  SubagentStop  
 2026-09-24T13:35:44Z  default  SubagentStop  
 2026-09-24T13:35:44Z  default  SubagentStop  
@@ -11863,6 +11857,11 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 2026-09-24T20:19:00Z  open-tab  SubagentStop  publisher
 2026-09-24T20:38:50Z  open-tab  SubagentStart  builder
 2026-09-24T20:38:53Z  open-tab  SubagentStart  builder-light
+2026-09-24T20:39:48Z  open-tab  SubagentStop  builder-light
+2026-09-24T20:39:56Z  open-tab  SubagentStop  builder-light
+2026-09-24T20:39:56Z  open-tab  SubagentStop  builder
+2026-09-24T20:40:00Z  open-tab  SubagentStop  builder
+2026-09-24T20:50:26Z  open-tab  SubagentStart  publisher
 ```
 
 ---
