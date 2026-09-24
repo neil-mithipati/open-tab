@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-09-11 17:14 UTC · regenerated on every task completion.
+Updated 2026-09-24 13:35 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $7.69 | $200.00 | ░░░░░░░░░░ 3% |
+| default | $0.55 | $10.00 | ░░░░░░░░░░ 5% |
 
 ## Agents
 
@@ -11794,12 +11794,6 @@ three low findings carried to OT-161.
 ## Recent activity
 
 ```
-2026-09-11T17:09:44Z  open-tab  SubagentStart  publisher
-2026-09-11T17:10:15Z  open-tab  SubagentStop  
-2026-09-11T17:10:15Z  open-tab  SubagentStop  
-2026-09-11T17:10:15Z  open-tab  SubagentStop  
-2026-09-11T17:10:15Z  open-tab  SubagentStop  
-2026-09-11T17:10:15Z  open-tab  SubagentStop  
 2026-09-11T17:10:15Z  open-tab  SubagentStop  
 2026-09-11T17:10:46Z  open-tab  SubagentStop  
 2026-09-11T17:10:46Z  open-tab  SubagentStop  
@@ -11814,6 +11808,12 @@ three low findings carried to OT-161.
 2026-09-11T17:14:09Z  open-tab  SubagentStop  
 2026-09-11T17:14:09Z  open-tab  SubagentStop  
 2026-09-11T17:14:09Z  open-tab  SubagentStop  
+2026-09-24T13:35:25Z  default  SubagentStop  
+2026-09-24T13:35:25Z  default  SubagentStop  
+2026-09-24T13:35:25Z  default  SubagentStop  
+2026-09-24T13:35:25Z  default  SubagentStop  
+2026-09-24T13:35:25Z  default  SubagentStop  
+2026-09-24T13:35:25Z  default  SubagentStop  
 ```
 
 ---
