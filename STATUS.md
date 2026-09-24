@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-09-24 14:43 UTC · regenerated on every task completion.
+Updated 2026-09-24 14:48 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| default | $0.26 | $10.00 | ░░░░░░░░░░ 2% |
+| default | $0.4 | $10.00 | ░░░░░░░░░░ 4% |
 
 ## Agents
 
