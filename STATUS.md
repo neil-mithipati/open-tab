@@ -1,22 +1,25 @@
 # Agent status
 
-Updated 2026-09-24 21:12 UTC · regenerated on every task completion.
+Updated 2026-09-24 21:23 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $3.21 | $200.00 | ░░░░░░░░░░ 1% |
+| open-tab | $3.76 | $200.00 | ░░░░░░░░░░ 1% |
 
 ## Agents
 
-Idle — no agents currently running.
+| Role | Lane | Started | Running |
+|---|---|---|---|
+| 🟢 builder | open-tab | 2026-09-24T21:22:36Z | 1 |
+| 🟢 reviewer | open-tab | 2026-09-24T21:22:39Z | 1 |
+| 🟢 publisher | open-tab | 2026-09-24T21:22:43Z | 1 |
 
 ## Blocked — needs your input
 
 > [!CAUTION]
-> 🔴 **Blocked `OT-154`** — needs a maintenance grant: add OT-154 to maintenance in .claude/gates.json. also should land after OT-160 so its harness can prove the changes.
-> 🔴 **Blocked `OT-156`** — needs a maintenance grant: add OT-156 to maintenance in .claude/gates.json.
+> 🔴 **Blocked `OT-154`** — only file in scope is .claude/hooks/protect-fleet.sh, which no maintenance grant covers. the owner must apply it upstream, or re-scope it.
 
 ## Tasks
 
@@ -11236,7 +11239,7 @@ Findings carried out to OT-157, not blocking this merge:
   HB_GRACE, which is now validated alongside them.
 
 </details>
-<details><summary>🔴 <code>OT-154</code> blocked — leftover edges in the patched fleet guard · 0/6 criteria — needs a maintenance grant: add OT-154 to maintenance in .claude/gates.json. also should land after OT-160 so its harness can prove the changes.</summary>
+<details><summary>🔴 <code>OT-154</code> blocked — leftover edges in the patched fleet guard · 0/6 criteria — only file in scope is .claude/hooks/protect-fleet.sh, which no maintenance grant covers. the owner must apply it upstream, or re-scope it.</summary>
 
 - app: open-tab
 - tier: builder
@@ -11247,8 +11250,8 @@ Findings carried out to OT-157, not blocking this merge:
 - files:
 -   - .claude/hooks/protect-fleet.sh
 - blocked_reason: >-
--   needs a maintenance grant: add OT-154 to maintenance in .claude/gates.json.
--   also should land after OT-160 so its harness can prove the changes.
+-   only file in scope is .claude/hooks/protect-fleet.sh, which no maintenance
+-   grant covers. the owner must apply it upstream, or re-scope it.
 
 
 ## From the final review of the OT-150 candidate. None blocked the install.
@@ -11431,18 +11434,17 @@ prompt sent it to re-run four ephemeral scratchpad scripts before reasoning
 about the criteria. Retried at the same tier with a narrowed prompt.
 
 </details>
-<details><summary>🔴 <code>OT-156</code> blocked — loop hook can't tell an absent last_assistant_message from an empty one · 0/6 criteria — needs a maintenance grant: add OT-156 to maintenance in .claude/gates.json.</summary>
+<details><summary>🟢 <code>OT-156</code> in-progress — loop hook can't tell an absent last_assistant_message from an empty one · 0/6 criteria</summary>
 
 - app: open-tab
 - tier: builder
 - review: full
 - attempts: 0
-- branch: null
-- worktree: null
+- branch: task/OT-156
+- worktree: ../wt-OT-156
 - files:
 -   - .claude/hooks/loop-until-done.sh
-- blocked_reason: >-
--   needs a maintenance grant: add OT-156 to maintenance in .claude/gates.json.
+- blocked_reason: null
 
 
 ## Two findings from `reviewer-deep`'s adversarial pass on OT-155
@@ -11843,9 +11845,6 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 2026-09-24T13:35:44Z  default  SubagentStop  
 2026-09-24T13:35:44Z  default  SubagentStop  
 2026-09-24T13:35:44Z  default  SubagentStop  
-2026-09-24T13:35:44Z  default  SubagentStop  
-2026-09-24T13:35:44Z  default  SubagentStop  
-2026-09-24T13:35:44Z  default  SubagentStop  
 2026-09-24T20:07:47Z  open-tab  SubagentStart  builder
 2026-09-24T20:07:48Z  open-tab  SubagentStart  publisher
 2026-09-24T20:08:54Z  open-tab  SubagentStop  publisher
@@ -11860,6 +11859,9 @@ Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not conf
 2026-09-24T20:40:00Z  open-tab  SubagentStop  builder
 2026-09-24T20:50:26Z  open-tab  SubagentStart  publisher
 2026-09-24T20:51:00Z  open-tab  SubagentStop  publisher
+2026-09-24T21:22:36Z  open-tab  SubagentStart  builder
+2026-09-24T21:22:39Z  open-tab  SubagentStart  reviewer
+2026-09-24T21:22:43Z  open-tab  SubagentStart  publisher
 ```
 
 ---
