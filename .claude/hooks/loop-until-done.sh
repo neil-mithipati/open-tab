@@ -77,10 +77,16 @@ active=$(printf '%s' "$input"  | jq -r '.stop_hook_active // false' 2>/dev/null)
 # The fix is not to wait for the file. Sleeping or polling in a Stop hook trades
 # one race for a slower one. It is to stop reading the file at all when the
 # harness has already handed us the text.
+has_field=$(printf '%s' "$input" | jq -e 'has("last_assistant_message")' >/dev/null 2>&1 && echo yes || echo no)
 last_reply=$(printf '%s' "$input" | jq -r '.last_assistant_message // ""' 2>/dev/null)
 
-# Fallback, only for a harness that does not send the field (and for the
-# SubagentStop-on-interrupt path, which omits it): the old transcript scan.
+# Fallback, only for a harness that does not send the field at all (and for
+# the SubagentStop-on-interrupt path, which omits it): the old transcript
+# scan. Gate this on the field being ABSENT, not on it being empty — an empty
+# or null field means the reply genuinely had no text, which is not a marker,
+# and falling back in that case risks matching a stale marker left over in
+# the transcript from an earlier turn (OT-156).
+#
 # The transcript logs one JSONL line per content BLOCK, not per turn — a single
 # reply that ends in text after a tool call is split across several
 # assistant-typed lines. Picking only the single most-recent non-empty entry
@@ -88,7 +94,10 @@ last_reply=$(printf '%s' "$input" | jq -r '.last_assistant_message // ""' 2>/dev
 # shadows the marker sitting in the block right before it. Concatenate every
 # text block from every assistant entry in the window instead, in order.
 tp=$(printf '%s' "$input" | jq -r '.transcript_path // ""' 2>/dev/null)
-if [ -z "$last_reply" ] && [ -n "$tp" ] && [ -f "$tp" ]; then
+if [ "$has_field" = "no" ] && [ "${LOOP_VERBOSE:-0}" = "1" ]; then
+  echo "loop-until-done: last_assistant_message absent from payload, falling back to transcript scan" >&2
+fi
+if [ "$has_field" = "no" ] && [ -n "$tp" ] && [ -f "$tp" ]; then
   last_reply=$(tail -80 "$tp" 2>/dev/null | jq -rs '
     [.[] | select(.type == "assistant")
      | (.message.content // [])
