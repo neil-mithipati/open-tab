@@ -1,19 +1,19 @@
 # Agent status
 
-Updated 2026-09-24 20:27 UTC · regenerated on every task completion.
+Updated 2026-09-24 20:39 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $2.19 | $200.00 | ░░░░░░░░░░ 1% |
+| open-tab | $2.57 | $200.00 | ░░░░░░░░░░ 1% |
 
 ## Agents
 
 | Role | Lane | Started | Running |
 |---|---|---|---|
-| 🟢 builder | open-tab | 2026-09-24T20:07:47Z | 1 |
-| 🟢 builder-light | open-tab | 2026-09-24T20:18:26Z | 1 |
+| 🟢 builder | open-tab | 2026-09-24T20:38:50Z | 1 |
+| 🟢 builder-light | open-tab | 2026-09-24T20:38:53Z | 1 |
 
 ## Blocked — needs your input
 
@@ -11796,13 +11796,17 @@ three low findings carried to OT-161.
 
 Hit the 40-turn limit with no report. Left an uncommitted diff in scripts/protect-fleet-cases.sh (+59/-2). The work looked sound, so the retry stays on builder and builds on that diff instead of starting over.
 
+## Advice for attempt 2
+
+macOS has no `timeout`. Use `perl -e 'alarm shift; exec @ARGV' 5 <cmd>` (exit 142 on timeout) instead of a hand-rolled bash timeout. Build on the existing uncommitted diff.
+
 </details>
 <details><summary>🟢 <code>OT-162</code> in-progress — hide delete account for guests, top padding on header and guest blurb · 0/5 criteria</summary>
 
 - app: open-tab
 - tier: builder-light
 - review: full
-- attempts: 0
+- attempts: 1
 - branch: task/OT-162
 - worktree: ../wt-OT-162
 - files:
@@ -11830,13 +11834,15 @@ vertically centered and out of scope.
 - [ ] the now-stale comment above the guest branch ("deletion is offered here too") is updated
 - [ ] typecheck, lint, tests pass
 
+## Attempt 1 (builder-light)
+
+Hit the 15-turn limit after edits were made (uncommitted, +3/-4). Gates not confirmed; lint result unclear. Retry finishes from that diff.
+
 </details>
 
 ## Recent activity
 
 ```
-2026-09-24T13:35:25Z  default  SubagentStop  
-2026-09-24T13:35:25Z  default  SubagentStop  
 2026-09-24T13:35:35Z  default  SubagentStop  
 2026-09-24T13:35:35Z  default  SubagentStop  
 2026-09-24T13:35:35Z  default  SubagentStop  
@@ -11855,6 +11861,8 @@ vertically centered and out of scope.
 2026-09-24T20:18:26Z  open-tab  SubagentStart  builder-light
 2026-09-24T20:18:28Z  open-tab  SubagentStart  publisher
 2026-09-24T20:19:00Z  open-tab  SubagentStop  publisher
+2026-09-24T20:38:50Z  open-tab  SubagentStart  builder
+2026-09-24T20:38:53Z  open-tab  SubagentStart  builder-light
 ```
 
 ---
