@@ -6,6 +6,7 @@ Updated 2026-09-24 14:43 UTC · regenerated on every task completion.
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
+| default | $0.26 | $10.00 | ░░░░░░░░░░ 2% |
 
 ## Agents
 
@@ -6337,7 +6338,7 @@ itself.
   design-as-specified, not a defect. Recorded as a possible refinement.
 
 </details>
-<details><summary>✅ <code>OT-131</code> done — untitled</summary>
+<details><summary>✅ <code>OT-131</code> done — the kit re-install reverted five merged fleet fixes; installed cap hook miscounts on this repo's own log</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -6646,7 +6647,7 @@ B2 stayed out of scope; `parsed_at` claim logic untouched. Nothing reached
 `saveReceipt.ts` or `supabase/migrations/`.
 
 </details>
-<details><summary>✅ <code>OT-133</code> done — a late claim is destroyed by the item re-mint when the claimer IS in the payload</summary>
+<details><summary>✅ <code>OT-133</code> done — a late claim is destroyed by the item re-mint when the claimer IS in the payload · 6/6 criteria</summary>
 
 - app: open-tab
 - tier: builder-deep
@@ -6663,6 +6664,293 @@ B2 stayed out of scope; `parsed_at` claim logic untouched. Nothing reached
 - blocked_reason: null
 
 
+## Context
+
+The OT-130 reviewer's `medium` finding, reproduced against real Postgres and
+explicitly disclosed by the OT-130 builder as out of that task's scope. OT-130
+merged as `420a8d3`; read `ledger/OT-130.md` first, especially the review section
+and migration `0022`.
+
+OT-130 closed the window where a late claimer is *not* named in the owner's
+payload — that now raises `PT409` and rolls the whole save back. This task is the
+window it could not close.
+
+**When the late claimer IS named in the payload, her claim and her charge are
+silently destroyed, and the save reports success.** Concretely: carol's
+participant row survives, her claim on the fries is gone, her charge is gone, no
+refusal fires.
+
+Reviewer's verbatim reproduction: `carol row ALIVE, fries claim GONE, charge
+GONE, call SUCCEEDED`.
+
+## Why it happens
+
+`save_receipt_state` does an unconditional
+`delete from receipt_items where receipt_id = p_receipt_id` and re-mints every id
+with `gen_random_uuid()`. `item_assignments.receipt_item_id` is
+`references public.receipt_items(id) on delete cascade` (migration `0005`). So
+every assignment dies with its item regardless of how carefully the participant
+row is preserved. `receipt_items` has **no `client_id` column**, so the RPC has
+no way to match a payload entry to the row it came from.
+
+Pre-existing since `0016`. Identical under `0021` and `0022` — OT-130 did not
+introduce or worsen it.
+
+## Why it matters more now, not less
+
+A `PT409` refusal tells the owner to reload. Reloading pulls all participants
+into the payload — which moves the owner **out** of the window OT-130 fixed and
+**into** this one. The reviewer's judgement: this is now arguably the more likely
+of the two windows.
+
+## The shape of the fix
+
+Give items stable identity across a save, so an assignment can survive the swap.
+The reviewer named the constraint precisely: this needs stable item identity in
+the payload, which is why OT-130 could not do it inside its file scope.
+
+That means touching the payload contract, which is what puts
+`ReceiptEditPage.tsx`, `receiptShare.ts` and `new/page.tsx` in scope here and put
+them out of scope there. Decide the mechanism yourself — a `client_id` on
+`receipt_items` matched on save, or preserving ids the payload already knows, are
+both plausible. Do not assume either is right without checking it against `0022`.
+
+**HARD CONSTRAINT, inherited from OT-105, OT-113, OT-124 and OT-130:** do not
+weaken the delete/re-insert atomicity. No transaction control. Everything stays
+inside the existing `security definer` function. And do not break `0022`'s
+refusal path — both windows must be closed when you are done, not one traded for
+the other.
+
+## Acceptance criteria
+
+- [x] a claim made after the owner's client loaded, by someone who **is** named in the owner's payload, survives the save — with the charge intact, proven by a test that models the interleaving
+- [x] OT-130's `PT409` refusal still fires for a claimer the payload does **not** name; its tests still pass unmodified
+- [x] a participant the owner deliberately removed is still removed, and an item the owner deliberately deleted is still deleted — not fixed by never deleting
+- [x] `joined_via_share` and `joined_at` still survive an owner save; OT-124's tests still pass unmodified
+- [x] atomicity unchanged: no transaction control, delete/re-insert stays inside the function
+- [x] gates: `npm run lint`, `npm run typecheck`, `npm run test` pass against a baseline of 339 on main at `420a8d3`, measured rather than trusted
+
+## Prove it
+
+Criterion 1 must not be tautological. Verify it FAILS against current `0022`
+behaviour before your change, and say what you observed. OT-123, OT-124 and
+OT-130 all mutation-checked their tests this way and their reviewers reproduced
+it independently.
+
+The OT-130 reviewer verified its migration by installing PGlite in a scratchpad
+and applying all 22 migrations in order — real Postgres, no remote project
+touched. That route is available to you and is much stronger than shape
+assertions against a TypeScript model. Use it if you can. Running a migration
+against the remote project is a denied action.
+
+## Also open, from the same review — decide, do not silently skip
+
+- **low** — `reopenEditing` disarms the `0022` guard: `v_claiming` is false at
+  `status='open'`, so a join committing in the gap between `joinReceipt` reading
+  `'shared'` and `reopenEditing` writing `'open'` is deletable by the next save.
+  Fix it here if it falls out naturally; otherwise record why not.
+- **low** — a refused save strands the owner's unsaved edits, since the only
+  remedy is a reload. Design-as-specified per OT-130, not a defect. If this task
+  makes refusal rarer it may become moot; say so either way.
+
+## Attempt 1 — died on a 529, no work done, not a real attempt
+
+Dispatched 2026-08-19 at `builder-deep`. The agent terminated on an
+`API Error: 529 Overloaded` while still reading the task file. No commits, no
+file writes, worktree `../wt-OT-133` clean and unchanged from `420a8d3`.
+
+This is an infrastructure failure, not a failure on the problem, so the
+escalate-on-retry rule does not apply: re-dispatched at the same tier with the
+same prompt, which is the one case where repeating a tier is correct.
+`attempts` is left at 1 rather than incremented, because nothing was attempted.
+
+## Attempt 2 result — built, awaiting review
+
+Three commits on `task/OT-133`, tree clean. Gates: typecheck pass, lint pass
+(only the pre-existing `NewReceiptPage.test.tsx` warning, identical on main),
+tests 364/364 in 25 files against a baseline measured on `420a8d3` of 339/24.
+
+New migration `0023_save_receipt_state_keep_late_claims.sql`. **`0022` is left
+byte-identical on disk** so its shape assertions still bind. Three interlocking
+parts, all gated on the same `v_claiming := v_status is distinct from 'open'`
+that `0022` uses:
+
+1. **Items keep the id the payload already knows.** `p_items[].id` is re-used
+   when it names a live row *on this receipt*; anything else still gets
+   `gen_random_uuid()`. A repeated id counts once via a `row_number()` guard so
+   it cannot collide on the primary key.
+2. **Share-link claims are read before the delete and re-inserted after the
+   swap**, keyed by `(item id, lower(venmo_username))` — the item id because the
+   payload can now keep it, the username because the participant row id does not
+   survive. `on conflict do nothing`, so the payload's own version wins.
+3. **Charges the payload does not restate are carried across** and re-pointed at
+   the participant's new row. Without this the claim survives but the charge
+   still dies from the participant cascade.
+
+Client side: `SaveReceiptItem.dbId` → `p_items[].id`, with the key *omitted*
+rather than nulled when absent so the existing `toEqual` in `saveReceipt.test.ts`
+passes unmodified. A non-uuid or repeated `dbId` is dropped client-side, since
+the function reads the field as `uuid` and a bad value would abort the save.
+
+**Verified against real Postgres** — PGlite in the scratchpad, all 23 migrations
+applied in order, no remote project touched. The defect was reproduced on `0022`
+first, verbatim: `call SUCCEEDED, carol row ALIVE, fries claim GONE, charge
+GONE`. Under `0023` the same payload keeps all three. Four SQL mutations confirm
+each part is load-bearing; five SQL and six model mutations confirm the committed
+tests are non-vacuous.
+
+### Residuals the reviewer should check rather than assume
+
+- `src/app/receipts/new/page.tsx` sends no item ids, so a save from that page
+  still re-mints. Argued safe because it hands off to `/receipts/[id]` 1.5s after
+  a share, so its saves precede any claim. **That argument depends on the same
+  1.5s timer OT-130 found to be the source of a stale snapshot — worth a second
+  look.**
+- While a receipt is out for claiming, the owner's stale page can no longer
+  revoke a claimer's claim: restored claims are unioned with the payload's, not
+  diffed. "Reopen editing" hands that control back. Documented in the migration
+  header.
+- `reopenEditing` still disarms the guard. Deliberately not fixed — it needs
+  either a change in `claim.ts` or a client snapshot timestamp, both out of
+  scope. Unchanged from `0022`, not worsened.
+- One file outside the declared `files:` list — `saveReceiptLateClaim.test.ts` —
+  because criterion 1 requires a test and the frontmatter named none. Added to
+  `files:` above.
+
+## Review attempt 1 — turn-exhausted, findings lost
+
+Dispatched `reviewer` 2026-08-20T02:41:32Z. It ran 707s across 44 tool uses and
+was killed by its turn limit mid-review, emitting a progress line instead of a
+Result block: "Baseline confirmed at 339/24. Now mutation-testing the production
+code to check the tests are non-vacuous."
+
+**What survives from it:** the builder's claimed baseline of 339 tests in 24
+files on `420a8d3` is independently confirmed. Nothing else — no per-criterion
+verdict, no PGlite reproduction result, no judgement on the three residuals.
+
+The worktree is untouched and still at `0996ade` with a clean tree, as expected
+from a read-only agent.
+
+This is a budget failure, not a capability failure, so the tier does not change.
+Re-dispatched at `reviewer` with a narrowed prompt: the baseline is given rather
+than re-derived, and the highest-risk criteria are ordered first so a second
+exhaustion still leaves the important verdicts delivered.
+
+## Review attempt 2 — stopped, no verdict recorded
+
+Dispatched `reviewer` 2026-08-20 with the narrowed prompt described above. The
+agent's `SubagentStop` is in `events.jsonl` at `2026-08-20T03:00:39Z`. **No
+Result block reached the orchestrator and no verdict is recorded anywhere.**
+The findings, if any were reached, are lost.
+
+Do not read this as a pass or a fail. It is neither. The task's criteria remain
+entirely unverified beyond the baseline confirmation salvaged from review
+attempt 1.
+
+State of the work itself is unchanged and healthy: `task/OT-133` is at `0996ade`
+with a clean tree, three commits, migration `0023`. A reviewer is read-only, so
+two exhausted reviews have cost time and tokens but have not touched the code.
+
+**Next step is a third `reviewer` dispatch, not a builder.** The build is done;
+what is missing is only the verdict. If a third review also fails to deliver
+one, that is an escalation to the owner about review budget on this task, not
+evidence of a problem in the diff.
+
+## Review attempt 3 — dispatched 2026-08-20
+
+Third `reviewer`, tier held at `builder-deep` after the owner raised demoting to
+`builder` and accepted the recommendation to hold. The tier matters here only
+for which reviewer grades the work: `reviewer-light` is the wrong instrument for
+a migration that moves live claims and charges.
+
+Prompt changes made specifically to survive the turn limit that killed the two
+prior attempts:
+
+- The 339/24 baseline is GIVEN as established fact, not re-derived. Attempt 1
+  spent most of its budget confirming it.
+- Criteria are ordered by risk and the reviewer is told to work depth-first, so
+  an early death still delivers the verdicts that matter most.
+- Explicit instruction to stop and emit a partial Result block rather than
+  push on — a partial verdict delivered beats a complete one lost.
+- The three mechanisms most likely to hide a subtle defect (id re-use with the
+  `row_number()` guard, claim re-insert keyed on item id + lower(username),
+  carried-across charges) are named so they are not rediscovered from scratch.
+
+Acceptance criteria were also converted from a numbered list to a checklist so
+the Stop hook and `bin/audit` can report what actually remains. All six are
+unchecked and stay unchecked until this reviewer returns a per-criterion verdict.
+
+## Review attempt 3 — PASS, all six criteria, adversarial pass run
+
+`reviewer`, 319s, 19 tool uses. Delivered where two predecessors died. Handing it
+the 339/24 baseline and ordering criteria by risk is what bought the budget.
+
+**Gates, run by the reviewer directly in the worktree:** lint exit 0 (only the
+pre-existing `NewReceiptPage.test.tsx` warning, in a file this diff does not
+touch), typecheck exit 0, tests 364/364 in 25 files. +25 over baseline is exactly
+the count in the one new test file, and no existing test file appears in the
+diff — so OT-130's, OT-124's and `saveReceipt.test.ts`'s assertions all pass
+unmodified rather than having been quietly adjusted.
+
+**Criterion 1 was mutation-checked independently, not trusted.** The reviewer
+extracted the committed model into a scratchpad, reverted all three `0023`
+mechanisms to pre-`0023` behaviour, and ran both:
+
+- committed: `refused=false carolRow=ALIVE friesClaim=KEPT charge=KEPT`
+- mutated: `refused=false carolRow=ALIVE friesClaim=GONE charge=GONE`
+
+The mutated run reproduces the original defect signature verbatim. The test is
+load-bearing on all three mechanisms, not tautological.
+
+`0022` confirmed byte-identical — zero diff lines against `420a8d3` — so its
+shape assertions still bind. No `begin`/`commit`/`rollback` anywhere in `0023`;
+the delete/re-insert stays in the single `security definer` body.
+
+Frontmatter `files:` corrected: the real path is
+`src/app/receipts/[id]/ReceiptEditPage.tsx`. The old entry was a stale path in
+the task, not an out-of-scope edit.
+
+### Findings — none blocking, all carried forward to OT-135
+
+- **medium** — stable item ids introduce a new concurrency mode: two overlapping
+  owner saves on one receipt can now collide on the `receipt_items` primary key
+  (`23505`), whole-transaction rollback with an error toast. Before `0023`,
+  random ids produced silently duplicated rows instead. This trades silent
+  corruption for a visible retry, which is the better failure — but it is a new
+  user-visible error path and is not covered by a test.
+- **medium** — `src/lib/receiptShare.ts:60-62` still claims "claiming starts from
+  a clean slate… the swap clears any left from an earlier save". That is now
+  false when the receipt is already `shared`/`closed`, because charges the
+  payload does not restate are carried across. Narrow reach, since the editor
+  only renders at `status = 'open'`, but the comment actively misleads the next
+  reader of exactly this function.
+- **low** — the owner cannot revoke a claim while claiming. Documented in the
+  migration header; behaviour as specified.
+- **low** — `src/app/receipts/new/page.tsx` sends no item ids. Weaker than the
+  builder feared: that page's payload can never name a share-link joiner, so
+  `0022`'s `PT409` refuses rather than silently destroying.
+
+## Findings DECLINED 2026-08-20 on owner instruction — not lost, not fixed
+
+The two `medium` findings above were briefly filed as OT-135 and OT-136. Both
+task files were deleted on the owner's cost instruction. Recording the decision
+here so the findings survive their tasks, which is the whole reason this file
+exists.
+
+Neither meets the bar of "the app fails its one job without it":
+
+- The `23505` collision on two concurrent owner saves is a **new failure mode
+  introduced by `0023`**, but a strictly better one — a whole rollback with an
+  error toast, where the old behaviour silently duplicated item rows. Untested
+  and its message is generic. If it is ever seen in the wild, the fix is a
+  distinct "someone else just saved this, reload" message following the existing
+  `PT409` idiom, plus a test for the interleaving.
+- The stale comment at `src/lib/receiptShare.ts:60-62` claims the swap clears
+  charges left from an earlier save. False under `0023` when the receipt is
+  `shared`/`closed`, since unrestated charges are now carried. Costs the next
+  reader of that function, nobody else. Three lines.
+
+Pick these up only if something else takes you into those files anyway.
 
 </details>
 <details><summary>✅ <code>OT-134</code> done — a transient gemini outage permanently burns a receipt's only parse — no retry affordance · 10/10 criteria</summary>
