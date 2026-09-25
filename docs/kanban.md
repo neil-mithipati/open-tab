@@ -42,7 +42,7 @@
 | OT-139 | lock down receipt image storage — private bucket, RLS, signed URLs, retention job | Done | — (P0, go-live tomorrow; attempt 2 merged. Deployment note stands: migration 0026 must be re-applied even if already run, and BEFORE the code, since the retention function's OUT columns changed. Owner set `RECEIPT_IMAGE_RETENTION_DAYS=14` and generated `CRON_SECRET` 2026-08-20; bucket `file_size_limit`/`allowed_mime_types` agreed but owner action, not code) |
 | OT-140 | client-side image downscale and EXIF orientation normalization before upload | Done | — (P0, go-live tomorrow; owner waived both open criteria — parse-quality, no fixtures/key, and upload size/time, rejected as proven-by-`sharp`-proxy not the real `canvas.toBlob` path. Measurement stands as strong evidence — 11.0MB to 649KB, 94% reduction — but recorded as WAIVED, not passed) |
 | OT-141 | fourth unbound reader of image_url — handleDelete inlines a copy of the storage-path extractor | Done | — (merged to main as `d6c347a` on top of `f9b1910`; `handleDelete` now calls `boundStoragePath`, skips `storage.remove` on a null return, and the OT-139 sweep test gained a class rule catching inline `"/receipt-images/"` parsing anywhere outside `src/lib/storage.ts`) |
-| OT-142 | production database is ~14 migrations behind the repo — merged code reads columns that do not exist live | Blocked | needs the owner to run the schema_migrations query against production and decide the remediation path. no agent can see the live database, so the gap cannot be measured from here. this blocks the go-live, not just this task. Found while applying migration 0026 through the dashboard: `parsed_at` (0020) doesn't exist live, production appears to be at roughly migration 11 of 26. Code merged tonight (OT-135, OT-136, OT-139) assumes the full set. 2 of 6 criteria now checked: live migration state established (case 2 — never tracked, live schema built by hand) and migrations applied up to 0026. Still open: gap enumerated per table, remediation order recorded, dashboard policy steps completed, and a drift check exists (split out as OT-145, done). New P0 found on the live database: the `receipt_images_insert_own` storage policy is missing both its folder and ownership conjuncts — any authenticated user can write into another user's folder — fix is owner-side only. |
+| OT-142 | production database is ~14 migrations behind the repo — merged code reads columns that do not exist live | Done | — (owner closed 2026-08-21: schema reset, all 26 migrations applied and tracked, bucket private, all four storage policies carrying their full tests, including the INSERT policy's missing ownership conjuncts, fixed and owner-verified. Drift detection exists via OT-145, hardened by OT-148. Criteria 2 and 3 — per-table gap enumeration and remediation ordering — stay unchecked on purpose: the schema reset made that reconciliation unnecessary, not skipped) |
 | OT-143 | 0026 cannot be applied by supabase db push — split the storage half out of the migration | Done | — (reviewed MERGE, all five criteria pass; reviewer confirmed `supabase/storage-policies.sql` byte-identical to pre-split `0026`, gates re-run 574/574 tests, typecheck and lint clean. `public.` half stays in `0026` and pushes clean; storage half moved to `supabase/storage-policies.sql` with the apply procedure documented in `docs/deployment.md`. Criterion 1 verified by statement inspection, not a live hosted push — no agent can reach one) |
 | OT-144 | change the receipt image retention default from 7 days to 14 | Done | — (`builder-light`, `review: skip`, attempt 2. Owner decision 2026-08-20 to match `RECEIPT_IMAGE_RETENTION_DAYS=14`, already set live) |
 | OT-145 | nothing detects schema drift between the repo and the live database | Done | — (reviewed MERGE, all 8 criteria pass; `npm run check:drift` compares migrations and storage policies by normalised expression, not by name; on its first live run it found the storage-policy hole recorded on OT-142's row above. 5 findings routed to backlog) |
@@ -54,13 +54,14 @@
 | OT-151 | the stop hook ignores the [awaiting owner] marker and forces continuation anyway | Done | — (reviewed MERGE, all five criteria pass by execution against synthetic transcripts; commit `ef30099`. Fix worked on fixtures but not live — continued as OT-155) |
 | OT-152 | fleet-path matcher is bypassed by path spelling, no grant needed | Done | — (closed by OT-160: fix installed on main at a28cfad, case harness rebuilt as scripts/protect-fleet-cases.sh, installed hook re-proven 68 ok / 0 fail. one narrow gap filed as OT-154#1, does not reach any fleet file) |
 | OT-153 | remaining cap-counting gaps found in the OT-147 review | Done | — (reviewer-deep pass 2 approved all six criteria, no high findings, merged as `caa98a1`. Carries OT-147's cap fix as a strict superset and resolves the merge conflict OT-147 has with main. Four residual gaps, none blocking, routed to OT-157) |
-| OT-154 | leftover edges in the patched fleet guard | Blocked | needs a maintenance grant: add OT-154 to maintenance in .claude/gates.json. also should land after OT-160 so its harness can prove the changes. |
+| OT-154 | leftover edges in the patched fleet guard | Done | — (closed by owner as won't-fix, 2026-09-24: no maintenance grant will cover protect-fleet.sh and none of the findings blocked the install. acceptance criteria left unchecked — the work was never done, only closed.) |
 | OT-155 | the [awaiting owner] marker passes its fixtures but still fails live | Done | — (root cause: the Stop hook's transcript JSONL is flushed asynchronously, so the marker read live is stale even though the OT-151 matcher logic is correct. Fixed via the Stop payload's own `last_assistant_message` field instead of the transcript tail, no polling. All six criteria verified live, not just by fixture. Merged as `962ce18`. Two residual gaps routed to OT-156) |
-| OT-156 | loop hook can't tell an absent last_assistant_message from an empty one | Blocked | needs a maintenance grant: add OT-156 to maintenance in .claude/gates.json. |
+| OT-156 | loop hook can't tell an absent last_assistant_message from an empty one | Done | — (reviewer passed 6/6 criteria, merged to main) |
 | OT-158 | remove the Sentry wizard's example page and route before launch | Done | — (builder committed `fc664dc` but died before its result block; criteria verified independently from the branch, gates green, merged) |
 | OT-159 | production deploy is not reachable — enable it and set the required env vars | Done | — |
 | OT-160 | rebuild the protect-fleet case harness as a versioned script and re-prove the installed hook | Done | — (reviewer-deep verified all nine criteria by execution: 68 ok / 0 fail / 0 skip against the installed hook, byte-identical to main. merged. three low findings routed to OT-161) |
-| OT-161 | three low findings in the protect-fleet case harness | Todo | — |
+| OT-161 | three low findings in the protect-fleet case harness | Done | — (reviewer passed 5/5 criteria, merged to main) |
+| OT-162 | hide delete account for guests, top padding on header and guest blurb | Done | — (merged to main as `4313850`) |
 
 ## Backlog — non-blocking findings from reviews, not yet filed as ledger tasks
 
@@ -72,6 +73,157 @@
 | OT-145-F4 | drift check: the ENOENT message interpolates `SUPABASE_BIN` unredacted (owner-supplied path, not a credential, but still worth trimming) | Todo | — |
 | OT-145-F5 | drift check: `--help` exits 0 having checked nothing, which a deploy step passing a stray flag would read as a clean run | Todo | — |
 | OT-157 | four residual cap-counting gaps found in the OT-153 reviewer-deep pass (NUL-byte log line defeats the lost-line deny; worktree with no events.jsonl turns the cap off; whole log buffered in shell memory; stderr inventory omits HB_GRACE) | Todo | — |
+
+## Sync notes (2026-09-24, cycle 42)
+
+- **OT-156** In Progress → **Done**. Ledger `state: done`. Reviewer passed
+  6/6 criteria; merged to main.
+
+Left alone, no drift: every other card checked against its ledger file and
+already matches, including OT-161 (Done) reconciled by a concurrent sync.
+
+No id disappeared from the ledger that had a card on this board; nothing to
+flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
+
+## Sync notes (2026-09-24, cycle 41)
+
+- **OT-161** In Progress → **Done**. Ledger `state: done`. Reviewer passed
+  5/5 criteria; merged to main. Non-empty guard on the fixture root, a
+  per-case hook timeout, and a nonzero exit on any skipped case all landed.
+
+Left alone, no drift: every other card checked against its ledger file and
+already matches.
+
+No id disappeared from the ledger that had a card on this board; nothing to
+flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
+
+## Sync notes (2026-09-24, cycle 40)
+
+Reconciled against `ledger/OT-154.md`, `ledger/OT-156.md`, `ledger/OT-161.md`.
+Matched on id — no card created without a matching ledger file.
+
+- **OT-154** Blocked → **Done**. Ledger `state: done`. The owner closed it
+  won't-fix, not by finishing the work — acceptance criteria stay unchecked
+  in the ledger body, and the note above says so on the card rather than
+  reading as a normal completion.
+- **OT-156** left at **In Progress**, no change. Ledger `state: in-progress`
+  still — built and in review, but the ledger hasn't moved to done, so the
+  card doesn't either.
+- **OT-161** left at **In Progress**, no change. Ledger `state: in-progress`
+  matches the card.
+
+Everything else already matched the ledger; no other cards touched. No
+ledger ids vanished this cycle — nothing to flag.
+
+## Sync notes (2026-09-24, cycle 39)
+
+Reconciled against `ledger/OT-154.md`, `ledger/OT-156.md`, `ledger/OT-161.md`,
+`ledger/OT-162.md`. Matched on id — no card created without a matching ledger
+file.
+
+- **OT-156** Blocked → **In Progress**. Ledger `state: in-progress`,
+  `blocked_reason: null`. Requested transition.
+- **OT-154** stays **Blocked**, reason refreshed. Ledger `blocked_reason`
+  carried verbatim: only file in scope is `.claude/hooks/protect-fleet.sh`,
+  which no maintenance grant covers — the owner must apply it upstream, or
+  re-scope it. Replaces the stale maintenance-grant-plus-OT-160-ordering note,
+  which no longer matches the ledger.
+- **OT-161** left at **In Progress**, no change. Ledger `state: in-progress`,
+  `attempts: 1`, `blocked_reason: null` — matches the board already. The
+  dispatch note that it's "in review" is not a ledger `state`; the four-state
+  mapping has no review column, and the ledger still reads `in-progress`, so
+  the card is unchanged.
+- **OT-162** row note updated to reflect the merge (`4313850`), documented
+  separately below. Status was already Done — the ledger said `done` before
+  the merge, per the "kanban tracks work, not history" rule, and stays Done
+  now that the merge has also happened.
+
+Left alone, no drift: every other card checked against its ledger file and
+already matches.
+
+No id disappeared from the ledger that had a card on this board; nothing new
+to flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
+
+## Sync notes (2026-09-24, cycle 38)
+
+- **OT-162** In Progress → **Done**. Ledger `state: done`, `attempts: 1`,
+  `blocked_reason: null`. Moved because the ledger says done — this is
+  before merge, not after; the kanban tracks the work, not the git history.
+  Not yet merged to `main`.
+
+Left alone, no drift: **OT-161** checked against `ledger/OT-161.md` and
+unchanged — `state: in-progress`, `attempts: 1`, `blocked_reason: null`.
+(The dispatch note for this cycle said "attempt 2"; the ledger file itself
+still reads `attempts: 1`, and the ledger wins over any other account, so the
+card is left as is.)
+
+Every other card checked against its ledger file and already matches.
+
+No id disappeared from the ledger that had a card on this board; nothing new
+to flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
+
+## Sync notes (2026-09-24, cycle 37)
+
+- **OT-162** created, **In Progress**. Ledger `state: in-progress`,
+  `tier: builder-light`, `review: full`, `attempts: 0`, branch `task/OT-162`,
+  worktree `../wt-OT-162`. No existing card — new task added, not a status
+  disagreement.
+
+Left alone, no drift: every other card checked against its ledger file and
+already matches, including OT-161 (in-progress, unchanged) which a separate
+concurrent sync may also be reconciling — this pass found no conflicting
+write, ledger already reflects the same state either way.
+
+No id disappeared from the ledger that had a card on this board; nothing new
+to flag as vanished.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
+
+## Sync notes (2026-09-24, cycle 36)
+
+Reconciled against every file in `ledger/`, 60 files read (OT-157 has no
+ledger file yet, as noted below).
+
+- **OT-161** Todo → **In Progress**. Ledger `state: in-progress`,
+  `tier: builder`, `attempts: 0`, branch `task/OT-161`, worktree
+  `../wt-OT-161`. Requested transition. Tier was `builder-light` at creation;
+  the ledger now reads `builder`, so this sync updates both status and the
+  tier note in the same pass rather than treating them as separate events.
+- **OT-142** Blocked → **Done**. Ledger `state: done`, `blocked_reason: null`.
+  This was drift the last two sync cycles missed — the ledger was closed by
+  the owner 2026-08-21 (schema reset, all 26 migrations applied and tracked,
+  the live INSERT-policy hole fixed and verified) but the board still carried
+  the old blocked note. Row rewritten to the closure summary.
+
+Left alone, no drift: every other card checked against its ledger file and
+already matches, including OT-154 and OT-156 which remain correctly Blocked
+with their maintenance-grant reasons unchanged.
+
+No id disappeared from the ledger that had a card on this board; nothing new
+to flag as vanished. OT-157 remains referenced only in OT-153's ledger body
+and the backlog table below — still no `ledger/OT-157.md` on disk.
+
+Notion was not reachable this cycle: no `mcp__notion__*` tools present in
+this session's tool list. Per the fallback rule this is expected — writing to
+`docs/kanban.md` is the correct outcome, not a degraded one.
 
 ## Sync notes (2026-09-11, cycle 35)
 
