@@ -1,12 +1,12 @@
 # Agent status
 
-Updated 2026-09-24 22:59 UTC · regenerated on every task completion.
+Updated 2026-09-25 18:57 UTC · regenerated on every task completion.
 
 ## Spend
 
 | Lane | Spent | Cap | Used |
 |---|---|---|---|
-| open-tab | $6.21 | $200.00 | ░░░░░░░░░░ 3% |
+| open-tab | $6.9 | $200.00 | ░░░░░░░░░░ 3% |
 
 ## Agents
 
